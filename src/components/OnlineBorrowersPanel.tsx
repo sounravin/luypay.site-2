@@ -1,8 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Borrower } from '../types';
 import { useLanguage } from '../i18n';
-import { Activity, Wifi, Circle, Clock, MessageSquare, ArrowRight, UserCheck } from 'lucide-react';
+import { Activity, Wifi, Circle, Clock, MessageSquare, ArrowRight, UserCheck, Play, Power } from 'lucide-react';
 import { formatMoney } from '../utils';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface OnlineBorrowersPanelProps {
   borrowers: Borrower[];
@@ -11,6 +13,7 @@ interface OnlineBorrowersPanelProps {
 
 export default function OnlineBorrowersPanel({ borrowers, onSelectBorrower }: OnlineBorrowersPanelProps) {
   const { language } = useLanguage();
+  const [isSimulating, setIsSimulating] = useState(false);
 
   // Determine who is Online (isOnline is true and lastActive is within 3 minutes)
   const onlineBorrowers = useMemo(() => {
@@ -31,6 +34,45 @@ export default function OnlineBorrowersPanel({ borrowers, onSelectBorrower }: On
       return !isActuallyOnline && b.lastActive && b.lastActive > twentyFourHoursAgo;
     }).sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0));
   }, [borrowers]);
+
+  // Handle live demo simulation: set 1-2 existing borrowers to online
+  const startSimulation = async () => {
+    if (borrowers.length === 0) return;
+    setIsSimulating(true);
+    
+    // Choose up to 2 random borrowers
+    const shuffled = [...borrowers].sort(() => 0.5 - Math.random());
+    const targets = shuffled.slice(0, Math.min(2, shuffled.length));
+
+    for (const target of targets) {
+      try {
+        const docRef = doc(db, 'borrowers', target.id);
+        await updateDoc(docRef, {
+          isOnline: true,
+          lastActive: Date.now()
+        });
+      } catch (err) {
+        console.error("Simulation error:", err);
+      }
+    }
+  };
+
+  // Turn off simulation: set everyone offline
+  const stopSimulation = async () => {
+    setIsSimulating(false);
+    const activeBorrowers = borrowers.filter(b => b.isOnline);
+    for (const b of activeBorrowers) {
+      try {
+        const docRef = doc(db, 'borrowers', b.id);
+        await updateDoc(docRef, {
+          isOnline: false,
+          lastActive: Date.now() - 5 * 60 * 1000 // 5 minutes ago to put in recently active
+        });
+      } catch (err) {
+        console.error("Stop simulation error:", err);
+      }
+    }
+  };
 
   // Helper to format relative time in Khmer/English
   const formatRelativeTime = (timestamp?: number) => {
@@ -56,27 +98,39 @@ export default function OnlineBorrowersPanel({ borrowers, onSelectBorrower }: On
   };
 
   if (onlineBorrowers.length === 0 && recentlyActiveBorrowers.length === 0) {
-    // If no one is online or recently active, render a mini clean banner so we don't waste space
+    // If no one is online or recently active, render a mini clean banner so we don't waste space but keep simulation button
     return (
-      <div className="mx-0 p-4.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/80 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-3xs">
-        <div className="flex items-center gap-3 text-center sm:text-left">
-          <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-            <Wifi className="w-5 h-5 text-slate-400" />
+      <div className="mx-0 p-4.5 bg-gradient-to-br from-slate-900/95 via-slate-950 to-slate-900 border border-slate-200/20 dark:border-indigo-500/10 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-3xs text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(#4338ca_1px,transparent_1px)] [background-size:16px_16px] opacity-5 pointer-events-none" />
+        <div className="flex items-center gap-3 text-center md:text-left relative z-10">
+          <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 shrink-0">
+            <Wifi className="w-5 h-5 text-indigo-400" />
           </div>
           <div>
-            <h4 className="text-xs font-black text-slate-700 dark:text-slate-300">
-              {language === 'kh' ? 'មិនមានសកម្មភាពថ្មីៗពីកូនបំណុល' : 'No Recent Borrower Activity'}
+            <h4 className="text-xs font-black text-slate-100 flex items-center gap-2 justify-center md:justify-start">
+              <span>{language === 'kh' ? 'មិនទាន់មានកូនបំណុលអនឡាញបច្ចុប្បន្ន' : 'No Borrowers Online Currently'}</span>
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
             </h4>
             <p className="text-[10px] text-slate-400 font-bold">
               {language === 'kh' 
-                ? 'ប្រព័ន្ធកំពុងរង់ចាំកូនបំណុលបើកតំណភ្ជាប់សងប្រាក់ក្នុងតំណភ្ជាប់ពិតប្រាកដ។' 
-                : 'LuyPay will track borrower presence here when they visit their payment portal links.'}
+                ? 'ប្រព័ន្ធកំពុងរង់ចាំកូនបំណុលបើកតំណភ្ជាប់។ បងអាចចុចប៊ូតុង "តេស្តអនឡាញ" ដើម្បីសាកល្បងមើលផ្ទាំង Digital Onilne បាន។' 
+                : 'Waiting for clients to open their links. Click "Simulate Live" to test the live online panel.'}
             </p>
           </div>
         </div>
-        <div className="text-[10px] bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-slate-500 font-black flex items-center gap-1.5 border border-slate-200/50">
-          <Circle className="w-2 h-2 fill-slate-300 text-slate-300" />
-          <span>{language === 'kh' ? 'បច្ចុប្បន្នភាពស្វ័យប្រវត្ត' : 'Live Sync Active'}</span>
+        <div className="flex items-center gap-3 shrink-0 relative z-10 w-full md:w-auto justify-center">
+          <button
+            onClick={startSimulation}
+            disabled={borrowers.length === 0}
+            className="px-3.5 py-1.5 text-[10px] font-black bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 rounded-xl transition duration-150 cursor-pointer text-white flex items-center gap-1.5 shadow-md shadow-indigo-500/20 disabled:opacity-50"
+          >
+            <Play className="w-3 h-3 fill-current" />
+            <span>{language === 'kh' ? 'តេស្តអនឡាញ (Simulate Live)' : 'Simulate Live'}</span>
+          </button>
+          <div className="text-[10px] bg-slate-800 px-3 py-1 rounded-full text-indigo-400 font-black flex items-center gap-1.5 border border-slate-700">
+            <Circle className="w-1.5 h-1.5 fill-indigo-500 text-indigo-500 animate-pulse" />
+            <span>{language === 'kh' ? 'ត្រួតពិនិត្យផ្សាយផ្ទាល់' : 'Monitoring Live'}</span>
+          </div>
         </div>
       </div>
     );
@@ -109,21 +163,42 @@ export default function OnlineBorrowersPanel({ borrowers, onSelectBorrower }: On
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-black text-xs px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
-            <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>
-              {onlineBorrowers.length} {language === 'kh' ? 'កំពុង Online' : 'Online'}
-            </span>
-          </span>
-          {recentlyActiveBorrowers.length > 0 && (
-            <span className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-black text-xs px-3 py-1 rounded-xl flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-3.5 flex-wrap">
+          {/* Simulation Controllers */}
+          {isSimulating ? (
+            <button
+              onClick={stopSimulation}
+              className="px-3 py-1 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 rounded-xl text-[10px] font-black text-rose-300 transition duration-150 flex items-center gap-1 cursor-pointer"
+            >
+              <Power className="w-3 h-3" />
+              <span>{language === 'kh' ? 'បិទការតេស្ត' : 'Stop Test'}</span>
+            </button>
+          ) : (
+            <button
+              onClick={startSimulation}
+              className="px-3 py-1 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl text-[10px] font-black text-indigo-300 transition duration-150 flex items-center gap-1 cursor-pointer"
+            >
+              <Play className="w-3 h-3 fill-current" />
+              <span>{language === 'kh' ? 'តេស្តអនឡាញ' : 'Test Simulation'}</span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-2">
+            <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-black text-xs px-3 py-1 rounded-xl flex items-center gap-1.5 shadow-sm">
+              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
               <span>
-                {recentlyActiveBorrowers.length} {language === 'kh' ? 'សកម្មថ្មីៗ' : 'Recent'}
+                {onlineBorrowers.length} {language === 'kh' ? 'កំពុង Online' : 'Online'}
               </span>
             </span>
-          )}
+            {recentlyActiveBorrowers.length > 0 && (
+              <span className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 font-black text-xs px-3 py-1 rounded-xl flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                <span>
+                  {recentlyActiveBorrowers.length} {language === 'kh' ? 'សកម្មថ្មីៗ' : 'Recent'}
+                </span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -244,3 +319,4 @@ export default function OnlineBorrowersPanel({ borrowers, onSelectBorrower }: On
     </div>
   );
 }
+
