@@ -8,13 +8,16 @@ import { Upload, Camera, CheckCircle, AlertCircle, Phone, User, DollarSign, Refr
 interface BorrowerApplyFormProps {
   lenderId: string;
   onBackToPortal?: () => void;
+  onSubmitSuccess?: (appId: string) => void;
 }
 
-export default function BorrowerApplyForm({ lenderId, onBackToPortal }: BorrowerApplyFormProps) {
+export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSuccess }: BorrowerApplyFormProps) {
   const { language } = useLanguage();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [amountRequested, setAmountRequested] = useState('');
+  const [loanDuration, setLoanDuration] = useState('30');
+  const [lastCreatedAppId, setLastCreatedAppId] = useState('');
   
   const [idCardPhoto, setIdCardPhoto] = useState<string>('');
   const [selfiePhoto, setSelfiePhoto] = useState<string>('');
@@ -161,12 +164,14 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal }: Borrower
         idCardPhoto,
         selfiePhoto,
         amountRequested: amt,
+        loanDuration: parseInt(loanDuration) || 30,
         lenderId,
         status: 'pending',
         createdAt: new Date().toISOString()
       };
 
       await setDoc(doc(db, 'loan_applications', applicationId), applicationData);
+      setLastCreatedAppId(applicationId);
       setSubmitStatus('success');
     } catch (err: any) {
       console.error("Error submitting loan request:", err);
@@ -203,6 +208,10 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal }: Borrower
             <span>{language === 'kh' ? 'លេខទូរស័ព្ទ' : 'Phone Number'}</span>
             <span className="text-slate-200 font-bold">{phone}</span>
           </div>
+          <div className="flex justify-between border-b border-slate-800 pb-1.5 text-slate-400">
+            <span>{language === 'kh' ? 'រយះពេលនៃការខ្ចី' : 'Loan Duration'}</span>
+            <span className="text-slate-200 font-bold">{loanDuration} {language === 'kh' ? 'ថ្ងៃ' : 'Days'}</span>
+          </div>
           <div className="flex justify-between text-slate-400">
             <span>{language === 'kh' ? 'ទឹកប្រាក់ស្នើសុំ' : 'Amount Requested'}</span>
             <span className="text-emerald-400 font-bold">${parseFloat(amountRequested).toLocaleString()} USD</span>
@@ -211,16 +220,21 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal }: Borrower
 
         <button
           onClick={() => {
-            setName('');
-            setPhone('');
-            setAmountRequested('');
-            setIdCardPhoto('');
-            setSelfiePhoto('');
-            setSubmitStatus('idle');
+            if (onSubmitSuccess && lastCreatedAppId) {
+              onSubmitSuccess(lastCreatedAppId);
+            } else {
+              setName('');
+              setPhone('');
+              setAmountRequested('');
+              setLoanDuration('30');
+              setIdCardPhoto('');
+              setSelfiePhoto('');
+              setSubmitStatus('idle');
+            }
           }}
           className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl text-sm transition cursor-pointer shadow-lg shadow-blue-600/20 active:scale-98"
         >
-          {language === 'kh' ? 'ស្នើសុំសារជាថ្មី' : 'Apply for another loan'}
+          {language === 'kh' ? 'បន្តទៅមុខ' : 'Continue / Track'}
         </button>
 
         {onBackToPortal && (
@@ -309,6 +323,23 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal }: Borrower
                 $
               </span>
             </div>
+          </div>
+
+          {/* Loan Duration in Days */}
+          <div className="space-y-1.5">
+            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-blue-400">📅</span>
+              {language === 'kh' ? 'រយះពេលនៃការខ្ចី (ចំនួនថ្ងៃ)' : 'Loan Duration (Days)'} <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="number"
+              required
+              min="1"
+              value={loanDuration}
+              onChange={(e) => setLoanDuration(e.target.value)}
+              placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ ៣០' : 'e.g., 30'}
+              className="w-full px-4 py-3 text-sm bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-bold text-slate-100 placeholder-slate-600"
+            />
           </div>
 
           {/* ID Card Upload Card */}

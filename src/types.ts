@@ -58,6 +58,7 @@ export interface Borrower {
   reportedPayments?: ReportedPayment[]; // Payments scanned & reported by borrower via portal
   isOnline?: boolean; // Whether the borrower is currently visiting their portal
   lastActive?: number; // Milliseconds timestamp of borrower's last interaction or heartbeat
+  applicationId?: string; // Prefilled application identifier
 }
 
 export interface ChatMessage {
@@ -124,5 +125,6 @@ export interface LoanApplication {
   createdAt: string; // ISO string
   approvedAt?: string;
   rejectedReason?: string;
+  loanDuration?: number; // Duration of loan in days
 }
 

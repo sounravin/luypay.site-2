@@ -10,6 +10,7 @@ import AdminMembersDashboard from './components/AdminMembersDashboard';
 import PricingPanel from './components/PricingPanel';
 import NotificationBell from './components/NotificationBell';
 import BorrowerApplyForm from './components/BorrowerApplyForm';
+import LoanApplicationTracker from './components/LoanApplicationTracker';
 import LoanApplicationsControlPanel from './components/LoanApplicationsControlPanel';
 import { LoanApplication } from './types';
 import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText } from 'lucide-react';
@@ -120,11 +121,16 @@ export default function App() {
     principal?: number;
     profilePhoto?: string;
     notes?: string;
+    applicationId?: string;
   } | null>(null);
 
   const [isApplyMode, setIsApplyMode] = useState<boolean>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('apply') === 'true';
+  });
+  const [trackId, setTrackId] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('track');
   });
   const [applyLenderId, setApplyLenderId] = useState<string>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1411,10 +1417,12 @@ export default function App() {
       id: 'b-' + generateId(),
       payments: [],
       isArchived: false,
+      applicationId: prefilledData?.applicationId || undefined,
     };
     const newList = [newBorrower, ...borrowers];
     saveBorrowers(newList);
     setIsAddModalOpen(false);
+    setPrefilledData(null);
     showToast(`បានបន្ថែមអ្នកខ្ចីថ្មី "${data.name}" ដោយជោគជ័យ!`);
   };
 
@@ -1792,6 +1800,19 @@ export default function App() {
     );
   }
 
+  // Render Loan Application Tracking page if viewing the track link
+  if (trackId) {
+    return (
+      <LoanApplicationTracker
+        trackId={trackId}
+        onBack={() => {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setTrackId(null);
+        }}
+      />
+    );
+  }
+
   // Render Public Loan Application form if viewing the apply link
   if (isApplyMode) {
     return (
@@ -1803,6 +1824,12 @@ export default function App() {
         <div className="w-full max-w-md z-10">
           <BorrowerApplyForm 
             lenderId={applyLenderId} 
+            onSubmitSuccess={(appId) => {
+              const newUrl = `${window.location.origin}/?track=${appId}`;
+              window.history.pushState({}, document.title, newUrl);
+              setTrackId(appId);
+              setIsApplyMode(false);
+            }}
             onBackToPortal={() => {
               window.history.replaceState({}, document.title, window.location.pathname);
               setIsApplyMode(false);
@@ -3700,7 +3727,9 @@ export default function App() {
                     phone: app.phone,
                     principal: app.amountRequested,
                     profilePhoto: app.selfiePhoto,
-                    notes: `សំណើខ្ចីលុយឆក់អេឡិចត្រូនិច ID: ${app.id}`
+                    notes: `សំណើខ្ចីលុយឆក់អេឡិចត្រូនិច ID: ${app.id}`,
+                    applicationId: app.id,
+                    loanDuration: app.loanDuration
                   });
                   setActiveSection('ledger');
                   setIsAddModalOpen(true);

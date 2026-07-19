@@ -34,6 +34,7 @@ interface AddBorrowerModalProps {
     principal?: number;
     profilePhoto?: string;
     notes?: string;
+    loanDuration?: number;
   } | null;
 }
 
@@ -67,6 +68,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
         setPrincipal(prefilledData.principal ? prefilledData.principal.toString() : '');
         setProfilePhoto(prefilledData.profilePhoto || '');
         setNotes(prefilledData.notes || '');
+        setDuration(prefilledData.loanDuration ? prefilledData.loanDuration.toString() : '24');
         setIsTotalToPayManuallyEdited(false);
         setIsInstallmentManuallyEdited(false);
       } else {
