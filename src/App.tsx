@@ -3235,14 +3235,14 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 min-h-screen p-4 sm:p-6 md:p-8 space-y-6 overflow-y-auto">
         {/* Mobile Header profile bar */}
-        <div className={`md:hidden flex flex-col p-4 rounded-2xl border shadow-lg gap-4 relative z-40 transition-all duration-300 overflow-hidden ${
+        <div className={`md:hidden flex flex-col p-4 rounded-2xl border shadow-lg gap-4 relative z-50 transition-all duration-300 overflow-visible ${
           mobileHeaderStyle === 'angkor'
             ? 'bg-gradient-to-br from-[#2c080a] via-[#1f0506] to-[#0d0202] text-amber-100 border-amber-600/40 shadow-xl shadow-amber-950/40'
             : currentThemeConfig.sidebarClass
         }`}>
           {/* Angkor Wat background vector silhouette */}
           {mobileHeaderStyle === 'angkor' && (
-            <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+            <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none select-none z-0">
               <div className="absolute inset-0 bg-gradient-to-t from-[#0d0202]/90 via-[#1f0506]/30 to-transparent" />
               <svg className="absolute right-[-24px] bottom-[-8px] h-[120%] w-auto opacity-20 text-amber-500/80" viewBox="0 0 180 120" fill="currentColor">
                 {/* Base foundation tier */}

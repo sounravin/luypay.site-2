@@ -81,6 +81,25 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
           </div>
         </>
       )}
+
+      {/* Dynamic Top-Left Badge requested by user */}
+      {isSelected && (
+        <div className="absolute top-1.5 left-1.5 z-10 bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow-md border border-emerald-400/40 flex items-center gap-1 animate-in fade-in zoom-in duration-150">
+          <Check className="w-2.5 h-2.5 stroke-[4]" />
+          <span>
+            {useLanguage().language === 'kh' 
+              ? `បានជ្រើសរើស${isCompleted ? ' (បង់រួច)' : ''}` 
+              : `Selected${isCompleted ? ' (Paid)' : ''}`}
+          </span>
+        </div>
+      )}
+      {!isSelected && isCompleted && (
+        <div className="absolute top-1.5 left-1.5 z-10 bg-teal-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow-md border border-teal-400/40 flex items-center gap-1">
+          <CheckCircle className="w-2.5 h-2.5" />
+          <span>{useLanguage().language === 'kh' ? 'បង់រួច' : 'Paid'}</span>
+        </div>
+      )}
+
       {/* Top Header Row */}
       <div className="flex items-start gap-3 justify-between">
         <div className="flex items-center gap-3">

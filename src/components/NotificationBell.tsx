@@ -123,7 +123,7 @@ export default function NotificationBell({ borrowers, onSelectBorrower, isMobile
   }, []);
 
   return (
-    <div ref={containerRef} className={`z-50 ${sidebarMode ? 'relative' : 'md:relative'}`}>
+    <div ref={containerRef} className="z-50 relative">
       {/* SVG definitions for beautiful golden gradients */}
       <svg className="absolute w-0 h-0 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -164,10 +164,10 @@ export default function NotificationBell({ borrowers, onSelectBorrower, isMobile
             {/* Overlay background to capture clicks and close smoothly */}
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.1 }}
+              animate={{ opacity: 0.15 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black z-40"
+              className="fixed inset-0 bg-black/40 z-[90]"
             />
             
             <motion.div
