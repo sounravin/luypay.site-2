@@ -121,6 +121,7 @@ export default function App() {
   const [blockScreenPaymentStep, setBlockScreenPaymentStep] = useState<'scan' | 'counting' | 'select_plan' | 'success'>('scan');
   const [blockScreenCountdown, setBlockScreenCountdown] = useState<number>(56);
   const [blockScreenQrScanDetected, setBlockScreenQrScanDetected] = useState<boolean>(false);
+  const [mobileHeaderStyle, setMobileHeaderStyle] = useState<'default' | 'angkor'>(() => (localStorage.getItem('luypay_mobile_header_style') as 'default' | 'angkor') || 'default');
 
   // Real-time QR Configuration from Firestore settings/qr_config
   const [qrConfig, setQrConfig] = useState<any>({
@@ -3234,31 +3235,86 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 min-h-screen p-4 sm:p-6 md:p-8 space-y-6 overflow-y-auto">
         {/* Mobile Header profile bar */}
-        <div className={`md:hidden flex flex-col p-4 rounded-2xl border shadow-lg gap-4 relative z-40 ${currentThemeConfig.sidebarClass}`}>
-          <div className="flex items-center justify-between w-full">
+        <div className={`md:hidden flex flex-col p-4 rounded-2xl border shadow-lg gap-4 relative z-40 transition-all duration-300 overflow-hidden ${
+          mobileHeaderStyle === 'angkor'
+            ? 'bg-gradient-to-br from-[#2c080a] via-[#1f0506] to-[#0d0202] text-amber-100 border-amber-600/40 shadow-xl shadow-amber-950/40'
+            : currentThemeConfig.sidebarClass
+        }`}>
+          {/* Angkor Wat background vector silhouette */}
+          {mobileHeaderStyle === 'angkor' && (
+            <div className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0d0202]/90 via-[#1f0506]/30 to-transparent" />
+              <svg className="absolute right-[-24px] bottom-[-8px] h-[120%] w-auto opacity-20 text-amber-500/80" viewBox="0 0 180 120" fill="currentColor">
+                {/* Base foundation tier */}
+                <path d="M10,110 L170,110 L165,115 L15,115 Z" />
+                <rect x="20" y="100" width="140" height="10" rx="1" />
+                <rect x="30" y="92" width="120" height="8" rx="1" />
+                
+                {/* Central Tower (Prasat) */}
+                <path d="M80,92 L80,35 C80,28 83,23 90,15 C97,23 100,28 100,35 L100,92 Z" />
+                <path d="M78,42 L102,42 M76,52 L104,52 M74,62 L106,62 M72,72 L108,72 M70,82 L110,82" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M90,15 L90,5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                
+                {/* Left Tower */}
+                <path d="M45,92 L45,50 C45,45 47,41 52,35 C57,41 59,45 59,50 L59,92 Z" />
+                <path d="M43,56 L61,56 M41,64 L63,64 M39,72 L65,72 M37,80 L67,80" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M52,35 L52,27" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+
+                {/* Right Tower */}
+                <path d="M121,92 L121,50 C121,45 123,41 128,35 C133,41 135,45 135,50 L135,92 Z" />
+                <path d="M119,56 L137,56 M117,64 L139,64 M115,72 L141,72 M113,80 L143,80" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M128,35 L128,27" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+
+                {/* Outermost Left Spire */}
+                <path d="M22,100 L22,70 C22,66 23,63 26,58 C29,63 30,66 30,70 L30,100 Z" />
+                <path d="M21,74 L31,74 M20,80 L32,80 M19,86 L33,86" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+
+                {/* Outermost Right Spire */}
+                <path d="M150,100 L150,70 C150,66 151,63 154,58 C157,63 158,66 158,70 L158,100 Z" />
+                <path d="M149,74 L159,74 M148,80 L160,80 M147,86 L161,86" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
+              <div className="absolute right-[60px] bottom-[40px] w-14 h-14 rounded-full bg-amber-500/10 blur-xl animate-pulse" />
+              {/* Gold Khmer pattern border accents */}
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-600 via-amber-300 to-amber-600" />
+            </div>
+          )}
+
+          <div className="flex items-center justify-between w-full relative z-10">
             <div className="flex items-center gap-2.5 border-transparent">
               {memberProfile?.photoURL ? (
                 <img
                   src={memberProfile.photoURL}
                   alt={userDisplayName}
-                  className="w-11 h-11 rounded-xl object-cover border border-white/20 shadow-md shrink-0"
+                  className={`w-11 h-11 rounded-xl object-cover border shadow-md shrink-0 ${
+                    mobileHeaderStyle === 'angkor' ? 'border-amber-400/40' : 'border-white/20'
+                  }`}
                   referrerPolicy="no-referrer"
                 />
               ) : (
                 renderSystemLogo("w-11 h-11 shrink-0")
               )}
               <div>
-                <div className="flex flex-col gap-1.5">
-                  <p className="text-sm font-black leading-tight">{logoConfig?.systemName || t('appName')}</p>
+                <div className="flex flex-col gap-1">
+                  <p className={`text-sm font-black leading-tight ${
+                    mobileHeaderStyle === 'angkor'
+                      ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 font-serif'
+                      : ''
+                  }`}>
+                    {mobileHeaderStyle === 'angkor' ? '៚ ប្រព័ន្ធលុយឆក់ ៚' : (logoConfig?.systemName || t('appName'))}
+                  </p>
                   <div className="flex items-center gap-2">
                     <a
                       href="https://www.facebook.com/share/1F4p12PfJx/?mibextid=wwXIfr"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 bg-white/10 text-current hover:text-blue-400 rounded-lg hover:bg-white/20 transition flex items-center justify-center shadow-3xs"
+                      className={`p-1.5 rounded-lg transition flex items-center justify-center shadow-3xs ${
+                        mobileHeaderStyle === 'angkor'
+                          ? 'bg-amber-500/10 text-amber-300 hover:text-amber-200 hover:bg-amber-500/20 border border-amber-500/20'
+                          : 'bg-white/10 text-current hover:text-blue-400 hover:bg-white/20'
+                      }`}
                       title="Facebook Link"
                     >
-                      <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                         <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.8c4.56-.93 8-4.96 8-9.8z"/>
                       </svg>
                     </a>
@@ -3266,32 +3322,65 @@ export default function App() {
                       href="https://t.me/laymeancamera"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 bg-white/10 text-current hover:text-sky-400 rounded-lg hover:bg-white/20 transition flex items-center justify-center shadow-3xs"
+                      className={`p-1.5 rounded-lg transition flex items-center justify-center shadow-3xs ${
+                        mobileHeaderStyle === 'angkor'
+                          ? 'bg-amber-500/10 text-amber-300 hover:text-amber-200 hover:bg-amber-500/20 border border-amber-500/20'
+                          : 'bg-white/10 text-current hover:text-sky-400 hover:bg-white/20'
+                      }`}
                       title="Telegram Link"
                     >
-                      <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.53-1.39.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.46-.42-1.4-.88.03-.24.36-.49.99-.75 3.88-1.69 6.47-2.8 7.77-3.32 3.7-1.49 4.47-1.75 4.97-1.76.11 0 .36.03.52.16.14.11.18.26.19.38 0 .09-.01.27-.02.39z"/>
                       </svg>
                     </a>
                   </div>
                 </div>
-                <p className="text-[9px] opacity-70 leading-none mt-1">{t('accountLabel')} {userDisplayName} ({currentUser})</p>
+                <p className={`text-[9px] leading-none mt-1 ${
+                  mobileHeaderStyle === 'angkor' ? 'text-amber-200/80 font-bold' : 'opacity-70'
+                }`}>{t('accountLabel')} {userDisplayName} ({currentUser})</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {/* Style Switcher Button */}
+              <button
+                onClick={() => {
+                  const nextStyle = mobileHeaderStyle === 'default' ? 'angkor' : 'default';
+                  setMobileHeaderStyle(nextStyle);
+                  localStorage.setItem('luypay_mobile_header_style', nextStyle);
+                  playClickSound();
+                }}
+                className={`p-2 rounded-xl transition cursor-pointer border flex items-center justify-center gap-1 shadow-3xs ${
+                  mobileHeaderStyle === 'angkor'
+                    ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/35 border-amber-400/40'
+                    : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border-transparent'
+                }`}
+                title={language === 'kh' ? 'ប្តូររចនាប័ទ្មអង្គរវត្ត' : 'Switch Header Style'}
+              >
+                <Sparkles className={`w-3.5 h-3.5 ${mobileHeaderStyle === 'angkor' ? 'text-yellow-400 animate-spin-slow' : 'text-slate-400'}`} />
+                {mobileHeaderStyle === 'angkor' && <span className="text-[8px] font-black tracking-wider uppercase text-amber-200">អង្គរ</span>}
+              </button>
+
               {/* Mobile Notification Bell */}
               <NotificationBell borrowers={borrowers} onSelectBorrower={setSelectedBorrowerId} isMobile={true} />
 
               <button
                 onClick={() => setIsSettingsOpen(true)}
-                className="p-2 bg-white/10 hover:bg-white/20 text-amber-400 hover:text-amber-300 rounded-xl transition cursor-pointer border-transparent"
+                className={`p-2 rounded-xl transition cursor-pointer ${
+                  mobileHeaderStyle === 'angkor'
+                    ? 'bg-amber-500/10 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 border border-amber-500/20'
+                    : 'bg-white/10 hover:bg-white/20 text-amber-400 hover:text-amber-300 border-transparent'
+                }`}
                 title={language === 'kh' ? 'ការកំណត់ / Settings' : 'Settings'}
               >
                 <Key className="w-4 h-4" />
               </button>
               <button
                 onClick={handleLogout}
-                className="p-2 bg-white/10 hover:bg-white/20 active:bg-rose-500/10 text-rose-400 hover:text-rose-300 rounded-xl transition cursor-pointer border-transparent"
+                className={`p-2 rounded-xl transition cursor-pointer ${
+                  mobileHeaderStyle === 'angkor'
+                    ? 'bg-red-500/10 hover:bg-red-500/25 text-red-300 hover:text-red-200 border border-red-500/20'
+                    : 'bg-white/10 hover:bg-white/20 active:bg-rose-500/10 text-rose-400 hover:text-rose-300 border-transparent'
+                }`}
                 title={t('logoutBtnTitle')}
               >
                 <LogOut className="w-4 h-4" />
@@ -3300,19 +3389,37 @@ export default function App() {
           </div>
 
           {/* Mobile Nav buttons row */}
-          <div className="flex items-center gap-2 border-t border-white/10 pt-2.5">
+          <div className={`flex items-center gap-2 border-t pt-2.5 relative z-10 ${
+            mobileHeaderStyle === 'angkor' ? 'border-amber-600/30' : 'border-white/10'
+          }`}>
             <button
               onClick={() => setActiveSection('ledger')}
-              className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${activeSection === 'ledger' ? `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md` : 'bg-white/10 text-current hover:text-white'}`}
+              className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeSection === 'ledger'
+                  ? mobileHeaderStyle === 'angkor'
+                    ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
+                    : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
+                  : mobileHeaderStyle === 'angkor'
+                    ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
+                    : 'bg-white/10 text-current hover:text-white'
+              }`}
             >
-              <span>📝 បញ្ជីកម្ចី</span>
+              <span>📝 {language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger Records'}</span>
             </button>
             {currentUser === 'sounravin' ? (
               <button
                 onClick={() => setActiveSection('admin_dashboard')}
-                className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all relative cursor-pointer flex items-center justify-center gap-1.5 ${activeSection === 'admin_dashboard' ? `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md` : 'bg-white/10 text-current hover:text-white'}`}
+                className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all relative cursor-pointer flex items-center justify-center gap-1.5 ${
+                  activeSection === 'admin_dashboard'
+                    ? mobileHeaderStyle === 'angkor'
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
+                      : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
+                    : mobileHeaderStyle === 'angkor'
+                      ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
+                      : 'bg-white/10 text-current hover:text-white'
+                }`}
               >
-                <span>📊 គ្រប់គ្រងប្រព័ន្ធ</span>
+                <span>📊 {language === 'kh' ? 'គ្រប់គ្រងប្រព័ន្ធ' : 'Manage System'}</span>
                 {subRequests.filter(r => r.status === 'pending').length > 0 && (
                   <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[8px] rounded-md font-black bg-rose-500 text-white animate-pulse">
                     {subRequests.filter(r => r.status === 'pending').length}
@@ -3323,9 +3430,17 @@ export default function App() {
               isMember && (
                 <button
                   onClick={() => setActiveSection('pricing')}
-                  className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${activeSection === 'pricing' ? `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md` : 'bg-white/10 text-current hover:text-white'}`}
+                  className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    activeSection === 'pricing'
+                      ? mobileHeaderStyle === 'angkor'
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
+                        : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
+                      : mobileHeaderStyle === 'angkor'
+                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
+                        : 'bg-white/10 text-current hover:text-white'
+                  }`}
                 >
-                  <span>💎 គម្រោងកម្មវិធី</span>
+                  <span>💎 {language === 'kh' ? 'គម្រោងកម្មវិធី' : 'Application Plans'}</span>
                 </button>
               )
             )}
