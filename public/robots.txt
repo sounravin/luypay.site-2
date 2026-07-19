@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /sitemap.xml
+Allow: /sitemap.xsl
+
+Sitemap: https://luypay.vercel.app/sitemap.xml
