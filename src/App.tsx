@@ -3167,7 +3167,7 @@ export default function App() {
             </motion.button>
           )}
 
-          {isMember && (
+          {isLoggedIn && (
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -3502,7 +3502,7 @@ export default function App() {
                 </button>
               )
             )}
-            {isMember && (
+            {isLoggedIn && (
               <button
                 onClick={() => setActiveSection('loan_applications')}
                 className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
