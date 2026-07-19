@@ -50,7 +50,14 @@ export interface Borrower {
   userId?: string; // The username of the member who owns this borrower
   interestOnlyExtension?: boolean; // Whether the borrower requested interest-only principal deferral
   interestOnlyExtensionNote?: string; // Note/reason for interest-only principal deferral
+  interestOnlyExtensionReason?: string; // Standard condition/reason selected for the extension request (e.g. "គ្រួសារឈឺ", "សុំយកបន្ថែមថ្មីលើកម្ចីចាស់")
+  topUpLoanAmount?: number; // Additional top-up loan amount requested or granted
+  topUpSeparate?: boolean; // Whether the top-up loan is separate (true) or merged/re-calculated (false)
+  topUpNotes?: string; // Notes/details about the top-up loan
+  topUpDate?: string; // Date when top-up loan was registered
   reportedPayments?: ReportedPayment[]; // Payments scanned & reported by borrower via portal
+  isOnline?: boolean; // Whether the borrower is currently visiting their portal
+  lastActive?: number; // Milliseconds timestamp of borrower's last interaction or heartbeat
 }
 
 export interface ChatMessage {

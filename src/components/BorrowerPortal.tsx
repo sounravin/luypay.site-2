@@ -76,6 +76,57 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
     return () => unsubscribeLender();
   }, [borrower.userId]);
 
+  // Online Status and Heartbeat Tracking (Only when real borrower is visiting, i.e., not when lender is logged in/viewing)
+  useEffect(() => {
+    if (isLenderLoggedIn) return;
+
+    const docRef = doc(db, 'borrowers', borrower.id);
+
+    const markOnline = async () => {
+      try {
+        await updateDoc(docRef, {
+          isOnline: true,
+          lastActive: Date.now()
+        });
+      } catch (err) {
+        console.error("Error setting borrower online status:", err);
+      }
+    };
+
+    const markOffline = async () => {
+      try {
+        await updateDoc(docRef, {
+          isOnline: false,
+          lastActive: Date.now()
+        });
+      } catch (err) {
+        console.error("Error setting borrower offline status:", err);
+      }
+    };
+
+    // Set online instantly on load
+    markOnline();
+
+    // Heartbeat every 20 seconds to renew lastActive timestamp
+    const interval = setInterval(() => {
+      markOnline();
+    }, 20000);
+
+    // Event listener for tab/browser closing (Best effort)
+    const handleUnload = () => {
+      // In firestore, let's try direct promise or sendBeacon isn't directly compatible, but standard async in unload works frequently
+      markOffline();
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleUnload);
+      markOffline();
+    };
+  }, [borrower.id, isLenderLoggedIn]);
+
   const handleUpdateBorrower = async (updatedFields: Partial<Borrower>) => {
     try {
       const docRef = doc(db, 'borrowers', borrower.id);
@@ -425,18 +476,91 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
         </div>
 
         {borrower.interestOnlyExtension && (
-          <div className="p-5 bg-rose-50 border-2 border-rose-500/30 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="p-5 bg-amber-50 border-2 border-amber-500/30 rounded-3xl flex flex-col gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-start gap-3">
               <span className="text-2xl shrink-0">⚠️</span>
-              <div className="space-y-1">
-                <h4 className="text-sm font-black text-rose-800 flex items-center gap-1.5">
-                  <span>{language === 'kh' ? 'កូនបំណុលសងការបន្តរ' : 'Borrower Pays Interest Continuously'}</span>
-                  <span className="inline-flex h-2 w-2 rounded-full bg-rose-500 animate-ping" />
+              <div className="space-y-1 w-full">
+                <h4 className="text-sm font-black text-amber-900 flex items-center gap-1.5 flex-wrap">
+                  <span>{language === 'kh' ? 'កូនបំណុលបានស្នើសុំពន្យារពេល (បង់ការបន្តរ)' : 'Borrower Requested Extension (Interest-Only)'}</span>
+                  <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-ping" />
                 </h4>
+                
+                {borrower.interestOnlyExtensionReason && (
+                  <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">
+                    <span>📢 {language === 'kh' ? 'លក្ខខណ្ឌស្នើសុំ៖' : 'Reason:'}</span>
+                    <span className="font-extrabold">{borrower.interestOnlyExtensionReason}</span>
+                  </div>
+                )}
+
                 {borrower.interestOnlyExtensionNote && (
-                  <p className="text-xs font-bold text-slate-600 bg-white p-3 border border-slate-100 rounded-2xl whitespace-pre-line leading-relaxed mt-2">
-                    {language === 'kh' ? 'កំណត់ចំណាំការសងការបន្តរ៖ ' : 'Extension Note: '}{borrower.interestOnlyExtensionNote}
+                  <p className="text-xs font-bold text-slate-600 bg-white p-3 border border-slate-100 rounded-2xl whitespace-pre-line leading-relaxed mt-2 shadow-sm">
+                    {language === 'kh' ? 'កំណត់ចំណាំបន្ថែម៖ ' : 'Extension Note: '}{borrower.interestOnlyExtensionNote}
                   </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {borrower.topUpLoanAmount !== undefined && borrower.topUpLoanAmount > 0 && (
+          <div className="p-5 bg-indigo-50 border-2 border-indigo-500/30 rounded-3xl flex flex-col gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl shrink-0">💸</span>
+              <div className="space-y-1 w-full">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-sm font-black text-indigo-900">
+                    {language === 'kh' ? 'កម្ចីឌីជីថលបន្ថែមលើកម្ចីចាស់ (Top-up Loan)' : 'Digital Top-up Loan Active'}
+                  </h4>
+                  <span className={`px-3 py-1 rounded-full text-xs font-black border ${
+                    borrower.topUpSeparate !== false
+                      ? 'bg-purple-100 text-purple-800 border-purple-200'
+                      : 'bg-blue-100 text-blue-800 border-blue-200'
+                  }`}>
+                    {borrower.topUpSeparate !== false
+                      ? (language === 'kh' ? '🔍 ចែកដាច់ពីកម្ចីចាស់ (Separate)' : '🔍 Separate Loan')
+                      : (language === 'kh' ? '🔗 បូកបញ្ចូលគ្នា (Merged)' : '🔗 Merged Loan')
+                    }
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+                  <div className="bg-white p-3 rounded-2xl border border-indigo-100 shadow-sm flex items-center justify-between">
+                    <div>
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        {language === 'kh' ? 'ទឹកប្រាក់ខ្ចីបន្ថែម' : 'Top-up Amount'}
+                      </span>
+                      <span className="text-base font-black text-indigo-900">
+                        {formatMoney(borrower.topUpLoanAmount, borrower.currency)}
+                      </span>
+                    </div>
+                    {borrower.topUpSeparate === false && (
+                      <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
+                        {language === 'kh' ? '+បូកបញ្ចូលរួច' : '+Already Merged'}
+                      </span>
+                    )}
+                  </div>
+
+                  {borrower.topUpDate && (
+                    <div className="bg-white p-3 rounded-2xl border border-indigo-100 shadow-sm">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        {language === 'kh' ? 'កាលបរិច្ឆេទបន្ថែមប្រាក់' : 'Top-up Date'}
+                      </span>
+                      <span className="text-sm font-bold text-slate-700">
+                        {formatKhmerDate(borrower.topUpDate)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {borrower.topUpNotes && (
+                  <div className="mt-3 bg-white p-3 border border-indigo-100 rounded-2xl shadow-sm">
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      {language === 'kh' ? 'កំណត់ចំណាំកម្ចីបន្ថែម៖' : 'Top-up Notes:'}
+                    </span>
+                    <p className="text-xs font-bold text-indigo-950 whitespace-pre-line leading-relaxed">
+                      {borrower.topUpNotes}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

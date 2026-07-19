@@ -35,6 +35,13 @@ export default function BorrowerDetail({
   const payments = Array.isArray(borrower.payments) ? borrower.payments : [];
   const [customAmount, setCustomAmount] = useState<string>('');
 
+  // Calculate if borrower is currently online
+  const isOnline = !!(
+    borrower.isOnline && 
+    borrower.lastActive && 
+    borrower.lastActive > Date.now() - 3 * 60 * 1000
+  );
+
   const [customDate, setCustomDate] = useState<string>(getTodayDateString());
   const [customNote, setCustomNote] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
@@ -65,8 +72,22 @@ export default function BorrowerDetail({
 
   const [editInterestOnlyExtension, setEditInterestOnlyExtension] = useState<boolean>(!!borrower.interestOnlyExtension);
   const [editInterestOnlyExtensionNote, setEditInterestOnlyExtensionNote] = useState<string>(borrower.interestOnlyExtensionNote || '');
+  const [editInterestOnlyExtensionReason, setEditInterestOnlyExtensionReason] = useState<string>(borrower.interestOnlyExtensionReason || '');
   const [extensionActive, setExtensionActive] = useState<boolean>(!!borrower.interestOnlyExtension);
   const [extensionNote, setExtensionNote] = useState<string>(borrower.interestOnlyExtensionNote || '');
+  const [extensionReason, setExtensionReason] = useState<string>(borrower.interestOnlyExtensionReason || '');
+
+  // Top-up loan states
+  const [editTopUpLoanAmount, setEditTopUpLoanAmount] = useState<string>(borrower.topUpLoanAmount ? borrower.topUpLoanAmount.toString() : '');
+  const [editTopUpSeparate, setEditTopUpSeparate] = useState<boolean>(borrower.topUpSeparate !== false); // Default separate is true
+  const [editTopUpNotes, setEditTopUpNotes] = useState<string>(borrower.topUpNotes || '');
+  const [editTopUpDate, setEditTopUpDate] = useState<string>(borrower.topUpDate || '');
+
+  // Quick panel top-up states
+  const [quickTopUpLoanAmount, setQuickTopUpLoanAmount] = useState<string>(borrower.topUpLoanAmount ? borrower.topUpLoanAmount.toString() : '');
+  const [quickTopUpSeparate, setQuickTopUpSeparate] = useState<boolean>(borrower.topUpSeparate !== false);
+  const [quickTopUpNotes, setQuickTopUpNotes] = useState<string>(borrower.topUpNotes || '');
+  const [quickTopUpDate, setQuickTopUpDate] = useState<string>(borrower.topUpDate || '');
 
   // Reset editing states when borrower or editing mode changes
   useEffect(() => {
@@ -87,8 +108,20 @@ export default function BorrowerDetail({
     setEditPaymentQr(borrower.paymentQr || '');
     setEditInterestOnlyExtension(!!borrower.interestOnlyExtension);
     setEditInterestOnlyExtensionNote(borrower.interestOnlyExtensionNote || '');
+    setEditInterestOnlyExtensionReason(borrower.interestOnlyExtensionReason || '');
     setExtensionActive(!!borrower.interestOnlyExtension);
     setExtensionNote(borrower.interestOnlyExtensionNote || '');
+    setExtensionReason(borrower.interestOnlyExtensionReason || '');
+
+    setEditTopUpLoanAmount(borrower.topUpLoanAmount ? borrower.topUpLoanAmount.toString() : '');
+    setEditTopUpSeparate(borrower.topUpSeparate !== false);
+    setEditTopUpNotes(borrower.topUpNotes || '');
+    setEditTopUpDate(borrower.topUpDate || '');
+
+    setQuickTopUpLoanAmount(borrower.topUpLoanAmount ? borrower.topUpLoanAmount.toString() : '');
+    setQuickTopUpSeparate(borrower.topUpSeparate !== false);
+    setQuickTopUpNotes(borrower.topUpNotes || '');
+    setQuickTopUpDate(borrower.topUpDate || '');
   }, [borrower, isEditing]);
 
   const handleEditPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -237,6 +270,11 @@ export default function BorrowerDetail({
         paymentQr: editPaymentQr,
         interestOnlyExtension: editInterestOnlyExtension,
         interestOnlyExtensionNote: editInterestOnlyExtensionNote.trim(),
+        interestOnlyExtensionReason: editInterestOnlyExtensionReason,
+        topUpLoanAmount: editTopUpLoanAmount ? parseFloat(editTopUpLoanAmount) : undefined,
+        topUpSeparate: editTopUpSeparate,
+        topUpNotes: editTopUpNotes.trim() || undefined,
+        topUpDate: editTopUpDate || undefined,
       });
     }
     setIsEditing(false);
@@ -928,19 +966,132 @@ export default function BorrowerDetail({
                   </div>
                   
                   {editInterestOnlyExtension && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                        {language === 'kh' ? 'កំណត់ចំណាំការសងការបន្តរ' : 'Extension Notes'}
-                      </label>
-                      <textarea
-                        value={editInterestOnlyExtensionNote}
-                        onChange={(e) => setEditInterestOnlyExtensionNote(e.target.value)}
-                        rows={2}
-                        placeholder={language === 'kh' ? 'បញ្ចូលព័ត៌មានលម្អិត...' : 'Enter details...'}
-                        className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium"
-                      />
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          {language === 'kh' ? 'លក្ខខណ្ឌ/មូលហេតុស្នើសុំ' : 'Request Condition / Reason'}
+                        </label>
+                        <select
+                          value={editInterestOnlyExtensionReason}
+                          onChange={(e) => {
+                            setEditInterestOnlyExtensionReason(e.target.value);
+                            // Auto append to notes if empty
+                            if (e.target.value && !editInterestOnlyExtensionNote) {
+                              setEditInterestOnlyExtensionNote(e.target.value);
+                            }
+                          }}
+                          className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-slate-700"
+                        >
+                          <option value="">{language === 'kh' ? '-- ជ្រើសរើសលក្ខខណ្ឌ/មូលហេតុ --' : '-- Select Condition/Reason --'}</option>
+                          <option value="គ្រួសារឈឺ">{language === 'kh' ? '🏥 គ្រួសារឈឺ' : '🏥 Family illness'}</option>
+                          <option value="សុំយកបន្ថែមថ្មីលើកម្ចីចាស់">{language === 'kh' ? '💸 សុំយកបន្ថែមថ្មីលើកម្ចីចាស់' : '💸 Request top-up on existing'}</option>
+                          <option value="លក់មិនដាច់">{language === 'kh' ? '📉 លក់មិនដាច់' : '📉 Slow sales / bad business'}</option>
+                          <option value="ឡាយលុងខាត">{language === 'kh' ? '❌ ឡាយលុងខាត' : '❌ Business/Markdown loss'}</option>
+                          <option value="ករណីបន្ទាន់ផ្សេងៗ">{language === 'kh' ? '🚨 ករណីបន្ទាន់ផ្សេងៗ' : '🚨 Other emergencies'}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          {language === 'kh' ? 'កំណត់ចំណាំការសងការបន្តរ' : 'Extension Notes'}
+                        </label>
+                        <textarea
+                          value={editInterestOnlyExtensionNote}
+                          onChange={(e) => setEditInterestOnlyExtensionNote(e.target.value)}
+                          rows={2}
+                          placeholder={language === 'kh' ? 'បញ្ចូលព័ត៌មានលម្អិត...' : 'Enter details...'}
+                          className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium"
+                        />
+                      </div>
                     </div>
                   )}
+                </div>
+
+                {/* Edit Digital Top-up Loan Section */}
+                <div className="p-4 bg-indigo-50/50 border border-indigo-200 rounded-2xl space-y-4">
+                  <div>
+                    <span className="block text-xs font-black text-indigo-900 uppercase tracking-wider">
+                      {language === 'kh' ? '💸 កម្ចីបន្ថែមលើកម្ចីចាស់ (Top-up Loan)' : '💸 Top-up Loan Option'}
+                    </span>
+                    <p className="text-[10px] text-indigo-700 font-bold mt-0.5">
+                      {language === 'kh' ? 'កំណត់បន្ថែមទឹកប្រាក់ខ្ចីថ្មីនៅលើកម្ចីចាស់' : 'Add a new digital top-up amount on top of the original loan'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        {language === 'kh' ? 'ទឹកប្រាក់បន្ថែម' : 'Top-up Amount'}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={editTopUpLoanAmount}
+                          onChange={(e) => setEditTopUpLoanAmount(e.target.value)}
+                          placeholder="e.g. 150"
+                          className="w-full pl-3 pr-7 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-bold text-indigo-900"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                          {editCurrency === 'USD' ? '$' : '៛'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        {language === 'kh' ? 'ថ្ងៃបន្ថែមប្រាក់' : 'Top-up Date'}
+                      </label>
+                      <input
+                        type="date"
+                        value={editTopUpDate}
+                        onChange={(e) => setEditTopUpDate(e.target.value)}
+                        className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'kh' ? 'លក្ខខណ្ឌកម្ចីបន្ថែម' : 'Top-up Loan Handling'}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditTopUpSeparate(true)}
+                        className={`py-2 px-1 text-xs font-bold rounded-xl border text-center transition cursor-pointer ${
+                          editTopUpSeparate
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-600/20'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        {language === 'kh' ? '🔍 ចែកដាច់ពីកម្ចីចាស់' : '🔍 Separate Loan'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditTopUpSeparate(false)}
+                        className={`py-2 px-1 text-xs font-bold rounded-xl border text-center transition cursor-pointer ${
+                          !editTopUpSeparate
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-600/20'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        {language === 'kh' ? '🔗 បូកបញ្ចូលគ្នា' : '🔗 Merged Loan'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'kh' ? 'កំណត់ចំណាំកម្ចីបន្ថែម' : 'Top-up Notes / Details'}
+                    </label>
+                    <textarea
+                      value={editTopUpNotes}
+                      onChange={(e) => setEditTopUpNotes(e.target.value)}
+                      rows={2}
+                      placeholder={language === 'kh' ? 'ឧ. ៣០០$ ថែម ១៥០$ ទៀត...' : 'e.g. 300$ top-up 150$...'}
+                      className="w-full px-3.5 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -999,8 +1150,18 @@ export default function BorrowerDetail({
 
                 {/* Name & Title */}
                 <div className="text-center sm:text-left sm:pl-32 space-y-1 mt-2 sm:mt-0">
-                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center sm:justify-start gap-2">
-                    {borrower.name}
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                    <span>{borrower.name}</span>
+                    {isOnline ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-500 text-white border border-emerald-600 shadow-sm animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                        <span>{language === 'kh' ? 'កំពុងអនឡាញ' : 'Online'}</span>
+                      </span>
+                    ) : borrower.lastActive ? (
+                      <span className="inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200" title={`Last active: ${new Date(borrower.lastActive).toLocaleString()}`}>
+                        {language === 'kh' ? 'អសកម្ម (Offline)' : 'Offline'}
+                      </span>
+                    ) : null}
                   </h3>
                   {borrower.phone && (
                     <a
@@ -1038,17 +1199,80 @@ export default function BorrowerDetail({
             </div>
 
             {borrower.interestOnlyExtension && (
-              <div className="mx-6 mt-4 p-4.5 bg-rose-50 border-2 border-rose-500/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+              <div className="mx-6 mt-4 p-4.5 bg-amber-50 border-2 border-amber-500/30 rounded-2xl flex flex-col gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex items-start gap-3">
                   <span className="text-xl shrink-0">⚠️</span>
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-black text-rose-800 flex items-center gap-1.5">
-                      <span>{language === 'kh' ? 'កូនបំណុលសងការបន្តរ' : 'Borrower Pays Interest Continuously'}</span>
-                      <span className="inline-flex h-2 w-2 rounded-full bg-rose-500 animate-ping" />
+                  <div className="space-y-1 w-full">
+                    <h4 className="text-sm font-black text-amber-900 flex items-center gap-1.5 flex-wrap">
+                      <span>{language === 'kh' ? 'កូនបំណុលបានស្នើសុំពន្យារពេល (បង់ការបន្តរ)' : 'Borrower Requested Extension (Interest-Only)'}</span>
+                      <span className="inline-flex h-2 w-2 rounded-full bg-amber-500 animate-ping" />
                     </h4>
+                    
+                    {borrower.interestOnlyExtensionReason && (
+                      <div className="mt-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-amber-100 text-amber-800 text-[11px] font-bold rounded-full">
+                        <span>📢 {language === 'kh' ? 'លក្ខខណ្ឌស្នើសុំ៖' : 'Reason:'}</span>
+                        <span className="font-extrabold">{borrower.interestOnlyExtensionReason}</span>
+                      </div>
+                    )}
+
                     {borrower.interestOnlyExtensionNote && (
-                      <p className="text-xs font-bold text-slate-600 bg-white p-2.5 border border-slate-100 rounded-xl whitespace-pre-line leading-relaxed">
-                        {language === 'kh' ? 'កំណត់ចំណាំការសងការបន្តរ៖ ' : 'Extension Note: '}{borrower.interestOnlyExtensionNote}
+                      <p className="text-xs font-bold text-slate-600 bg-white p-2.5 border border-slate-100 rounded-xl whitespace-pre-line leading-relaxed mt-1.5 shadow-sm">
+                        {language === 'kh' ? 'កំណត់ចំណាំបន្ថែម៖ ' : 'Extension Note: '}{borrower.interestOnlyExtensionNote}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {borrower.topUpLoanAmount !== undefined && borrower.topUpLoanAmount > 0 && (
+              <div className="mx-6 mt-4 p-4.5 bg-indigo-50 border-2 border-indigo-500/30 rounded-2xl flex flex-col gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl shrink-0">💸</span>
+                  <div className="space-y-1 w-full">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <h4 className="text-sm font-black text-indigo-900">
+                        {language === 'kh' ? 'កម្ចីឌីជីថលបន្ថែមលើកម្ចីចាស់ (Top-up Loan)' : 'Digital Top-up Loan Active'}
+                      </h4>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                        borrower.topUpSeparate !== false
+                          ? 'bg-purple-100 text-purple-800 border-purple-200'
+                          : 'bg-blue-100 text-blue-800 border-blue-200'
+                      }`}>
+                        {borrower.topUpSeparate !== false
+                          ? (language === 'kh' ? '🔍 ចែកដាច់ពីគ្នា' : 'Separate')
+                          : (language === 'kh' ? '🔗 បូកបញ្ចូលគ្នា' : 'Merged')
+                        }
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <div className="bg-white p-2 rounded-xl border border-indigo-100 shadow-xs flex items-center justify-between text-xs">
+                        <div>
+                          <span className="block text-[9px] font-bold text-slate-400 uppercase">
+                            {language === 'kh' ? 'ទឹកប្រាក់ខ្ចីបន្ថែម' : 'Top-up Amount'}
+                          </span>
+                          <span className="font-extrabold text-indigo-900">
+                            {formatMoney(borrower.topUpLoanAmount, borrower.currency)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {borrower.topUpDate && (
+                        <div className="bg-white p-2 rounded-xl border border-indigo-100 shadow-xs text-xs">
+                          <span className="block text-[9px] font-bold text-slate-400 uppercase">
+                            {language === 'kh' ? 'កាលបរិច្ឆេទបន្ថែម' : 'Top-up Date'}
+                          </span>
+                          <span className="font-bold text-slate-700">
+                            {formatKhmerDate(borrower.topUpDate)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {borrower.topUpNotes && (
+                      <p className="text-xs font-bold text-indigo-950 bg-white p-2 border border-indigo-100 rounded-xl whitespace-pre-line leading-relaxed mt-1.5 shadow-sm">
+                        {borrower.topUpNotes}
                       </p>
                     )}
                   </div>
@@ -1625,6 +1849,43 @@ export default function BorrowerDetail({
                               <p className="whitespace-pre-line text-slate-600 leading-relaxed font-bold bg-white p-2 border border-slate-100 rounded-lg">{borrower.notes}</p>
                             </div>
                           )}
+                          {borrower.topUpLoanAmount !== undefined && borrower.topUpLoanAmount > 0 && (
+                            <div className="pt-3 border-t border-slate-200 space-y-2 text-xs">
+                              <span className="font-bold block text-indigo-700 flex items-center gap-1.5">
+                                <span>💸</span>
+                                <span>{language === 'kh' ? 'កម្ចីបន្ថែមលើកម្ចីចាស់ (Top-up Loan)៖' : 'Top-up Loan Info:'}</span>
+                              </span>
+                              <div className="bg-indigo-50/50 border border-indigo-100 p-3.5 rounded-xl space-y-2">
+                                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                  <div>
+                                    <span className="text-slate-400 block">{language === 'kh' ? 'ទឹកប្រាក់បន្ថែម៖' : 'Amount:'}</span>
+                                    <span className="font-extrabold text-indigo-900 text-sm">{formatMoney(borrower.topUpLoanAmount, borrower.currency)}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-400 block">{language === 'kh' ? 'លក្ខខណ្ឌ៖' : 'Handling:'}</span>
+                                    <span className="font-extrabold text-indigo-900">
+                                      {borrower.topUpSeparate !== false
+                                        ? (language === 'kh' ? '🔍 ចែកដាច់ពីគ្នា' : 'Separate')
+                                        : (language === 'kh' ? '🔗 បូកបញ្ចូលគ្នា' : 'Merged')
+                                      }
+                                    </span>
+                                  </div>
+                                </div>
+                                {borrower.topUpDate && (
+                                  <div className="text-[11px]">
+                                    <span className="text-slate-400 block">{language === 'kh' ? 'ថ្ងៃបន្ថែមប្រាក់៖' : 'Date Added:'}</span>
+                                    <span className="font-bold text-slate-700">{formatKhmerDate(borrower.topUpDate)}</span>
+                                  </div>
+                                )}
+                                {borrower.topUpNotes && (
+                                  <div className="text-[11px] border-t border-indigo-100/50 pt-1.5">
+                                    <span className="text-slate-400 block font-bold mb-0.5">{language === 'kh' ? 'កំណត់ចំណាំបន្ថែម៖' : 'Top-up Notes:'}</span>
+                                    <p className="text-slate-600 bg-white p-2 border border-indigo-100/40 rounded-lg whitespace-pre-line font-bold leading-relaxed">{borrower.topUpNotes}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                           {borrower.noticeMessage && (
                             <div className="pt-2 text-[11px] border-t border-slate-200">
                               <span className="font-bold block text-amber-600 flex items-center gap-1 mb-1">
@@ -1724,6 +1985,31 @@ export default function BorrowerDetail({
                           </p>
                         </div>
 
+                        {/* Condition / Reason Select dropdown */}
+                        <div className="space-y-1.5">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                            {language === 'kh' ? 'លក្ខខណ្ឌ/មូលហេតុស្នើសុំ' : 'Request Condition / Reason'}
+                          </label>
+                          <select
+                            value={extensionReason}
+                            onChange={(e) => {
+                              setExtensionReason(e.target.value);
+                              // Auto populate to notes if empty
+                              if (e.target.value && !extensionNote) {
+                                setExtensionNote(e.target.value);
+                              }
+                            }}
+                            className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-slate-700"
+                          >
+                            <option value="">{language === 'kh' ? '-- ជ្រើសរើសលក្ខខណ្ឌ/មូលហេតុ --' : '-- Select Condition/Reason --'}</option>
+                            <option value="គ្រួសារឈឺ">{language === 'kh' ? '🏥 គ្រួសារឈឺ' : '🏥 Family illness'}</option>
+                            <option value="សុំយកបន្ថែមថ្មីលើកម្ចីចាស់">{language === 'kh' ? '💸 សុំយកបន្ថែមថ្មីលើកម្ចីចាស់' : '💸 Request top-up on existing'}</option>
+                            <option value="លក់មិនដាច់">{language === 'kh' ? '📉 លក់មិនដាច់' : '📉 Slow sales / bad business'}</option>
+                            <option value="ឡាយលុងខាត">{language === 'kh' ? '❌ ឡាយលុងខាត' : '❌ Business/Markdown loss'}</option>
+                            <option value="ករណីបន្ទាន់ផ្សេងៗ">{language === 'kh' ? '🚨 ករណីបន្ទាន់ផ្សេងៗ' : '🚨 Other emergencies'}</option>
+                          </select>
+                        </div>
+
                         {/* Note Input */}
                         <div className="space-y-1.5">
                           <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
@@ -1769,6 +2055,7 @@ export default function BorrowerDetail({
                                 onEditBorrower(borrower.id, {
                                   interestOnlyExtension: extensionActive,
                                   interestOnlyExtensionNote: extensionNote.trim(),
+                                  interestOnlyExtensionReason: extensionReason,
                                 });
                                 alert(language === 'kh' 
                                   ? 'បានដំណើរការកំណត់ការសងការបន្តររបស់កូនបំណុលរួចរាល់!' 
@@ -1780,6 +2067,119 @@ export default function BorrowerDetail({
                           >
                             <span>🚀</span>
                             <span>{language === 'kh' ? 'ដំណើរការ' : 'Process'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Digital Top-up Loan Option Card */}
+                      <div className="bg-indigo-50/50 border border-indigo-200 rounded-2xl p-5 space-y-4 shadow-sm">
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-black text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <span>💸</span> {language === 'kh' ? 'កម្ចីបន្ថែមលើកម្ចីចាស់ (Top-up Loan)' : 'Digital Top-up Option'}
+                          </h4>
+                          <p className="text-[10px] text-indigo-700 font-semibold leading-relaxed">
+                            {language === 'kh' 
+                              ? 'បន្ថែមទំហំកម្ចីឌីជីថលថ្មីមួយទៀតនៅលើកូនបំណុលនេះ ដែលអាចកំណត់អោយចែកដាច់ពីកម្ចីចាស់បាន។'
+                              : 'Add a new digital loan amount for this borrower that can be separated from the original loan.'}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              {language === 'kh' ? 'ទឹកប្រាក់បន្ថែម' : 'Top-up Amount'}
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                value={quickTopUpLoanAmount}
+                                onChange={(e) => setQuickTopUpLoanAmount(e.target.value)}
+                                placeholder="e.g. 150"
+                                className="w-full pl-3 pr-7 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-500 font-bold text-indigo-950"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">
+                                {borrower.currency === 'USD' ? '$' : '៛'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              {language === 'kh' ? 'ថ្ងៃបន្ថែមប្រាក់' : 'Top-up Date'}
+                            </label>
+                            <input
+                              type="date"
+                              value={quickTopUpDate}
+                              onChange={(e) => setQuickTopUpDate(e.target.value)}
+                              className="w-full px-2 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-500 font-medium text-slate-700"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            {language === 'kh' ? 'លក្ខខណ្ឌកម្ចីបន្ថែម' : 'Top-up Handling'}
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setQuickTopUpSeparate(true)}
+                              className={`py-1.5 px-1 text-[10px] font-bold rounded-lg border text-center transition cursor-pointer ${
+                                quickTopUpSeparate
+                                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-600/10'
+                                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                              }`}
+                            >
+                              {language === 'kh' ? '🔍 ចែកដាច់ពីកម្ចីចាស់' : '🔍 Separate Loan'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setQuickTopUpSeparate(false)}
+                              className={`py-1.5 px-1 text-[10px] font-bold rounded-lg border text-center transition cursor-pointer ${
+                                !quickTopUpSeparate
+                                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-600/10'
+                                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                              }`}
+                            >
+                              {language === 'kh' ? '🔗 បូកបញ្ចូលគ្នា' : '🔗 Merged Loan'}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            {language === 'kh' ? 'កំណត់ចំណាំកម្ចីបន្ថែម' : 'Top-up Notes'}
+                          </label>
+                          <textarea
+                            value={quickTopUpNotes}
+                            onChange={(e) => setQuickTopUpNotes(e.target.value)}
+                            rows={2}
+                            placeholder={language === 'kh' ? 'ឧ. ៣០០$ ថែម ១៥០$ ទៀត...' : 'e.g. 300$ top-up 150$...'}
+                            className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium"
+                          />
+                        </div>
+
+                        <div className="flex justify-end pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (onEditBorrower) {
+                                onEditBorrower(borrower.id, {
+                                  topUpLoanAmount: quickTopUpLoanAmount ? parseFloat(quickTopUpLoanAmount) : undefined,
+                                  topUpSeparate: quickTopUpSeparate,
+                                  topUpNotes: quickTopUpNotes.trim() || undefined,
+                                  topUpDate: quickTopUpDate || undefined,
+                                });
+                                alert(language === 'kh'
+                                  ? 'បានរក្សាទុកកម្ចីបន្ថែមដោយជោគជ័យ!'
+                                  : 'Successfully saved top-up loan details!'
+                                );
+                              }
+                            }}
+                            className="w-full py-2 px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl transition cursor-pointer shadow-md shadow-indigo-600/10 flex items-center justify-center gap-1.5"
+                          >
+                            <span>💾</span>
+                            <span>{language === 'kh' ? 'រក្សាទុកកម្ចីបន្ថែម' : 'Save Top-up Loan'}</span>
                           </button>
                         </div>
                       </div>

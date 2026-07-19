@@ -20,6 +20,13 @@ interface BorrowerCardProps {
 export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelected = false, onToggleSelect, buttonStyle = 'kbach' }: BorrowerCardProps) {
   const { t } = useLanguage();
 
+  // Calculate if the borrower is currently Online
+  const isOnline = !!(
+    borrower.isOnline && 
+    borrower.lastActive && 
+    borrower.lastActive > Date.now() - 3 * 60 * 1000
+  );
+
   // Calculate payments
   const payments = Array.isArray(borrower.payments) ? borrower.payments : [];
   const totalPaid = payments.reduce((sum, p) => sum + (p?.amount || 0), 0);
@@ -123,20 +130,33 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
             </button>
           )}
 
-          {/* Avatar Container with Animated Frame support */}
-          <AvatarWithFrame
-            photoUrl={borrower.profilePhoto}
-            name={borrower.name}
-            frameId={borrower.avatarFrame}
-            size="sm"
-            className="shrink-0"
-            hasWarning={!!borrower.interestOnlyExtension}
-          />
+          {/* Avatar Container with Animated Frame support and Online Indicator */}
+          <div className="relative">
+            <AvatarWithFrame
+              photoUrl={borrower.profilePhoto}
+              name={borrower.name}
+              frameId={borrower.avatarFrame}
+              size="sm"
+              className="shrink-0"
+              hasWarning={!!borrower.interestOnlyExtension}
+            />
+            {isOnline && (
+              <span 
+                className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-sm animate-pulse z-10" 
+                title={useLanguage().language === 'kh' ? 'កំពុងអនឡាញ (Online)' : 'Online Now'} 
+              />
+            )}
+          </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-bold text-slate-800 text-base leading-tight">
                 {borrower.name}
               </h3>
+              {isOnline && (
+                <span className="inline-flex items-center text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500 text-white border border-emerald-600 shadow-xs animate-pulse">
+                  🟢 {useLanguage().language === 'kh' ? 'អនឡាញ' : 'Online'}
+                </span>
+              )}
               {borrower.statusTag && (
                 <span className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded ${
                   borrower.statusTag === 'good'
@@ -153,8 +173,13 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
                 </span>
               )}
               {borrower.interestOnlyExtension && (
-                <span className="inline-flex items-center text-[10px] font-black px-1.5 py-0.5 rounded bg-rose-500 text-white border border-rose-600 animate-pulse" title="កូនបំណុលសងការបន្តរ">
+                <span className="inline-flex items-center text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-white border border-amber-600 animate-pulse" title="កូនបំណុលសងការបន្តរ">
                   ⚠️ {useLanguage().language === 'kh' ? 'កូនបំណុលសងការបន្តរ' : 'Paying Interest Only'}
+                </span>
+              )}
+              {borrower.topUpLoanAmount !== undefined && borrower.topUpLoanAmount > 0 && (
+                <span className="inline-flex items-center text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-600 text-white border border-indigo-700 shadow-sm shadow-indigo-600/25" title="កម្ចីបន្ថែម">
+                  💸 {useLanguage().language === 'kh' ? `ថែម៖ ${formatMoney(borrower.topUpLoanAmount, borrower.currency)}` : `Top-up: ${formatMoney(borrower.topUpLoanAmount, borrower.currency)}`}
                 </span>
               )}
             </div>

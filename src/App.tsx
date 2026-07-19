@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest } from './types';
 import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound } from './utils';
 import Header from './components/Header';
+import OnlineBorrowersPanel from './components/OnlineBorrowersPanel';
 import BorrowerCard from './components/BorrowerCard';
 import BorrowerDetail from './components/BorrowerDetail';
 import AddBorrowerModal from './components/AddBorrowerModal';
@@ -3613,6 +3614,15 @@ export default function App() {
                 onSelectBorrower={setSelectedBorrowerId}
                 appTheme={appTheme}
                 buttonStyle={buttonStyle}
+              />
+
+              {/* Real-time Digital Online/Offline Presence Panel */}
+              <OnlineBorrowersPanel
+                borrowers={borrowers}
+                onSelectBorrower={(id) => {
+                  playClickSound();
+                  setSelectedBorrowerId(id);
+                }}
               />
 
               {/* Special Member Referral & Sync Panel */}
