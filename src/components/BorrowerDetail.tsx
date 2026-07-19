@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Borrower, Payment, ReportedPayment } from '../types';
 import { formatMoney, formatKhmerDate, getTodayDateString } from '../utils';
-import { X, Trash2, Archive, Phone, Calendar, ArrowLeft, Plus, Check, Share2, Copy, MessageSquare, RotateCcw, Edit3, MessageCircle, Camera, User, Image as ImageIcon, QrCode, Sparkles, Upload } from 'lucide-react';
+import { X, Trash2, Archive, Phone, Calendar, ArrowLeft, Plus, Check, Share2, Copy, MessageSquare, RotateCcw, Edit3, MessageCircle, Camera, User, Image as ImageIcon, QrCode, Sparkles, Upload, Radio, Wifi, WifiOff } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import LiveChat from './LiveChat';
 import { motion, AnimatePresence } from 'motion/react';
@@ -35,11 +35,20 @@ export default function BorrowerDetail({
   const payments = Array.isArray(borrower.payments) ? borrower.payments : [];
   const [customAmount, setCustomAmount] = useState<string>('');
 
-  // Calculate if borrower is currently online
+  // 5-second reactive tick to force re-render and keep timestamps fresh in real-time
+  const [tick, setTick] = useState<number>(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Calculate if borrower is currently online (with clock drift protection)
   const isOnline = !!(
     borrower.isOnline && 
     borrower.lastActive && 
-    borrower.lastActive > Date.now() - 3 * 60 * 1000
+    Math.abs(Date.now() - borrower.lastActive) < 10 * 60 * 1000
   );
 
   const [customDate, setCustomDate] = useState<string>(getTodayDateString());
@@ -1901,6 +1910,118 @@ export default function BorrowerDetail({
 
                     {/* Column 1 Right: Standing, Auto Check-In, Custom Payment Form (6 cols) */}
                     <div className="lg:col-span-6 space-y-6">
+                      {/* Live Presence & Simulator Section */}
+                      <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                              <Radio className="w-4 h-4 text-blue-500 animate-pulse shrink-0" />
+                              <span>{language === 'kh' ? 'ស្ថានភាពវត្តមានរបស់កូនបំណុល' : 'Borrower Live Presence'}</span>
+                            </h4>
+                            <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+                              {language === 'kh'
+                                ? 'ត្រួតពិនិត្យវត្តមានរបស់កូនបំណុលនៅពេលពួកគេបើកតំណភ្ជាប់សងប្រាក់ក្នុងពេលជាក់ស្តែង។'
+                                : 'Monitor debtor activity in real-time when they visit their payment portal.'}
+                            </p>
+                          </div>
+
+                          {/* Pulsing Status Pill */}
+                          {isOnline ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full bg-emerald-500 text-white border border-emerald-600 shadow-sm animate-pulse">
+                              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping shrink-0" />
+                              <span>{language === 'kh' ? 'អនឡាញ' : 'Online'}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-slate-200 text-slate-600 border border-slate-300">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                              <span>{language === 'kh' ? 'អសកម្ម' : 'Offline'}</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Status Details */}
+                        <div className="bg-white p-3.5 rounded-xl border border-slate-200/60 text-xs font-semibold text-slate-600 space-y-2.5">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400">{language === 'kh' ? 'ការតភ្ជាប់ចុងក្រោយ៖' : 'Last Portal Visit:'}</span>
+                            <span className="text-slate-800 font-extrabold">
+                              {borrower.lastActive ? (
+                                isOnline ? (
+                                  language === 'kh' ? 'កំពុងអនឡាញឥឡូវនេះ' : 'Active right now'
+                                ) : (
+                                  `${Math.round((Date.now() - borrower.lastActive) / 60000)} ${language === 'kh' ? 'នាទីមុន' : 'mins ago'}`
+                                )
+                              ) : (
+                                language === 'kh' ? 'មិនធ្លាប់ចូលមើល' : 'Never visited'
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center border-t border-slate-100 pt-2">
+                            <span className="text-slate-400 font-bold flex items-center gap-1">
+                              <span>🔗</span>
+                              <span>{language === 'kh' ? 'តំណភ្ជាប់សងប្រាក់៖' : 'Debtor Portal Link:'}</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const url = `${window.location.origin}/portal/${borrower.id}`;
+                                navigator.clipboard.writeText(url);
+                                alert(language === 'kh' ? 'បានចម្លងតំណភ្ជាប់រួចរាល់!' : 'Copied debtor link to clipboard!');
+                              }}
+                              className="text-blue-600 hover:text-blue-700 hover:underline font-black cursor-pointer bg-blue-50 hover:bg-blue-100/80 px-2 py-1 rounded text-[10px] transition"
+                            >
+                              {language === 'kh' ? 'ចម្លង Link' : 'Copy Link'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Real-time Simulator Panel */}
+                        <div className="bg-blue-50/50 border border-blue-200/60 rounded-xl p-3.5 space-y-2.5">
+                          <div>
+                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-wider block">
+                              ⚙️ {language === 'kh' ? 'បន្ទប់តេស្តសាកល្បងវត្តមានរហ័ស (Portal Simulator)' : 'Live Presence Portal Simulator'}
+                            </span>
+                            <p className="text-[9px] text-blue-700 font-semibold leading-relaxed mt-0.5">
+                              {language === 'kh'
+                                ? 'ចុចប៊ូតុងខាងក្រោមដើម្បីបង្កើតការសាកល្បងវត្តមានរបស់កូនបំណុលអនឡាញ ឬអសកម្មក្នុងពេលជាក់ស្តែង។'
+                                : 'Simulate the debtor entering or exiting their payment portal links to test instant status changes.'}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (onEditBorrower) {
+                                  // Toggle simulation status directly
+                                  await onEditBorrower(borrower.id, {
+                                    isOnline: !isOnline,
+                                    lastActive: !isOnline ? Date.now() : Date.now() - 15 * 60 * 1000
+                                  });
+                                }
+                              }}
+                              className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs border text-center transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm ${
+                                isOnline
+                                  ? 'bg-rose-500 hover:bg-rose-600 border-rose-600 text-white shadow-rose-500/10'
+                                  : 'bg-emerald-600 hover:bg-emerald-700 border-emerald-700 text-white shadow-emerald-600/15'
+                              }`}
+                            >
+                              {isOnline ? (
+                                <>
+                                  <WifiOff className="w-3.5 h-3.5" />
+                                  <span>{language === 'kh' ? 'សាកល្បងផ្តាច់ការតភ្ជាប់ (Simulate Offline)' : 'Simulate Debtor Offline'}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Wifi className="w-3.5 h-3.5" />
+                                  <span>{language === 'kh' ? 'សាកល្បងតភ្ជាប់អនឡាញ (Simulate Online)' : 'Simulate Debtor Online'}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Borrower standing status picker */}
                       <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-3 shadow-sm">
                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Borrower } from '../types';
 import { formatMoney, formatKhmerDate } from '../utils';
 import { Calendar, Phone, CheckCircle, Clock, Check } from 'lucide-react';
@@ -20,11 +20,20 @@ interface BorrowerCardProps {
 export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelected = false, onToggleSelect, buttonStyle = 'kbach' }: BorrowerCardProps) {
   const { t } = useLanguage();
 
-  // Calculate if the borrower is currently Online
+  // 10-second ticker to keep cards status up to date in real-time
+  const [tick, setTick] = useState<number>(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Calculate if the borrower is currently Online (with clock drift protection)
   const isOnline = !!(
     borrower.isOnline && 
     borrower.lastActive && 
-    borrower.lastActive > Date.now() - 3 * 60 * 1000
+    Math.abs(Date.now() - borrower.lastActive) < 10 * 60 * 1000
   );
 
   // Calculate payments

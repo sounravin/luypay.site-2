@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest } from './types';
 import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound } from './utils';
 import Header from './components/Header';
-import OnlineBorrowersPanel from './components/OnlineBorrowersPanel';
 import BorrowerCard from './components/BorrowerCard';
 import BorrowerDetail from './components/BorrowerDetail';
 import AddBorrowerModal from './components/AddBorrowerModal';
@@ -3616,15 +3615,6 @@ export default function App() {
                 buttonStyle={buttonStyle}
               />
 
-              {/* Real-time Digital Online/Offline Presence Panel */}
-              <OnlineBorrowersPanel
-                borrowers={borrowers}
-                onSelectBorrower={(id) => {
-                  playClickSound();
-                  setSelectedBorrowerId(id);
-                }}
-              />
-
               {/* Special Member Referral & Sync Panel */}
               {isMember && (
                 <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border border-emerald-500 animate-in fade-in duration-300">
@@ -3711,8 +3701,8 @@ export default function App() {
 
               {/* Dashboard Actions Bar */}
               <div id="dashboard-controls" className={`rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm border ${currentThemeConfig.cardClass}`}>
-                {/* Tab filters for mobile view (hidden on desktop) */}
-                <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto md:hidden">
+                {/* Tab filters for mobile and desktop views */}
+                <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
                   <button
                     onClick={() => setFilterTab('active')}
                     className={`px-3 py-2 text-xs font-black rounded-xl transition cursor-pointer flex-1 text-center whitespace-nowrap ${filterTab === 'active' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : `${currentThemeConfig.textMuted} hover:bg-slate-800/10 dark:hover:bg-white/5`}`}
