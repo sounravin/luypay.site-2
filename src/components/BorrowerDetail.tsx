@@ -57,7 +57,7 @@ export default function BorrowerDetail({
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [isFrameModalOpen, setIsFrameModalOpen] = useState<boolean>(false);
-  const [detailTab, setDetailTab] = useState<'schedule' | 'personal' | 'verification'>('schedule');
+  const [detailTab, setDetailTab] = useState<'schedule' | 'personal' | 'verification' | 'statement'>('schedule');
   const [rejectingReportId, setRejectingReportId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState<string>('');
 
@@ -1303,6 +1303,29 @@ export default function BorrowerDetail({
                   <span>{language === 'kh' ? 'តារាងបង់ប្រាក់' : 'Payment Schedule & Logs'}</span>
                 </span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setDetailTab('statement')}
+                className={`py-3.5 text-xs sm:text-sm font-extrabold relative transition-colors duration-200 cursor-pointer ${
+                  detailTab === 'statement' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-b-2 border-transparent'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <span>📄</span>
+                  <span>{language === 'kh' ? 'លិខិតសងប្រាក់អេឡិចត្រូនិច' : 'Digital Debt Statement'}</span>
+                  {isOnline ? (
+                    <span className="flex h-2.5 w-2.5 relative">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                  ) : (
+                    borrower.lastActive && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                    )
+                  )}
+                </span>
+              </button>
               
               <button
                 type="button"
@@ -1762,6 +1785,292 @@ export default function BorrowerDetail({
                       )}
                     </div>
                   </div>
+                ) : detailTab === 'statement' ? (
+                  <div className="space-y-6">
+                    {/* Header describing what this is */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-sm font-extrabold text-blue-900 flex items-center gap-2">
+                          <span>📄</span>
+                          <span>{language === 'kh' ? 'ផ្ទាំងរបាយការណ៍លិខិតសងប្រាក់អេឡិចត្រូនិច' : 'Electronic Repayment Statement Panel'}</span>
+                        </h3>
+                        <p className="text-xs text-blue-700/80 font-semibold mt-0.5">
+                          {language === 'kh' 
+                            ? 'ត្រួតពិនិត្យវត្តមាន Online របស់កូនបំណុល និងមើលរបាយការណ៍លិខិតសងប្រាក់អេឡិចត្រូនិចក្នុងពេលជាក់ស្តែង' 
+                            : 'Monitor debtor live activity and view their dynamic electronic repayment statement receipt page.'}
+                        </p>
+                      </div>
+                      
+                      {/* Copy link or view portal */}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${window.location.origin}/portal/${borrower.id}`;
+                            navigator.clipboard.writeText(url);
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                          }}
+                          className="px-3.5 py-2 text-xs font-bold text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                          <span>{copied ? (language === 'kh' ? 'បានចម្លង!' : 'Copied!') : (language === 'kh' ? 'ចម្លងតំណភ្ជាប់' : 'Copy Link')}</span>
+                        </button>
+                        
+                        <a
+                          href={`/portal/${borrower.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3.5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition flex items-center gap-1.5 shadow-xs"
+                        >
+                          <span>🔗</span>
+                          <span>{language === 'kh' ? 'បើកតំណភ្ជាប់' : 'Open Portal'}</span>
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      {/* Column 1 Left: Live Presence, Simulator, Chat Presence (6 cols) */}
+                      <div className="lg:col-span-6 space-y-6">
+                        {/* Live Presence & Simulator Section */}
+                        <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                <Radio className="w-4 h-4 text-blue-500 animate-pulse shrink-0" />
+                                <span>{language === 'kh' ? 'ស្ថានភាពវត្តមានរបស់កូនបំណុល' : 'Borrower Live Presence'}</span>
+                              </h4>
+                              <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+                                {language === 'kh'
+                                  ? 'ត្រួតពិនិត្យវត្តមានរបស់កូនបំណុលនៅពេលពួកគេបើកតំណភ្ជាប់សងប្រាក់ក្នុងពេលជាក់ស្តែង។'
+                                  : 'Monitor debtor activity in real-time when they visit their payment portal.'}
+                              </p>
+                            </div>
+
+                            {/* Pulsing Status Pill */}
+                            {isOnline ? (
+                              <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full bg-emerald-500 text-white border border-emerald-600 shadow-sm animate-pulse">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping shrink-0" />
+                                <span>{language === 'kh' ? 'អនឡាញ' : 'Online'}</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-slate-200 text-slate-600 border border-slate-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                                <span>{language === 'kh' ? 'អសកម្ម' : 'Offline'}</span>
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Status Details */}
+                          <div className="bg-white p-3.5 rounded-xl border border-slate-200/60 text-xs font-semibold text-slate-600 space-y-2.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-400">{language === 'kh' ? 'ការតភ្ជាប់ចុងក្រោយ៖' : 'Last Portal Visit:'}</span>
+                              <span className="text-slate-800 font-extrabold">
+                                {borrower.lastActive ? (
+                                  isOnline ? (
+                                    language === 'kh' ? 'កំពុងអនឡាញឥឡូវនេះ' : 'Active right now'
+                                  ) : (
+                                    `${Math.round((Date.now() - borrower.lastActive) / 60000)} ${language === 'kh' ? 'នាទីមុន' : 'mins ago'}`
+                                  )
+                                ) : (
+                                  language === 'kh' ? 'មិនធ្លាប់ចូលមើល' : 'Never visited'
+                                )}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between items-center border-t border-slate-100 pt-2">
+                              <span className="text-slate-400 font-bold flex items-center gap-1">
+                                <span>🔗</span>
+                                <span>{language === 'kh' ? 'តំណភ្ជាប់សងប្រាក់៖' : 'Debtor Portal Link:'}</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const url = `${window.location.origin}/portal/${borrower.id}`;
+                                  navigator.clipboard.writeText(url);
+                                  alert(language === 'kh' ? 'បានចម្លងតំណភ្ជាប់រួចរាល់!' : 'Copied debtor link to clipboard!');
+                                }}
+                                className="text-blue-600 hover:text-blue-700 hover:underline font-black cursor-pointer bg-blue-50 hover:bg-blue-100/80 px-2 py-1 rounded text-[10px] transition"
+                              >
+                                {language === 'kh' ? 'ចម្លង Link' : 'Copy Link'}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Real-time Simulator Panel */}
+                          <div className="bg-blue-50/50 border border-blue-200/60 rounded-xl p-3.5 space-y-2.5">
+                            <div>
+                              <span className="text-[10px] font-black text-blue-800 uppercase tracking-wider block">
+                                ⚙️ {language === 'kh' ? 'បន្ទប់តេស្តសាកល្បងវត្តមានរហ័ស (Portal Simulator)' : 'Live Presence Portal Simulator'}
+                              </span>
+                              <p className="text-[9px] text-blue-700 font-semibold leading-relaxed mt-0.5">
+                                {language === 'kh'
+                                  ? 'ចុចប៊ូតុងខាងក្រោមដើម្បីបង្កើតការសាកល្បងវត្តមានរបស់កូនបំណុលអនឡាញ ឬអសកម្មក្នុងពេលជាក់ស្តែង។'
+                                  : 'Simulate the debtor entering or exiting their payment portal links to test instant status changes.'}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (onEditBorrower) {
+                                    await onEditBorrower(borrower.id, {
+                                      isOnline: !isOnline,
+                                      lastActive: !isOnline ? Date.now() : Date.now() - 15 * 60 * 1000
+                                    });
+                                  }
+                                }}
+                                className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs border text-center transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm ${
+                                  isOnline
+                                    ? 'bg-rose-500 hover:bg-rose-600 border-rose-600 text-white shadow-rose-500/10'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 border-emerald-700 text-white shadow-emerald-600/15'
+                                }`}
+                              >
+                                {isOnline ? (
+                                  <>
+                                    <WifiOff className="w-3.5 h-3.5" />
+                                    <span>{language === 'kh' ? 'សាកល្បងផ្តាច់ការតភ្ជាប់ (Simulate Offline)' : 'Simulate Debtor Offline'}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Wifi className="w-3.5 h-3.5" />
+                                    <span>{language === 'kh' ? 'សាកល្បងតភ្ជាប់អនឡាញ (Simulate Online)' : 'Simulate Debtor Online'}</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Discussion Chat Presence Button */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs">
+                          <div className="flex justify-between items-center">
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                              <span>💬</span> {language === 'kh' ? 'ប្រអប់ជជែក និងវត្តមានផ្ទាល់' : 'Discussion & Live Chat'}
+                            </h4>
+                            {isOnline && (
+                              <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                                <span>{language === 'kh' ? 'កំពុងអនឡាញ' : 'Online'}</span>
+                              </span>
+                            )}
+                          </div>
+                          
+                          <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                            {language === 'kh'
+                              ? 'បើកផ្ទាំងជជែកផ្ទាល់ ដើម្បីផ្ញើសារ ឬទំនាក់ទំនងជាមួយកូនបំណុលក្នុងពេលជាក់ស្តែង នៅពេលពួកគេកំពុងអនឡាញ។'
+                              : 'Open the live discussion drawer to chat with the debtor in real-time when they are online.'}
+                          </p>
+
+                          <button
+                            type="button"
+                            onClick={() => setIsChatOpen(true)}
+                            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-2 shadow-sm shadow-blue-500/10"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            <span>{language === 'kh' ? 'បើកបន្ទប់ជជែកផ្ទាល់ (Open Live Chat)' : 'Open Live Chat Drawer'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Column 2 Right: High fidelity Live Preview of the Digital Debt Receipt (6 cols) */}
+                      <div className="lg:col-span-6 space-y-6">
+                        <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-lg flex flex-col relative overflow-hidden">
+                          {/* Top Status Border */}
+                          <div className="h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600" />
+                          
+                          {/* Inner Screen Preview */}
+                          <div className="p-5 space-y-5">
+                            {/* Header */}
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xs shadow-md">
+                                  LP
+                                </div>
+                                <div>
+                                  <h4 className="text-[10px] font-black text-slate-800 uppercase tracking-wider leading-none">LUYPAY LEDGER</h4>
+                                  <p className="text-[8px] text-slate-400 font-bold leading-none mt-1">{language === 'kh' ? 'លិខិតសងប្រាក់អេឡិចត្រូនិច' : 'Digital Debt Receipt'}</p>
+                                </div>
+                              </div>
+                              <span className="text-[9px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md uppercase">
+                                {borrower.currency}
+                              </span>
+                            </div>
+
+                            {/* Main Repayment Status Card */}
+                            <div className="bg-gradient-to-b from-slate-50 to-slate-100/30 p-4 rounded-xl border border-slate-200/60 space-y-3.5">
+                              <div className="flex justify-between items-start">
+                                <div className="space-y-0.5">
+                                  <span className="text-[9px] font-bold text-slate-400 block uppercase">{language === 'kh' ? 'ឈ្មោះកូនបំណុល' : 'Debtor Name'}</span>
+                                  <span className="text-base font-extrabold text-slate-800">{borrower.name}</span>
+                                </div>
+                                <div className="text-right space-y-0.5">
+                                  <span className="text-[9px] font-bold text-slate-400 block uppercase">{language === 'kh' ? 'ប្រាក់នៅសល់' : 'Remaining Balance'}</span>
+                                  <span className="text-base font-black text-blue-600">{formatMoney(remaining, borrower.currency)}</span>
+                                </div>
+                              </div>
+
+                              {/* Progress bar */}
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                                  <span>{language === 'kh' ? 'វឌ្ឍនភាពសង' : 'Repayment Progress'}</span>
+                                  <span className="text-blue-600 font-extrabold">{progressPercent}%</span>
+                                </div>
+                                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                                  <div className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full" style={{ width: `${progressPercent}%` }} />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3 pt-1 text-[11px] font-semibold text-slate-600">
+                                <div>
+                                  <span className="text-slate-400 block text-[9px] font-bold">{language === 'kh' ? 'ប្រាក់សរុបត្រូវសង' : 'Total Repayment'}</span>
+                                  <span className="text-slate-800 font-extrabold">{formatMoney(borrower.totalToPay, borrower.currency)}</span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400 block text-[9px] font-bold">{language === 'kh' ? 'បានសងសរុប' : 'Total Collected'}</span>
+                                  <span className="text-emerald-600 font-extrabold">{formatMoney(totalPaid, borrower.currency)}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Dynamic Details List */}
+                            <div className="space-y-2 text-[11px] font-semibold text-slate-600">
+                              <div className="flex justify-between border-b border-slate-50 pb-1.5">
+                                <span className="text-slate-400">{language === 'kh' ? 'វគ្គសរុប៖' : 'Total Terms:'}</span>
+                                <span className="text-slate-800 font-extrabold">{borrower.duration} {language === 'kh' ? 'វគ្គ' : 'Terms'}</span>
+                              </div>
+                              <div className="flex justify-between border-b border-slate-50 pb-1.5">
+                                <span className="text-slate-400">{language === 'kh' ? 'បង់ក្នុងមួយវគ្គ៖' : 'Term Installment:'}</span>
+                                <span className="text-slate-800 font-extrabold">{formatMoney(borrower.installmentAmount, borrower.currency)}</span>
+                              </div>
+                              <div className="flex justify-between pb-1">
+                                <span className="text-slate-400">{language === 'kh' ? 'ប្រេកង់៖' : 'Frequency:'}</span>
+                                <span className="text-slate-800 font-extrabold uppercase">{borrower.frequency}</span>
+                              </div>
+                            </div>
+
+                            {/* Payment QR Section */}
+                            {editPaymentQr && (
+                              <div className="pt-2 border-t border-slate-100 flex flex-col items-center text-center space-y-1.5">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">{language === 'kh' ? 'ស្កែន QR សម្រាប់ទូទាត់' : 'Scan to Pay'}</span>
+                                <img src={editPaymentQr} alt="QR Code" className="w-24 h-24 object-contain border border-slate-200 rounded-xl bg-slate-50 p-1" referrerPolicy="no-referrer" />
+                              </div>
+                            )}
+
+                            {/* View live footer banner */}
+                            <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl text-center">
+                              <p className="text-[9px] text-slate-400 font-bold leading-relaxed">
+                                {language === 'kh'
+                                  ? 'រូបភាពខាងលើជាការបង្ហាញគំរូនៃទំព័រដែលកូនបំណុលនឹងមើលឃើញ'
+                                  : 'This is a real-time live preview of the statement page seen by the debtor.'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* Column 1 Left: Financial Ledger (6 cols) */}
@@ -1910,118 +2219,6 @@ export default function BorrowerDetail({
 
                     {/* Column 1 Right: Standing, Auto Check-In, Custom Payment Form (6 cols) */}
                     <div className="lg:col-span-6 space-y-6">
-                      {/* Live Presence & Simulator Section */}
-                      <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                              <Radio className="w-4 h-4 text-blue-500 animate-pulse shrink-0" />
-                              <span>{language === 'kh' ? 'ស្ថានភាពវត្តមានរបស់កូនបំណុល' : 'Borrower Live Presence'}</span>
-                            </h4>
-                            <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
-                              {language === 'kh'
-                                ? 'ត្រួតពិនិត្យវត្តមានរបស់កូនបំណុលនៅពេលពួកគេបើកតំណភ្ជាប់សងប្រាក់ក្នុងពេលជាក់ស្តែង។'
-                                : 'Monitor debtor activity in real-time when they visit their payment portal.'}
-                            </p>
-                          </div>
-
-                          {/* Pulsing Status Pill */}
-                          {isOnline ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full bg-emerald-500 text-white border border-emerald-600 shadow-sm animate-pulse">
-                              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping shrink-0" />
-                              <span>{language === 'kh' ? 'អនឡាញ' : 'Online'}</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-slate-200 text-slate-600 border border-slate-300">
-                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-                              <span>{language === 'kh' ? 'អសកម្ម' : 'Offline'}</span>
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Status Details */}
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200/60 text-xs font-semibold text-slate-600 space-y-2.5">
-                          <div className="flex justify-between items-center">
-                            <span className="text-slate-400">{language === 'kh' ? 'ការតភ្ជាប់ចុងក្រោយ៖' : 'Last Portal Visit:'}</span>
-                            <span className="text-slate-800 font-extrabold">
-                              {borrower.lastActive ? (
-                                isOnline ? (
-                                  language === 'kh' ? 'កំពុងអនឡាញឥឡូវនេះ' : 'Active right now'
-                                ) : (
-                                  `${Math.round((Date.now() - borrower.lastActive) / 60000)} ${language === 'kh' ? 'នាទីមុន' : 'mins ago'}`
-                                )
-                              ) : (
-                                language === 'kh' ? 'មិនធ្លាប់ចូលមើល' : 'Never visited'
-                              )}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center border-t border-slate-100 pt-2">
-                            <span className="text-slate-400 font-bold flex items-center gap-1">
-                              <span>🔗</span>
-                              <span>{language === 'kh' ? 'តំណភ្ជាប់សងប្រាក់៖' : 'Debtor Portal Link:'}</span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const url = `${window.location.origin}/portal/${borrower.id}`;
-                                navigator.clipboard.writeText(url);
-                                alert(language === 'kh' ? 'បានចម្លងតំណភ្ជាប់រួចរាល់!' : 'Copied debtor link to clipboard!');
-                              }}
-                              className="text-blue-600 hover:text-blue-700 hover:underline font-black cursor-pointer bg-blue-50 hover:bg-blue-100/80 px-2 py-1 rounded text-[10px] transition"
-                            >
-                              {language === 'kh' ? 'ចម្លង Link' : 'Copy Link'}
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Real-time Simulator Panel */}
-                        <div className="bg-blue-50/50 border border-blue-200/60 rounded-xl p-3.5 space-y-2.5">
-                          <div>
-                            <span className="text-[10px] font-black text-blue-800 uppercase tracking-wider block">
-                              ⚙️ {language === 'kh' ? 'បន្ទប់តេស្តសាកល្បងវត្តមានរហ័ស (Portal Simulator)' : 'Live Presence Portal Simulator'}
-                            </span>
-                            <p className="text-[9px] text-blue-700 font-semibold leading-relaxed mt-0.5">
-                              {language === 'kh'
-                                ? 'ចុចប៊ូតុងខាងក្រោមដើម្បីបង្កើតការសាកល្បងវត្តមានរបស់កូនបំណុលអនឡាញ ឬអសកម្មក្នុងពេលជាក់ស្តែង។'
-                                : 'Simulate the debtor entering or exiting their payment portal links to test instant status changes.'}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-2 pt-1">
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                if (onEditBorrower) {
-                                  // Toggle simulation status directly
-                                  await onEditBorrower(borrower.id, {
-                                    isOnline: !isOnline,
-                                    lastActive: !isOnline ? Date.now() : Date.now() - 15 * 60 * 1000
-                                  });
-                                }
-                              }}
-                              className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs border text-center transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm ${
-                                isOnline
-                                  ? 'bg-rose-500 hover:bg-rose-600 border-rose-600 text-white shadow-rose-500/10'
-                                  : 'bg-emerald-600 hover:bg-emerald-700 border-emerald-700 text-white shadow-emerald-600/15'
-                              }`}
-                            >
-                              {isOnline ? (
-                                <>
-                                  <WifiOff className="w-3.5 h-3.5" />
-                                  <span>{language === 'kh' ? 'សាកល្បងផ្តាច់ការតភ្ជាប់ (Simulate Offline)' : 'Simulate Debtor Offline'}</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Wifi className="w-3.5 h-3.5" />
-                                  <span>{language === 'kh' ? 'សាកល្បងតភ្ជាប់អនឡាញ (Simulate Online)' : 'Simulate Debtor Online'}</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
                       {/* Borrower standing status picker */}
                       <div className="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-3 shadow-sm">
                         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">

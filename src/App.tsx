@@ -9,7 +9,10 @@ import BorrowerPortal from './components/BorrowerPortal';
 import AdminMembersDashboard from './components/AdminMembersDashboard';
 import PricingPanel from './components/PricingPanel';
 import NotificationBell from './components/NotificationBell';
-import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles } from 'lucide-react';
+import BorrowerApplyForm from './components/BorrowerApplyForm';
+import LoanApplicationsControlPanel from './components/LoanApplicationsControlPanel';
+import { LoanApplication } from './types';
+import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDoc } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import { useLanguage } from './i18n';
@@ -110,7 +113,23 @@ export default function App() {
   const [userAuthType, setUserAuthType] = useState<'credentials' | 'google' | 'facebook'>(() => (localStorage.getItem('luypay_auth_type') as any) || 'credentials');
   const [isMember, setIsMember] = useState<boolean>(() => localStorage.getItem('luypay_is_member') === 'true');
 
-  const [activeSection, setActiveSection] = useState<'ledger' | 'admin_dashboard' | 'pricing'>('ledger');
+  const [activeSection, setActiveSection] = useState<'ledger' | 'admin_dashboard' | 'pricing' | 'loan_applications'>('ledger');
+  const [prefilledData, setPrefilledData] = useState<{
+    name?: string;
+    phone?: string;
+    principal?: number;
+    profilePhoto?: string;
+    notes?: string;
+  } | null>(null);
+
+  const [isApplyMode, setIsApplyMode] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('apply') === 'true';
+  });
+  const [applyLenderId, setApplyLenderId] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('lender') || 'sounravin';
+  });
   const [members, setMembers] = useState<Member[]>([]);
   const [subRequests, setSubRequests] = useState<SubscriptionRequest[]>([]);
   const [memberProfile, setMemberProfile] = useState<Member | null>(null);
@@ -1756,6 +1775,27 @@ export default function App() {
     );
   }
 
+  // Render Public Loan Application form if viewing the apply link
+  if (isApplyMode) {
+    return (
+      <div className="min-h-screen bg-[#030712] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        {/* Animated Background Auroras */}
+        <div className="absolute top-10 left-10 w-80 h-80 rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-emerald-600/10 blur-3xl pointer-events-none" />
+        
+        <div className="w-full max-w-md z-10">
+          <BorrowerApplyForm 
+            lenderId={applyLenderId} 
+            onBackToPortal={() => {
+              window.history.replaceState({}, document.title, window.location.pathname);
+              setIsApplyMode(false);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const isSuperAdmin = currentUser === 'sounravin';
   const isBlocked = memberProfile?.isBlocked === true;
   const isExpired = isSubscriptionExpired(memberProfile);
@@ -3127,6 +3167,24 @@ export default function App() {
             </motion.button>
           )}
 
+          {isMember && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setActiveSection('loan_applications')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-extrabold rounded-xl transition-all border duration-200 cursor-pointer ${
+                activeSection === 'loan_applications'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-500 shadow-lg shadow-blue-600/25'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border-transparent'
+              }`}
+            >
+              <span className="flex items-center gap-2.5">
+                <FileText className="w-4 h-4 text-blue-400 shrink-0" />
+                <span>📂 សំណើសុំកម្ចី (លុយឆក់)</span>
+              </span>
+            </motion.button>
+          )}
+
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -3444,6 +3502,22 @@ export default function App() {
                 </button>
               )
             )}
+            {isMember && (
+              <button
+                onClick={() => setActiveSection('loan_applications')}
+                className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  activeSection === 'loan_applications'
+                    ? mobileHeaderStyle === 'angkor'
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
+                      : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
+                    : mobileHeaderStyle === 'angkor'
+                      ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
+                      : 'bg-white/10 text-current hover:text-white'
+                }`}
+              >
+                <span>📂 {language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -3594,6 +3668,26 @@ export default function App() {
                 getSubscriptionStatusInfo={getSubscriptionStatusInfo}
                 showToast={showToast}
                 qrConfig={qrConfig}
+              />
+            );
+          }
+
+          if (activeSection === 'loan_applications') {
+            return (
+              <LoanApplicationsControlPanel
+                currentUser={currentUser}
+                showToast={showToast}
+                onApproveAndCreateBorrower={(app) => {
+                  setPrefilledData({
+                    name: app.name,
+                    phone: app.phone,
+                    principal: app.amountRequested,
+                    profilePhoto: app.selfiePhoto,
+                    notes: `សំណើខ្ចីលុយឆក់អេឡិចត្រូនិច ID: ${app.id}`
+                  });
+                  setActiveSection('ledger');
+                  setIsAddModalOpen(true);
+                }}
               />
             );
           }
@@ -3905,8 +3999,12 @@ export default function App() {
       {/* Add New Borrower Overlay */}
       <AddBorrowerModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setPrefilledData(null);
+        }}
         onSave={handleAddNewBorrower}
+        prefilledData={prefilledData}
       />
 
       {/* Detail & Card-Checkboard Overlay */}

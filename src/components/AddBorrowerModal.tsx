@@ -28,9 +28,16 @@ interface AddBorrowerModalProps {
     profilePhoto?: string;
     coverPhoto?: string;
   }) => void;
+  prefilledData?: {
+    name?: string;
+    phone?: string;
+    principal?: number;
+    profilePhoto?: string;
+    notes?: string;
+  } | null;
 }
 
-export default function AddBorrowerModal({ isOpen, onClose, onSave }: AddBorrowerModalProps) {
+export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledData }: AddBorrowerModalProps) {
   const { t, language } = useLanguage();
   const [name, setName] = useState('');
 
@@ -50,6 +57,37 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave }: AddBorrowe
   const [dueTime, setDueTime] = useState('17:00');
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [coverPhoto, setCoverPhoto] = useState<string>('');
+
+  useEffect(() => {
+    if (isOpen) {
+      if (prefilledData) {
+        setName(prefilledData.name || '');
+        setPhone(prefilledData.phone || '');
+        setCurrency('USD');
+        setPrincipal(prefilledData.principal ? prefilledData.principal.toString() : '');
+        setProfilePhoto(prefilledData.profilePhoto || '');
+        setNotes(prefilledData.notes || '');
+        setIsTotalToPayManuallyEdited(false);
+        setIsInstallmentManuallyEdited(false);
+      } else {
+        setName('');
+        setPhone('');
+        setCurrency('USD');
+        setPrincipal('');
+        setProfilePhoto('');
+        setNotes('');
+        setTotalToPay('');
+        setInstallmentAmount('');
+        setDuration('24');
+        setInterestValue('4');
+        setInterestType('percent');
+        setPaymentMode('all');
+        setInterestCalculation('per-period');
+        setIsTotalToPayManuallyEdited(false);
+        setIsInstallmentManuallyEdited(false);
+      }
+    }
+  }, [isOpen, prefilledData]);
 
   // Compress image to store as a small base64 string
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {

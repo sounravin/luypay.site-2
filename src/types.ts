@@ -111,3 +111,18 @@ export interface QRConfig {
   bankLogoText: string;
   bankColor: string;
 }
+
+export interface LoanApplication {
+  id: string;
+  name: string;
+  phone: string;
+  idCardPhoto: string; // base64 string of ID card
+  selfiePhoto: string; // base64 string of selfie
+  amountRequested: number; // in USD
+  lenderId: string; // the member who will review/approve
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string; // ISO string
+  approvedAt?: string;
+  rejectedReason?: string;
+}
+

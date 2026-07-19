@@ -15,6 +15,9 @@ service cloud.firestore {
     match /subscription_requests/{requestId} {
       allow read, write: if true;
     }
+    match /loan_applications/{applicationId} {
+      allow read, write: if true;
+    }
     match /settings/{settingsId} {
       allow read, write: if true;
     }
