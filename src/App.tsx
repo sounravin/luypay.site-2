@@ -16,6 +16,8 @@ import { useLanguage } from './i18n';
 import { motion, AnimatePresence } from 'motion/react';
 import { SignInForm, RegisterForm, ForgotPasswordForm } from './components/AuthForms';
 import PWAInstallBanner from './components/PWAInstallBanner';
+import { THEMES, getButtonStyleClass } from './utils/theme';
+import type { AppThemeType, ButtonStyleType } from './utils/theme';
 
 const LOCAL_STORAGE_KEY = 'luypay_ledger_borrowers';
 
@@ -375,6 +377,15 @@ export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('luypay_theme') as 'light' | 'dark') || 'light';
   });
+  const [appTheme, setAppTheme] = useState<AppThemeType>(() => {
+    return (localStorage.getItem('luypay_app_theme') as AppThemeType) || 'slate';
+  });
+  const [buttonStyle, setButtonStyle] = useState<ButtonStyleType>(() => {
+    return (localStorage.getItem('luypay_button_style') as ButtonStyleType) || 'kbach';
+  });
+  const [enableAnimations, setEnableAnimations] = useState<boolean>(() => {
+    return localStorage.getItem('luypay_enable_animations') !== 'false';
+  });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
@@ -393,6 +404,18 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('luypay_app_theme', appTheme);
+  }, [appTheme]);
+
+  useEffect(() => {
+    localStorage.setItem('luypay_button_style', buttonStyle);
+  }, [buttonStyle]);
+
+  useEffect(() => {
+    localStorage.setItem('luypay_enable_animations', String(enableAnimations));
+  }, [enableAnimations]);
 
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -2572,10 +2595,141 @@ export default function App() {
     );
   }
 
+  const currentThemeConfig = THEMES[appTheme] || THEMES.slate;
+  const isDark = theme === 'dark';
+  const bodyBgClass = isDark ? currentThemeConfig.bgDark : currentThemeConfig.bgLight;
+
   return (
-    <div className={`min-h-screen bg-slate-50 text-slate-800 antialiased font-sans flex flex-col ${theme === 'dark' ? 'dark' : ''}`}>
+    <div className={`min-h-screen ${bodyBgClass} antialiased font-sans flex flex-col ${isDark ? 'dark' : ''} transition-all duration-350 overflow-x-hidden relative`}>
       {/* PWA Add to Home Screen Banner */}
       <PWAInstallBanner />
+
+      {/* Dynamic Animated Theme Background Effects */}
+      {enableAnimations && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-10 select-none">
+          {/* Celestial Apsara Night Theme: Floating stars, glowing moon, glowing butterflies */}
+          {appTheme === 'apsara' && (
+            <>
+              {/* Glowing Moon in top right */}
+              <div className="absolute top-8 right-12 w-28 h-28 bg-gradient-to-tr from-purple-500/20 to-indigo-400/10 rounded-full blur-xl animate-pulse" />
+              <motion.div 
+                animate={{ y: [0, -4, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute top-10 right-16 text-5xl opacity-40 text-purple-300 filter drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]"
+              >
+                🌙
+              </motion.div>
+              
+              {/* Star Particle Clouds */}
+              <div className="absolute top-20 left-10 w-96 h-96 bg-purple-500/5 dark:bg-purple-500/3 rounded-full blur-3xl" />
+              <div className="absolute bottom-40 right-10 w-96 h-96 bg-indigo-500/5 dark:bg-indigo-500/3 rounded-full blur-3xl" />
+
+              {/* Floating Butterflies / Star lanterns */}
+              {[
+                { label: '🦋', left: '15%', top: '25%', size: 'text-xl', delay: 0, duration: 8, xRange: [0, 20, -10, 0], yRange: [0, -30, -15, 0] },
+                { label: '✨', left: '85%', top: '40%', size: 'text-base', delay: 2, duration: 6, xRange: [0, -15, 10, 0], yRange: [0, -20, 10, 0] },
+                { label: '🦋', left: '70%', top: '75%', size: 'text-lg', delay: 4, duration: 10, xRange: [0, 30, -10, 0], yRange: [0, -40, -20, 0] },
+                { label: '✨', left: '30%', top: '80%', size: 'text-sm', delay: 1.5, duration: 5, xRange: [0, -10, 15, 0], yRange: [0, -25, 15, 0] },
+                { label: '🌸', left: '50%', top: '15%', size: 'text-base', delay: 3, duration: 12, xRange: [0, 25, -25, 0], yRange: [0, 40, 80, 0] },
+              ].map((p, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0 }}
+                  animate={{
+                    opacity: [0, 0.7, 0.7, 0],
+                    x: p.xRange,
+                    y: p.yRange,
+                    rotate: [0, 10, -10, 0]
+                  }}
+                  transition={{
+                    duration: p.duration,
+                    repeat: Infinity,
+                    delay: p.delay,
+                    ease: 'easeInOut'
+                  }}
+                  className={`absolute ${p.size} filter drop-shadow-[0_0_8px_rgba(168,85,247,0.4)]`}
+                  style={{ left: p.left, top: p.top }}
+                >
+                  {p.label}
+                </motion.div>
+              ))}
+            </>
+          )}
+
+          {/* Royal Angkor Golden Theme: Glowing golden sparkle clouds and warm temple sunrays */}
+          {appTheme === 'angkor' && (
+            <>
+              {/* Royal Golden sun aura */}
+              <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-amber-500/5 dark:bg-amber-500/3 rounded-full blur-3xl" />
+              
+              {/* Golden sparkle particles */}
+              {[
+                { label: '✨', left: '10%', top: '20%', size: 'text-xs', delay: 0, duration: 5 },
+                { label: '⚜️', left: '80%', top: '15%', size: 'text-sm', delay: 1, duration: 7 },
+                { label: '✨', left: '45%', top: '65%', size: 'text-sm', delay: 2.5, duration: 6 },
+                { label: '✨', left: '85%', top: '75%', size: 'text-xs', delay: 0.5, duration: 4 },
+                { label: '⚜️', left: '25%', top: '85%', size: 'text-xs', delay: 3, duration: 8 },
+              ].map((p, idx) => (
+                <motion.div
+                  key={idx}
+                  animate={{
+                    opacity: [0, 0.5, 0.5, 0],
+                    y: [0, -30, -60],
+                    x: [0, 10, -10],
+                    scale: [0.8, 1.1, 0.8]
+                  }}
+                  transition={{
+                    duration: p.duration,
+                    repeat: Infinity,
+                    delay: p.delay,
+                    ease: 'linear'
+                  }}
+                  className={`absolute ${p.size} text-amber-500 filter drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]`}
+                  style={{ left: p.left, top: p.top }}
+                >
+                  {p.label}
+                </motion.div>
+              ))}
+            </>
+          )}
+
+          {/* Mekong Emerald Theme: Gentle falling green bamboo leaves and morning dew glow */}
+          {appTheme === 'emerald' && (
+            <>
+              <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 dark:bg-emerald-500/2 rounded-full blur-3xl" />
+              
+              {/* Falling Bamboo leaves / organic particles */}
+              {[
+                { label: '🍃', left: '20%', top: '10%', delay: 0, duration: 10 },
+                { label: '💧', left: '75%', top: '30%', delay: 2, duration: 8 },
+                { label: '🍃', left: '60%', top: '60%', delay: 4, duration: 12 },
+                { label: '🍃', left: '15%', top: '75%', delay: 1, duration: 9 },
+                { label: '💧', left: '85%', top: '85%', delay: 3.5, duration: 7 },
+              ].map((p, idx) => (
+                <motion.div
+                  key={idx}
+                  animate={{
+                    opacity: [0, 0.6, 0.6, 0],
+                    y: [0, 100, 200],
+                    x: [0, -20, 20],
+                    rotate: [0, 45, 90, 180]
+                  }}
+                  transition={{
+                    duration: p.duration,
+                    repeat: Infinity,
+                    delay: p.delay,
+                    ease: 'easeInOut'
+                  }}
+                  className="absolute text-sm"
+                  style={{ left: p.left, top: p.top }}
+                >
+                  {p.label}
+                </motion.div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Decorative Traditional Khmer Night Lights and Lanterns (glowing effects) */}
       {theme === 'dark' && (
@@ -2681,7 +2835,7 @@ export default function App() {
         )}
 
         {/* Sidebar Navigation - Sleek Interface Dark Theme */}
-        <aside className="w-68 bg-slate-900 flex flex-col p-6 hidden md:flex shrink-0 border-r border-slate-800 relative z-40">
+        <aside className={`w-68 ${currentThemeConfig.sidebarClass} flex flex-col p-6 hidden md:flex shrink-0 border-r relative z-40`}>
         {/* Logo / Header */}
         <div className="flex items-center justify-between mb-8 px-2">
           <div className="flex items-center gap-3">
@@ -3342,6 +3496,8 @@ export default function App() {
                 onBulkAutoCheck={handleBulkAutoCheck}
                 borrowers={borrowers}
                 onSelectBorrower={setSelectedBorrowerId}
+                appTheme={appTheme}
+                buttonStyle={buttonStyle}
               />
 
               {/* Special Member Referral & Sync Panel */}
@@ -3561,6 +3717,7 @@ export default function App() {
                       onQuickPay={handleQuickPay}
                       isSelected={selectedBorrowerIds.includes(b.id)}
                       onToggleSelect={handleToggleSelectBorrower}
+                      buttonStyle={buttonStyle}
                     />
                   ))}
                 </div>
@@ -3854,6 +4011,100 @@ export default function App() {
                   >
                     <Moon className="w-4 h-4" />
                     <span>{language === 'kh' ? 'ងងឹត (Dark)' : 'Dark Mode'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Khmer Traditional Theme Picker Section */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <span>{language === 'kh' ? 'សោភ័ណភាពខ្មែរ (Khmer Art Theme)' : 'Traditional Khmer Theme'}</span>
+                </h4>
+                <div className="grid grid-cols-2 gap-3 text-[11px]">
+                  {[
+                    { id: 'slate', nameKh: 'លំនាំថ្មភក់', nameEn: 'Classic Slate', icon: '⛰️', colorClass: 'from-slate-600 to-slate-800 text-slate-100' },
+                    { id: 'angkor', nameKh: 'រាជវាំងអង្គរមាស', nameEn: 'Royal Angkor', icon: '🔱', colorClass: 'from-[#dfb035] to-[#b37e1b] text-white font-black shadow-amber-500/15' },
+                    { id: 'apsara', nameKh: 'រាត្រីទេពអប្សរា', nameEn: 'Celestial Apsara', icon: '✨', colorClass: 'from-[#100a25] to-[#251754] text-[#ebdcfc] shadow-purple-500/15' },
+                    { id: 'emerald', nameKh: 'មេគង្គមរកត', nameEn: 'Mekong Emerald', icon: '🌾', colorClass: 'from-[#031d12] to-[#053c25] text-[#cbfce2] shadow-emerald-500/15' }
+                  ].map((tPreset) => (
+                    <button
+                      key={tPreset.id}
+                      type="button"
+                      onClick={() => setAppTheme(tPreset.id as AppThemeType)}
+                      className={`p-3 rounded-2xl border text-left flex flex-col gap-1.5 transition duration-150 cursor-pointer shadow-xs ${
+                        appTheme === tPreset.id
+                          ? 'border-amber-500 ring-2 ring-amber-500/20 bg-gradient-to-br font-black ' + tPreset.colorClass
+                          : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      <span className="text-base">{tPreset.icon}</span>
+                      <div>
+                        <span className="block font-extrabold text-[11px]">
+                          {language === 'kh' ? tPreset.nameKh : tPreset.nameEn}
+                        </span>
+                        <span className="text-[9px] opacity-60 font-medium block">
+                          {tPreset.nameEn}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Button Style Selector Section */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-blue-500" />
+                  <span>{language === 'kh' ? 'រចនាប័ទ្មប៊ូតុង (Button Style)' : 'Button Interface Style'}</span>
+                </h4>
+                <div className="grid grid-cols-3 gap-2 text-[10px]">
+                  {[
+                    { id: 'modern', nameKh: 'ទំនើប', nameEn: 'Sleek Modern', icon: '📱' },
+                    { id: 'kbach', nameKh: 'ក្បាច់បុរាណ', nameEn: 'Khmer Kbach', icon: '⚜️' },
+                    { id: 'neon', nameKh: 'រស្មីនេអុង', nameEn: 'Neon Glow', icon: '⚡' }
+                  ].map((btnPreset) => (
+                    <button
+                      key={btnPreset.id}
+                      type="button"
+                      onClick={() => setButtonStyle(btnPreset.id as ButtonStyleType)}
+                      className={`p-2.5 rounded-xl border text-center flex flex-col items-center justify-center gap-1 transition duration-150 cursor-pointer ${
+                        buttonStyle === btnPreset.id
+                          ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-400 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
+                          : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      <span>{btnPreset.icon}</span>
+                      <span className="font-extrabold text-[10px]">
+                        {language === 'kh' ? btnPreset.nameKh : btnPreset.nameEn}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Animations ON/OFF Selector Section */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-emerald-500" />
+                  <span>{language === 'kh' ? 'ចលនារស់រវើក (Live Animations)' : 'Interface Animations'}</span>
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEnableAnimations(true)}
+                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${enableAnimations ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800 text-emerald-600 font-black' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600'}`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span>{language === 'kh' ? 'បើកចលនា (ON)' : 'Animations ON'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEnableAnimations(false)}
+                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${!enableAnimations ? 'bg-slate-100 dark:bg-slate-850 border-slate-350 dark:border-slate-700 text-slate-600 font-black' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600'}`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <span>{language === 'kh' ? 'បិទចលនា (OFF)' : 'Animations OFF'}</span>
                   </button>
                 </div>
               </div>

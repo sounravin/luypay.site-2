@@ -1,9 +1,11 @@
 import React from 'react';
 import { LedgerStats, Borrower } from '../types';
 import { formatMoney } from '../utils';
-import { DollarSign, Percent, TrendingUp, Users, CheckCircle2, Zap, Sparkles, CalendarRange, Clock } from 'lucide-react';
+import { DollarSign, Percent, TrendingUp, Users, CheckCircle2, Zap, Sparkles, CalendarRange, Clock, ShieldAlert, Award, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { motion } from 'motion/react';
+import { THEMES, getButtonStyleClass } from '../utils/theme';
+import type { AppThemeType, ButtonStyleType } from '../utils/theme';
 
 // Authentic Khmer Traditional Ornament (Kbach) Corner Vector
 const KhmerCorner = ({ className }: { className?: string }) => (
@@ -29,6 +31,8 @@ interface HeaderProps {
   onBulkAutoCheck: () => void;
   borrowers: Borrower[];
   onSelectBorrower: (id: string) => void;
+  appTheme?: AppThemeType;
+  buttonStyle?: ButtonStyleType;
 }
 
 export default function Header({ 
@@ -39,7 +43,9 @@ export default function Header({
   selectedCount, 
   onBulkAutoCheck,
   borrowers,
-  onSelectBorrower
+  onSelectBorrower,
+  appTheme = 'slate',
+  buttonStyle = 'kbach'
 }: HeaderProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { t, language, setLanguage } = useLanguage();
@@ -106,15 +112,102 @@ export default function Header({
 
   return (
     <div id="app-header" className="space-y-6">
+      {/* Traditional Theme Specific Banner Displays */}
+      {appTheme === 'apsara' && (
+        <div className="relative rounded-3xl p-6 overflow-hidden bg-gradient-to-r from-[#100a25] to-[#251754] border border-purple-500/30 text-[#ebdcfc] shadow-lg mb-6 animate-in fade-in duration-350">
+          {/* Ornate backdrops */}
+          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-4 h-full flex items-center justify-end select-none opacity-20 md:opacity-30 pointer-events-none">
+            {/* Mystical White Horse SVG Illustration with golden Apsara crown details */}
+            <svg className="w-56 h-56 text-purple-300 filter drop-shadow-[0_0_10px_rgba(168,85,247,0.3)]" viewBox="0 0 100 100" fill="currentColor">
+              <path d="M75 35 C70 30, 60 28, 55 25 C50 22, 45 15, 38 12 C30 9, 22 15, 20 22 C18 28, 22 35, 25 38 C28 41, 35 43, 35 45 C35 48, 28 52, 25 55 C20 60, 18 68, 22 75 C25 82, 35 85, 45 82 C55 80, 62 70, 68 62 C75 55, 80 42, 75 35 Z" fill="white" opacity="0.8" />
+              <path d="M40 35 C38 30, 32 25, 25 25 C20 25, 18 28, 20 32 C22 36, 30 40, 35 40 Z" fill="#dfb035" />
+              <path d="M55 45 C52 40, 48 35, 42 35 C38 35, 36 38, 38 42 C40 46, 48 50, 52 50 Z" fill="#dfb035" />
+              <path d="M55 25 C58 20, 56 12, 60 8 C62 5, 68 5, 70 10 C72 15, 68 20, 65 22 Z" fill="#dfb035" />
+              <path d="M60 24 C62 26, 68 28, 72 32 C75 35, 78 40, 75 45 C72 48, 65 44, 60 38 Z" fill="#dfb035" />
+            </svg>
+          </div>
+
+          <div className="relative z-10 space-y-2 max-w-lg">
+            <span className="text-[10px] font-black uppercase tracking-widest bg-purple-500/20 border border-purple-400/30 px-3 py-1 rounded-full text-purple-200">
+              ✨ {language === 'kh' ? 'រចនាប័ទ្ម រាត្រីទេពអប្សរា' : 'Celestial Apsara Night Theme'}
+            </span>
+            <h3 className="text-2xl font-black text-white leading-tight">
+              {language === 'kh' ? 'អរុណសួស្តី! សហគ្រិនឆ្នើម' : 'Arun Soursei! Welcome,'} <span className="text-amber-300 font-extrabold">លុយផេ Luypay</span>
+            </h3>
+            <p className="text-xs text-purple-200/80 font-medium leading-relaxed">
+              {language === 'kh' 
+                ? 'សូមរីករាយជាមួយប្រព័ន្ធគ្រប់គ្រងបំណុលបែបបុរាណខ្មែរ ដែលរចនាឡើងយ៉ាងរស់រវើក ដើម្បីសម្រួលដល់ការគ្រប់គ្រងហិរញ្ញវត្ថុរបស់អ្នក។' 
+                : 'Enjoy the vibrant traditional Khmer-style ledger dashboard crafted to optimize your debt tracking experience.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {appTheme === 'angkor' && (
+        <div className="relative rounded-3xl p-6 overflow-hidden bg-gradient-to-r from-[#1b1409] to-[#3a2a12] border border-[#e2b037]/30 text-[#faeec8] shadow-lg mb-6 animate-in fade-in duration-350">
+          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-4 h-full flex items-center justify-end select-none opacity-20 md:opacity-30 pointer-events-none">
+            {/* Angkor Wat towers illustration using simple clean SVG */}
+            <svg className="w-56 h-56 text-[#e2b037] filter drop-shadow-[0_0_10px_rgba(226,176,55,0.3)]" viewBox="0 0 100 100" fill="currentColor">
+              <path d="M10 90 L90 90 L85 60 L75 60 L70 40 L60 40 L55 20 L45 20 L40 40 L30 40 L25 60 L15 60 Z" opacity="0.2" />
+              <path d="M25 90 L75 90 L70 50 L65 50 L60 30 L50 30 L45 50 L35 50 L30 90" opacity="0.4" />
+              <path d="M40 90 L60 90 L55 40 L45 40 Z" opacity="0.6" />
+            </svg>
+          </div>
+
+          <div className="relative z-10 space-y-2 max-w-lg">
+            <span className="text-[10px] font-black uppercase tracking-widest bg-[#e2b037]/20 border border-[#e2b037]/30 px-3 py-1 rounded-full text-amber-200">
+              🔱 {language === 'kh' ? 'រចនាប័ទ្ម រាជវាំងអង្គរមាស' : 'Royal Angkor Golden Theme'}
+            </span>
+            <h3 className="text-2xl font-black text-white leading-tight">
+              {language === 'kh' ? 'សួស្តីឆ្នាំថ្មី! អាជីវករអង្គរ' : 'Soursei! Angkorian Trader,'} <span className="text-[#dfb035] font-extrabold">លុយផេ Luypay</span>
+            </h3>
+            <p className="text-xs text-amber-200/80 font-medium leading-relaxed">
+              {language === 'kh' 
+                ? 'គ្រប់គ្រងហិរញ្ញវត្ថុរបស់អ្នកដោយមោទនភាពជាតិខ្មែរ ជាមួយការកត់ត្រាដែលមានសុវត្ថិភាពខ្ពស់ដូចប្រាសាទថ្មបុរាណ។' 
+                : 'Manage your ledger with pride. Secure and solid records, built for long-term growth.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {appTheme === 'emerald' && (
+        <div className="relative rounded-3xl p-6 overflow-hidden bg-gradient-to-r from-[#031d12] to-[#053c25] border border-emerald-500/30 text-[#cbfce2] shadow-lg mb-6 animate-in fade-in duration-350">
+          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-4 h-full flex items-center justify-end select-none opacity-20 md:opacity-30 pointer-events-none">
+            {/* Rice stalk / Bamboo leaf SVG */}
+            <svg className="w-56 h-56 text-emerald-400 filter drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]" viewBox="0 0 100 100" fill="currentColor">
+              <path d="M10 90 Q30 50 80 10 Q60 40 40 90 Z" opacity="0.3" />
+              <path d="M20 90 Q40 60 90 20 Q70 50 50 90 Z" opacity="0.5" />
+            </svg>
+          </div>
+
+          <div className="relative z-10 space-y-2 max-w-lg">
+            <span className="text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 border border-emerald-400/30 px-3 py-1 rounded-full text-emerald-200">
+              🌾 {language === 'kh' ? 'រចនាប័ទ្ម មេគង្គមរកត' : 'Mekong Emerald Theme'}
+            </span>
+            <h3 className="text-2xl font-black text-white leading-tight">
+              {language === 'kh' ? 'សួស្តី! អាជីវកម្មរីកចម្រើន' : 'Soursei! Prosperous Partner,'} <span className="text-emerald-300 font-extrabold">លុយផេ Luypay</span>
+            </h3>
+            <p className="text-xs text-emerald-200/80 font-medium leading-relaxed">
+              {language === 'kh' 
+                ? 'ប្រមូលផលនិងគ្រប់គ្រងប្រាក់កាក់ប្រកបដោយភាពរីកចម្រើនត្រឈឹងត្រឈៃ ដូចដើមឫស្សីមាត់ទន្លេមេគង្គ។' 
+                : 'Grow and yield rich benefits with organic financial stability, matching the Mekong breeze.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Sleek top header title area */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2">
         <div>
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t('mainTitle')}</h2>
-          <p className="text-slate-500 text-sm mt-1">{t('mainSubtitle')}</p>
+          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">{t('mainTitle')}</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{t('mainSubtitle')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Elegant Language switcher option */}
-          <div id="language-switcher" className="flex bg-slate-200/80 border border-slate-300/30 p-1 rounded-xl items-center shadow-xs shrink-0 mr-1.5">
+          <div id="language-switcher" className="flex bg-slate-200/80 dark:bg-slate-800 border border-slate-300/30 p-1 rounded-xl items-center shadow-xs shrink-0 mr-1.5">
             <motion.button
               id="lang-kh"
               whileHover={{ scale: 1.05 }}
@@ -122,8 +215,8 @@ export default function Header({
               onClick={() => setLanguage('kh')}
               className={`px-3 py-1.5 text-[10px] font-extrabold rounded-lg transition-all duration-150 cursor-pointer flex items-center gap-1 ${
                 language === 'kh'
-                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm border border-slate-200/50 dark:border-slate-600'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <span>🇰🇭</span>
@@ -136,8 +229,8 @@ export default function Header({
               onClick={() => setLanguage('en')}
               className={`px-3 py-1.5 text-[10px] font-extrabold rounded-lg transition-all duration-150 cursor-pointer flex items-center gap-1 ${
                 language === 'en'
-                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm border border-slate-200/50 dark:border-slate-600'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <span>🇺🇸</span>
@@ -157,29 +250,30 @@ export default function Header({
             whileHover={{ scale: 1.02, y: -1 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleImportButtonClick}
-            className="px-4 py-2.5 text-xs bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-200 shadow-sm transition-all duration-150 cursor-pointer flex items-center gap-1.5"
+            className={`${getButtonStyleClass(buttonStyle, 'secondary')} px-4 py-2.5 text-xs flex items-center gap-1.5`}
           >
-            {t('importBtn')}
+            <ArrowDownToLine className="w-3.5 h-3.5" />
+            <span>{t('importBtn')}</span>
           </motion.button>
           <motion.button
             id="export-data-btn"
             whileHover={{ scale: 1.02, y: -1 }}
             whileTap={{ scale: 0.98 }}
             onClick={onBackupClick}
-            className="px-4 py-2.5 text-xs bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-200 shadow-sm transition-all duration-150 cursor-pointer flex items-center gap-1.5"
+            className={`${getButtonStyleClass(buttonStyle, 'secondary')} px-4 py-2.5 text-xs flex items-center gap-1.5`}
           >
-            {t('backupBtn')}
+            <ArrowUpFromLine className="w-3.5 h-3.5" />
+            <span>{t('backupBtn')}</span>
           </motion.button>
           <motion.button
             id="bulk-auto-check-btn"
             whileHover={{ scale: 1.02, y: -1 }}
             whileTap={{ scale: 0.98 }}
             onClick={onBulkAutoCheck}
-            className={`px-4 py-2.5 text-xs font-bold rounded-xl shadow-md transition-all duration-150 flex items-center gap-1.5 cursor-pointer ${
-              selectedCount > 0
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-emerald-500/20'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200/60'
-            }`}
+            className={selectedCount > 0 
+              ? `${getButtonStyleClass(buttonStyle, 'success')} px-4 py-2.5 text-xs flex items-center gap-1.5`
+              : `${getButtonStyleClass(buttonStyle, 'secondary')} px-4 py-2.5 text-xs opacity-50 flex items-center gap-1.5`
+            }
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>
@@ -192,9 +286,9 @@ export default function Header({
             whileHover={{ scale: 1.02, y: -1 }}
             whileTap={{ scale: 0.98 }}
             onClick={onAddNewClick}
-            className="px-5 py-2.5 text-xs bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all duration-150 flex items-center gap-1.5 cursor-pointer"
+            className={`${getButtonStyleClass(buttonStyle, 'primary')} px-5 py-2.5 text-xs flex items-center gap-1.5`}
           >
-            {t('addBtn')}
+            <span>{t('addBtn')}</span>
           </motion.button>
         </div>
       </div>

@@ -5,6 +5,8 @@ import { Calendar, Phone, CheckCircle, Clock, Check } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import AvatarWithFrame from './AvatarWithFrame';
 import { motion } from 'motion/react';
+import { getButtonStyleClass } from '../utils/theme';
+import type { ButtonStyleType } from '../utils/theme';
 
 interface BorrowerCardProps {
   borrower: Borrower;
@@ -12,9 +14,10 @@ interface BorrowerCardProps {
   onQuickPay: (borrowerId: string) => void;
   isSelected?: boolean;
   onToggleSelect?: (borrowerId: string) => void;
+  buttonStyle?: ButtonStyleType;
 }
 
-export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelected = false, onToggleSelect }: BorrowerCardProps) {
+export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelected = false, onToggleSelect, buttonStyle = 'kbach' }: BorrowerCardProps) {
   const { t } = useLanguage();
 
   // Calculate payments
@@ -50,16 +53,34 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
     }
   };
 
+  const cardBorderClass = isSelected
+    ? 'border-emerald-500 ring-2 ring-emerald-500/10'
+    : buttonStyle === 'kbach'
+      ? 'border-[#dfb035]/40 hover:border-[#dfb035] bg-gradient-to-br from-white to-[#fffcf3] dark:from-[#1b1409] dark:to-[#3a2a12] shadow-inner'
+      : buttonStyle === 'neon'
+        ? 'border-cyan-500/30 hover:border-cyan-400 hover:shadow-cyan-500/10 dark:bg-[#071329] shadow-cyan-500/5 shadow-md'
+        : 'border-slate-200 dark:border-slate-800 dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg';
+
   return (
     <div
       id={`borrower-card-${borrower.id}`}
       onClick={() => onSelect(borrower)}
-      className={`bg-white border rounded-2xl p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4 shadow-sm ${
-        isSelected
-          ? 'border-emerald-500 ring-2 ring-emerald-500/10'
-          : 'border-slate-200 hover:border-slate-300 hover:shadow-lg'
-      }`}
+      className={`bg-white dark:bg-slate-900 border rounded-2xl p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4 shadow-sm relative overflow-hidden ${cardBorderClass}`}
     >
+      {buttonStyle === 'kbach' && (
+        <>
+          <div className="absolute top-0 left-0 w-4 h-4 opacity-40 pointer-events-none">
+            <svg viewBox="0 0 16 16" fill="none" className="text-[#dfb035] w-full h-full" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0 0 L16 0 C12 1, 8 3, 5 6 C3 8, 1 12, 0 16 Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <div className="absolute top-0 right-0 w-4 h-4 opacity-40 pointer-events-none rotate-90">
+            <svg viewBox="0 0 16 16" fill="none" className="text-[#dfb035] w-full h-full" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0 0 L16 0 C12 1, 8 3, 5 6 C3 8, 1 12, 0 16 Z" fill="currentColor"/>
+            </svg>
+          </div>
+        </>
+      )}
       {/* Top Header Row */}
       <div className="flex items-start gap-3 justify-between">
         <div className="flex items-center gap-3">
@@ -185,10 +206,10 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleQuickPayClick}
-            className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg transition-all shadow-sm shadow-blue-500/10 flex items-center gap-1 cursor-pointer"
+            className={`${getButtonStyleClass(buttonStyle, 'primary')} px-3 py-1 text-xs flex items-center gap-1.5 shadow-sm`}
             title={t('quickPay')}
           >
-            <Check className="w-3.5 h-3.5 stroke-[3]" />
+            <Check className="w-3 h-3 stroke-[3]" />
             <span>{t('quickPay')}</span>
           </motion.button>
         ) : (
