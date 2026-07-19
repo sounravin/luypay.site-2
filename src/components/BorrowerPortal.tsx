@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Borrower, Payment } from '../types';
+import { Borrower, Payment, ReportedPayment } from '../types';
 import { formatMoney, formatKhmerDate, getFrequencyLabel } from '../utils';
-import { Phone, Calendar, ArrowLeft, ShieldCheck, Check, Clock, TrendingUp, DollarSign, RefreshCw, AlertCircle, MessageCircle, QrCode, X } from 'lucide-react';
+import { Phone, Calendar, ArrowLeft, ShieldCheck, Check, Clock, TrendingUp, DollarSign, RefreshCw, AlertCircle, MessageCircle, QrCode, X, Upload, Camera, CheckCircle2, Sparkles } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -22,6 +22,16 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
   const [isQrZoomOpen, setIsQrZoomOpen] = useState(false);
   const [isFrameModalOpen, setIsFrameModalOpen] = useState(false);
   const [lenderProfile, setLenderProfile] = useState<any>(null);
+  
+  // Payment reporting states
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [selectedInstallment, setSelectedInstallment] = useState<number>(0);
+  const [customAmount, setCustomAmount] = useState<string>('');
+  const [receiptBase64, setReceiptBase64] = useState<string>('');
+  const [reportNote, setReportNote] = useState<string>('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<'success' | 'error' | null>(null);
   
   // Real-time Portal Configuration from Firestore settings/portal_config
   const [portalConfig, setPortalConfig] = useState<any>({
@@ -74,6 +84,107 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
       console.error("Error updating chat messages from borrower portal:", err);
     }
   };
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToastMessage(message);
+    setToastType(type);
+    setTimeout(() => {
+      setToastMessage(null);
+      setToastType(null);
+    }, 4000);
+  };
+
+  const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 500;
+        const MAX_HEIGHT = 500;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const base64Str = canvas.toDataURL('image/jpeg', 0.8);
+          setReceiptBase64(base64Str);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmitReport = async () => {
+    if (!receiptBase64) {
+      showToast(language === 'kh' ? 'សូមបញ្ចូលរូបភាពវិក្កយបត្របង់ប្រាក់!' : 'Please upload the payment receipt image!', 'error');
+      return;
+    }
+
+    setIsSubmittingReport(true);
+    try {
+      const amountToPay = selectedInstallment === -1 
+        ? parseFloat(customAmount) || borrower.installmentAmount 
+        : borrower.installmentAmount;
+
+      const newReport: ReportedPayment = {
+        id: 'rep_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        installmentIndex: selectedInstallment,
+        amount: amountToPay,
+        date: new Date().toISOString(),
+        receiptImage: receiptBase64,
+        status: 'pending',
+        note: reportNote.trim()
+      };
+
+      const docRef = doc(db, 'borrowers', borrower.id);
+      const existingReports = Array.isArray(borrower.reportedPayments) ? borrower.reportedPayments : [];
+      await updateDoc(docRef, {
+        reportedPayments: [...existingReports, newReport]
+      });
+
+      setReceiptBase64('');
+      setReportNote('');
+      setCustomAmount('');
+      setIsReportModalOpen(false);
+      showToast(
+        language === 'kh' 
+          ? 'បានផ្ញើវិក្កយបត្របង់ប្រាក់ជោគជ័យ! ម្ចាស់បំណុលនឹងពិនិត្យឆាប់ៗនេះ។' 
+          : 'Receipt submitted successfully! The lender will review it shortly.', 
+        'success'
+      );
+    } catch (err) {
+      console.error('Error submitting payment report:', err);
+      showToast(
+        language === 'kh' 
+          ? 'មានបញ្ហាក្នុងការផ្ញើវិក្កយបត្រ សូមព្យាយាមម្តងទៀត!' 
+          : 'Failed to submit payment report. Please try again.', 
+        'error'
+      );
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
   // Calculate stats
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
   const remaining = Math.max(0, borrower.totalToPay - totalPaid);
@@ -90,6 +201,20 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 pb-12 flex flex-col">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className={`px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-2.5 border text-xs font-bold ${
+            toastType === 'success' 
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800 shadow-emerald-500/10' 
+              : 'bg-rose-50 border-rose-200 text-rose-850 shadow-rose-500/10'
+          }`}>
+            <CheckCircle2 className={`w-4 h-4 ${toastType === 'success' ? 'text-emerald-600' : 'text-rose-500'}`} />
+            <span>{toastMessage}</span>
+          </div>
+        </div>
+      )}
+
       {/* Marquee Banner */}
       <div id="portal-marquee-banner" className="bg-amber-500 text-slate-950 font-bold text-xs py-2 shadow-sm border-b border-amber-600/20 select-none shrink-0 z-40 overflow-hidden w-full">
         <div className="animate-marquee-smooth flex">
@@ -405,6 +530,90 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
                 )}
               </div>
             </div>
+
+            {/* Report KHQR Payment Card */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 space-y-4 shadow-sm">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>រាយការណ៍ការបង់ប្រាក់តាម KHQR</span>
+              </h3>
+
+              <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+                បន្ទាប់ពីលោកអ្នកបានធ្វើការស្កេន KHQR ដើម្បីបង់ប្រាក់សងរួចរាល់ សូមផ្ញើវិក្កយបត្រ (Receipt) មកកាន់ពួកយើងដើម្បីប្រព័ន្ធបញ្ជាក់ការបង់ប្រាក់ដោយស្វ័យប្រវត្តិ។
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  // Find first unpaid installment to pre-select
+                  let firstUnpaid = 0;
+                  for (let i = 0; i < borrower.duration; i++) {
+                    if (!paymentBySlot[i]) {
+                      firstUnpaid = i;
+                      break;
+                    }
+                  }
+                  setSelectedInstallment(firstUnpaid);
+                  setIsReportModalOpen(true);
+                }}
+                className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:scale-[0.99] text-white text-xs font-extrabold rounded-2xl shadow-md shadow-emerald-500/10 hover:shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer border border-emerald-400/20"
+              >
+                <Upload className="w-4 h-4" />
+                <span>{language === 'kh' ? 'ផ្ញើវិក្កយបត្របង់ប្រាក់ (Upload Receipt)' : 'Upload Payment Receipt'}</span>
+              </button>
+
+              {/* List of reported payments */}
+              {borrower.reportedPayments && borrower.reportedPayments.length > 0 && (
+                <div className="space-y-2.5 pt-3 border-t border-slate-100">
+                  <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">
+                    ប្រវត្តិផ្ញើវិក្កយបត្រផ្ទៀងផ្ទាត់ ({borrower.reportedPayments.length})
+                  </span>
+                  <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                    {[...borrower.reportedPayments].reverse().map((rep) => (
+                      <div key={rep.id} className="p-3 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-between gap-3 text-xs">
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-slate-700">
+                              {rep.installmentIndex === -1 ? 'បង់តាមចិត្ត' : `វគ្គទី ${rep.installmentIndex + 1}`}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-bold">
+                              {new Date(rep.date).toLocaleDateString('km-KH', { month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
+                          <div className="text-blue-600 font-black">
+                            {formatMoney(rep.amount, borrower.currency)}
+                          </div>
+                          {rep.note && (
+                            <div className="text-[10px] text-slate-400 font-medium truncate">
+                              "{rep.note}"
+                            </div>
+                          )}
+                          {rep.status === 'rejected' && rep.rejectedReason && (
+                            <div className="text-[10px] text-rose-500 font-bold bg-rose-50 p-1.5 rounded-lg border border-rose-100/50 mt-1">
+                              មូលហេតុ៖ {rep.rejectedReason}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="shrink-0 text-right">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black border ${
+                            rep.status === 'pending'
+                              ? 'bg-amber-50 text-amber-700 border-amber-100'
+                              : rep.status === 'approved'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                : 'bg-rose-50 text-rose-700 border-rose-100'
+                          }`}>
+                            {rep.status === 'pending' && '⏱️ រង់ចាំពិនិត្យ'}
+                            {rep.status === 'approved' && '✅ បានអនុម័ត'}
+                            {rep.status === 'rejected' && '❌ ត្រូវបដិសេធ'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Repayment Checkboard (7 cols) */}
@@ -574,6 +783,164 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
           </span>
         )}
       </button>
+
+      {/* Report Payment Modal */}
+      {isReportModalOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+          onClick={() => setIsReportModalOpen(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setIsReportModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 hover:bg-slate-100 rounded-xl transition text-slate-400 hover:text-slate-600 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-1.5">
+                <Upload className="w-5 h-5 text-emerald-600" />
+                <span>{language === 'kh' ? 'ផ្ញើវិក្កយបត្របង់ប្រាក់សង' : 'Upload Repayment Receipt'}</span>
+              </h3>
+              <p className="text-xs text-slate-400 font-bold mt-1">
+                សូមបំពេញព័ត៌មាន និងផ្ទុកឡើងវិក្កយបត្រផ្ទេរប្រាក់ខាងក្រោម។
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Select Installment */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">
+                  វគ្គដែលត្រូវទូទាត់ (Repayment Installment)
+                </label>
+                <select
+                  value={selectedInstallment}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    setSelectedInstallment(val);
+                    if (val === -1) {
+                      setCustomAmount(borrower.installmentAmount.toString());
+                    }
+                  }}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
+                >
+                  {Array.from({ length: borrower.duration }).map((_, index) => {
+                    const isPaid = !!paymentBySlot[index];
+                    return (
+                      <option key={index} value={index} disabled={isPaid}>
+                        វគ្គទី {index + 1} ({formatMoney(borrower.installmentAmount, borrower.currency)}) {isPaid ? ' - (បានបង់រួច)' : ''}
+                      </option>
+                    );
+                  })}
+                  <option value={-1}>បង់ប្រាក់តាមចិត្ត (Custom Amount)</option>
+                </select>
+              </div>
+
+              {/* Custom Amount if selected */}
+              {selectedInstallment === -1 && (
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">
+                    ចំនួនទឹកប្រាក់ដែលបានបង់
+                  </label>
+                  <input
+                    type="number"
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    placeholder="បញ្ចូលចំនួនទឹកប្រាក់..."
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              )}
+
+              {/* Image Receipt File Upload */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">
+                  រូបភាពវិក្កយបត្រ (Receipt Screenshot)
+                </label>
+                
+                {receiptBase64 ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 aspect-[4/3] bg-slate-50 flex items-center justify-center group">
+                    <img 
+                      src={receiptBase64} 
+                      alt="Receipt Preview" 
+                      className="w-full h-full object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setReceiptBase64('')}
+                      className="absolute top-2 right-2 p-1 bg-red-600 hover:bg-red-700 text-white rounded-xl transition cursor-pointer shadow-md"
+                      title="Remove image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="border-2 border-dashed border-slate-200 hover:border-blue-400/60 bg-slate-50/50 hover:bg-slate-50 rounded-3xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200 group">
+                    <div className="w-10 h-10 rounded-full bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center transition">
+                      <Camera className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div className="text-center space-y-0.5">
+                      <span className="text-xs font-extrabold text-slate-700 block">
+                        {language === 'kh' ? 'អាប់ឡូតរូបភាពវិក្កយបត្រ' : 'Upload Receipt Screenshot'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-bold block">
+                        JPEG ឬ PNG, ទំហំតូចជាង 5MB
+                      </span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleReceiptUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* Note input */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">
+                  កំណត់សម្គាល់បន្ថែម (Note - Option)
+                </label>
+                <textarea
+                  value={reportNote}
+                  onChange={(e) => setReportNote(e.target.value)}
+                  placeholder="ឧ. វេររួចរាល់ហើយបងពីគណនី ABA..."
+                  rows={2}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsReportModalOpen(false)}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-extrabold rounded-2xl transition cursor-pointer"
+              >
+                {language === 'kh' ? 'បោះបង់' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitReport}
+                disabled={isSubmittingReport}
+                className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-extrabold rounded-2xl shadow-md transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                {isSubmittingReport ? (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
+                <span>{language === 'kh' ? 'ផ្ញើរបាយការណ៍' : 'Submit Report'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Zoomed QR Code Modal */}
       {isQrZoomOpen && (

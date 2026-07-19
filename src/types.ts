@@ -9,6 +9,17 @@ export interface Payment {
   note?: string;
 }
 
+export interface ReportedPayment {
+  id: string;
+  installmentIndex: number;
+  amount: number;
+  date: string; // reported date (ISO string)
+  receiptImage?: string; // base64 receipt image
+  status: 'pending' | 'approved' | 'rejected';
+  note?: string;
+  rejectedReason?: string;
+}
+
 export interface Borrower {
   id: string;
   name: string;
@@ -39,6 +50,7 @@ export interface Borrower {
   userId?: string; // The username of the member who owns this borrower
   interestOnlyExtension?: boolean; // Whether the borrower requested interest-only principal deferral
   interestOnlyExtensionNote?: string; // Note/reason for interest-only principal deferral
+  reportedPayments?: ReportedPayment[]; // Payments scanned & reported by borrower via portal
 }
 
 export interface ChatMessage {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Borrower, Payment } from '../types';
+import { Borrower, Payment, ReportedPayment } from '../types';
 import { formatMoney, formatKhmerDate, getTodayDateString } from '../utils';
-import { X, Trash2, Archive, Phone, Calendar, ArrowLeft, Plus, Check, Share2, Copy, MessageSquare, RotateCcw, Edit3, MessageCircle, Camera, User, Image as ImageIcon, QrCode } from 'lucide-react';
+import { X, Trash2, Archive, Phone, Calendar, ArrowLeft, Plus, Check, Share2, Copy, MessageSquare, RotateCcw, Edit3, MessageCircle, Camera, User, Image as ImageIcon, QrCode, Sparkles, Upload } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import LiveChat from './LiveChat';
 import { motion, AnimatePresence } from 'motion/react';
@@ -41,7 +41,9 @@ export default function BorrowerDetail({
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [isFrameModalOpen, setIsFrameModalOpen] = useState<boolean>(false);
-  const [detailTab, setDetailTab] = useState<'schedule' | 'personal'>('schedule');
+  const [detailTab, setDetailTab] = useState<'schedule' | 'personal' | 'verification'>('schedule');
+  const [rejectingReportId, setRejectingReportId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState<string>('');
 
   // Edit Mode states
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -1081,6 +1083,24 @@ export default function BorrowerDetail({
                   <span>{language === 'kh' ? 'ព័ត៌មានផ្ទាល់ខ្លួន' : 'Personal & Loan Info'}</span>
                 </span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => setDetailTab('verification')}
+                className={`py-3.5 text-xs sm:text-sm font-extrabold relative transition-colors duration-200 cursor-pointer ${
+                  detailTab === 'verification' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-b-2 border-transparent'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <span>✨</span>
+                  <span>{language === 'kh' ? 'ផ្ទៀងផ្ទាត់ការបង់' : 'Verify Payments'}</span>
+                  {Array.isArray(borrower.reportedPayments) && borrower.reportedPayments.filter(r => r.status === 'pending').length > 0 && (
+                    <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-bounce">
+                      {borrower.reportedPayments.filter(r => r.status === 'pending').length}
+                    </span>
+                  )}
+                </span>
+              </button>
             </div>
 
             {/* Tab Contents with Framer Motion Transition */}
@@ -1093,7 +1113,186 @@ export default function BorrowerDetail({
                 transition={{ duration: 0.2 }}
                 className="p-6 space-y-6"
               >
-                {detailTab === 'schedule' ? (
+                {detailTab === 'verification' ? (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <span>✨</span>
+                        <span>{language === 'kh' ? 'ផ្ទៀងផ្ទាត់វិក្កយបត្រ KHQR ពីកូនបំណុល' : 'Verify Debtor KHQR Receipts'}</span>
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {language === 'kh' ? 'សូមពិនិត្យមើលរូបភាពវិក្កយបត្រដែលកូនបំណុលបានផ្ញើ ហើយចុច អនុម័ត ដើម្បីកត់ត្រាការបង់ប្រាក់ចូលប្រព័ន្ធស្វ័យប្រវត្ត។' : 'Review payment receipts submitted by the borrower. Approve to automatically log payment.'}
+                      </p>
+                    </div>
+
+                    {(!borrower.reportedPayments || borrower.reportedPayments.length === 0) ? (
+                      <div className="text-center py-12 text-slate-400 text-xs font-bold bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                        {language === 'kh' ? 'មិនទាន់មានការផ្ញើវិក្កយបត្រណាមួយឡើយ' : 'No payment reports submitted yet.'}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {[...borrower.reportedPayments].reverse().map((rep) => {
+                          const handleApprove = () => {
+                            // 1. Add payment transaction to borrower
+                            onAddPayment(borrower.id, {
+                              date: rep.date,
+                              amount: rep.amount,
+                              installmentIndex: rep.installmentIndex,
+                              note: rep.note || (language === 'kh' ? 'បង់ប្រាក់ស្វ័យប្រវត្តតាម KHQR' : 'Auto KHQR Payment')
+                            });
+
+                            // 2. Set report status to approved
+                            const updatedReports = (borrower.reportedPayments || []).map(r => 
+                              r.id === rep.id ? { ...r, status: 'approved' as const } : r
+                            );
+
+                            if (onEditBorrower) {
+                              onEditBorrower(borrower.id, { reportedPayments: updatedReports });
+                            }
+                          };
+
+                          const handleReject = () => {
+                            if (!rejectReason.trim()) {
+                              alert(language === 'kh' ? 'សូមបញ្ចូលមូលហេតុនៃការបដិសេធ!' : 'Please enter rejection reason!');
+                              return;
+                            }
+
+                            const updatedReports = (borrower.reportedPayments || []).map(r => 
+                              r.id === rep.id ? { ...r, status: 'rejected' as const, rejectedReason: rejectReason.trim() } : r
+                            );
+
+                            if (onEditBorrower) {
+                              onEditBorrower(borrower.id, { reportedPayments: updatedReports });
+                            }
+                            setRejectingReportId(null);
+                            setRejectReason('');
+                          };
+
+                          return (
+                            <div key={rep.id} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-xs">
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] text-slate-400 font-extrabold tracking-wider uppercase">
+                                    {new Date(rep.date).toLocaleString('km-KH', { dateStyle: 'medium', timeStyle: 'short' })}
+                                  </span>
+                                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black border ${
+                                    rep.status === 'pending'
+                                      ? 'bg-amber-50 text-amber-700 border-amber-100 animate-pulse'
+                                      : rep.status === 'approved'
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                        : 'bg-rose-50 text-rose-700 border-rose-100'
+                                  }`}>
+                                    {rep.status === 'pending' && '⏱️ រង់ចាំពិនិត្យ'}
+                                    {rep.status === 'approved' && '✅ បានអនុម័ត'}
+                                    {rep.status === 'rejected' && '❌ ត្រូវបដិសេធ'}
+                                  </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <div className="bg-white p-3 rounded-xl border border-slate-100">
+                                    <span className="text-[9px] text-slate-400 font-bold block mb-0.5">វគ្គទូទាត់</span>
+                                    <span className="font-extrabold text-slate-700">
+                                      {rep.installmentIndex === -1 ? 'បង់តាមចិត្ត' : `វគ្គទី ${rep.installmentIndex + 1}`}
+                                    </span>
+                                  </div>
+                                  <div className="bg-white p-3 rounded-xl border border-slate-100">
+                                    <span className="text-[9px] text-slate-400 font-bold block mb-0.5">ទឹកប្រាក់វេរ</span>
+                                    <span className="font-black text-blue-600">{formatMoney(rep.amount, borrower.currency)}</span>
+                                  </div>
+                                </div>
+
+                                {rep.note && (
+                                  <div className="text-xs bg-white p-3 rounded-xl border border-slate-100 font-semibold text-slate-600 leading-relaxed">
+                                    <span className="text-[9px] text-slate-400 font-bold block mb-0.5">កំណត់ចំណាំកូនបំណុល៖</span>
+                                    "{rep.note}"
+                                  </div>
+                                )}
+
+                                {rep.receiptImage && (
+                                  <div className="space-y-1">
+                                    <span className="text-[9px] text-slate-400 font-bold block">រូបភាពវិក្កយបត្រ៖</span>
+                                    <div className="relative rounded-xl overflow-hidden border border-slate-200 aspect-[4/3] bg-white group max-w-xs cursor-zoom-in">
+                                      <img 
+                                        src={rep.receiptImage} 
+                                        alt="Receipt Attachment" 
+                                        className="w-full h-full object-contain"
+                                        onClick={() => {
+                                          const w = window.open();
+                                          if (w) {
+                                            w.document.write(`<img src="${rep.receiptImage}" style="max-width:100%; max-height:100vh; display:block; margin:auto; background:#1e293b;" />`);
+                                          }
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {rep.status === 'rejected' && rep.rejectedReason && (
+                                  <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-xs font-semibold text-rose-800 leading-relaxed">
+                                    <span className="text-[9px] uppercase tracking-wider block text-rose-600 mb-0.5 font-bold">មូលហេតុបដិសេធ</span>
+                                    {rep.rejectedReason}
+                                  </div>
+                                )}
+                              </div>
+
+                              {rep.status === 'pending' && (
+                                <div className="space-y-2 pt-2 border-t border-slate-200/50">
+                                  {rejectingReportId !== rep.id ? (
+                                    <div className="flex gap-2.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => setRejectingReportId(rep.id)}
+                                        className="flex-1 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-extrabold rounded-xl transition cursor-pointer"
+                                      >
+                                        ❌ បដិសេធ
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={handleApprove}
+                                        className="flex-1 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-extrabold rounded-xl shadow-sm transition cursor-pointer"
+                                      >
+                                        ✅ អនុម័តការបង់
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                      <input
+                                        type="text"
+                                        value={rejectReason}
+                                        onChange={(e) => setRejectReason(e.target.value)}
+                                        placeholder="បញ្ចូលមូលហេតុនៃការបដិសេធ..."
+                                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-rose-500"
+                                      />
+                                      <div className="flex gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setRejectingReportId(null);
+                                            setRejectReason('');
+                                          }}
+                                          className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition cursor-pointer"
+                                        >
+                                          បោះបង់
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={handleReject}
+                                          className="flex-1 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition cursor-pointer"
+                                        >
+                                          បញ្ជាក់បដិសេធ
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ) : detailTab === 'schedule' ? (
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                       {/* Column 2: Visual Installment Card / Box Checklist (7 cols) */}

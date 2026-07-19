@@ -3537,6 +3537,53 @@ export default function App() {
                 </div>
               )}
 
+              {/* Central KHQR Pending Receipts Notification Banner */}
+              {borrowers.some(b => Array.isArray(b.reportedPayments) && b.reportedPayments.some(r => r.status === 'pending')) && (() => {
+                const debtorsWithPending = borrowers.filter(b => Array.isArray(b.reportedPayments) && b.reportedPayments.some(r => r.status === 'pending'));
+                const totalPendingCount = debtorsWithPending.reduce((sum, b) => sum + b.reportedPayments!.filter(r => r.status === 'pending').length, 0);
+                
+                return (
+                  <div className="bg-gradient-to-r from-amber-500/10 via-amber-600/5 to-transparent border border-amber-500/20 rounded-3xl p-5 shadow-sm space-y-3.5 animate-in fade-in slide-in-from-top-3 duration-300">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center animate-pulse shrink-0">
+                          <Sparkles className="w-5 h-5 text-amber-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                            <span>{language === 'kh' ? 'សេចក្តីជូនដំណឹងអំពីការបង់ប្រាក់' : 'Repayment Verification Alert'}</span>
+                            <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full">
+                              {totalPendingCount} {language === 'kh' ? 'វិក្កយបត្រថ្មី' : 'New Receipt(s)'}
+                            </span>
+                          </h4>
+                          <p className="text-xs text-slate-400 font-bold mt-0.5">
+                            {language === 'kh' ? 'មានកូនបំណុលបានផ្ញើវិក្កយបត្រ KHQR មកបង។ សូមចុចលើឈ្មោះខាងក្រោមដើម្បីត្រួតពិនិត្យ និងអនុម័ត៖' : 'Debtors have submitted KHQR transfer receipts. Click a name to verify & approve:'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {debtorsWithPending.map((b) => (
+                        <button
+                          key={b.id}
+                          onClick={() => {
+                            playClickSound();
+                            setSelectedBorrowerId(b.id);
+                          }}
+                          className="bg-white hover:bg-amber-500 hover:text-slate-950 text-slate-700 border border-slate-200 hover:border-amber-400 rounded-2xl px-4 py-2 text-xs font-black transition-all cursor-pointer shadow-xs flex items-center gap-1.5 duration-150"
+                        >
+                          <span>👤 {b.name}</span>
+                          <span className="bg-slate-100 text-slate-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                            {b.reportedPayments!.filter(r => r.status === 'pending').length}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Dashboard Actions Bar */}
               <div id="dashboard-controls" className={`rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm border ${currentThemeConfig.cardClass}`}>
                 {/* Tab filters for mobile view (hidden on desktop) */}
