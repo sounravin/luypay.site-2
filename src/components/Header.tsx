@@ -50,6 +50,7 @@ export default function Header({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { t, language, setLanguage } = useLanguage();
   const [customHorizon, setCustomHorizon] = React.useState<number>(30);
+  const currentThemeConfig = THEMES[appTheme];
 
   const activeBorrowers = React.useMemo(() => {
     return (borrowers || []).filter(b => {
@@ -476,17 +477,17 @@ export default function Header({
         {/* Card 1: Active Borrowers */}
         <motion.div 
           whileHover={{ y: -4, scale: 1.01 }}
-          className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4 transition-all duration-200 hover:shadow-md"
+          className={`${currentThemeConfig.cardClass} p-5 rounded-2xl flex items-center gap-4 transition-all duration-200 hover:shadow-md`}
         >
-          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center shrink-0">
             <Users className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{t('statsActive')}</p>
-            <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">
+            <p className={`text-xs ${currentThemeConfig.textMuted} font-bold uppercase tracking-wider`}>{t('statsActive')}</p>
+            <h3 className={`text-xl font-extrabold ${currentThemeConfig.textTitle} mt-0.5`}>
               {stats.totalActiveLoansCount} <span className="text-xs font-normal text-slate-500">{t('personCount')}</span>
             </h3>
-            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+            <p className={`text-[10px] ${currentThemeConfig.textMuted} opacity-80 font-semibold mt-0.5`}>
               {stats.totalCompletedLoansCount} {t('statsCompleted')}
             </p>
           </div>
@@ -495,19 +496,19 @@ export default function Header({
         {/* Card 2: Total Principal */}
         <motion.div 
           whileHover={{ y: -4, scale: 1.01 }}
-          className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4 transition-all duration-200 hover:shadow-md"
+          className={`${currentThemeConfig.cardClass} p-5 rounded-2xl flex items-center gap-4 transition-all duration-200 hover:shadow-md`}
         >
-          <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 bg-amber-500/10 dark:bg-amber-500/20 text-amber-650 dark:text-amber-400 rounded-full flex items-center justify-center shrink-0">
             <DollarSign className="w-6 h-6" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{t('statsPrincipal')}</p>
+            <p className={`text-xs ${currentThemeConfig.textMuted} font-bold uppercase tracking-wider`}>{t('statsPrincipal')}</p>
             <div className="mt-1 space-y-0.5">
-              <div className="text-xs font-bold text-slate-800 flex justify-between">
+              <div className={`text-xs font-bold ${currentThemeConfig.textTitle} flex justify-between`}>
                 <span>USD:</span>
                 <span>{formatMoney(stats.totalPrincipalUSD, 'USD')}</span>
               </div>
-              <div className="text-xs font-bold text-slate-800 flex justify-between">
+              <div className={`text-xs font-bold ${currentThemeConfig.textTitle} flex justify-between`}>
                 <span>Riel:</span>
                 <span>{formatMoney(stats.totalPrincipalKHR, 'KHR')}</span>
               </div>
@@ -518,19 +519,19 @@ export default function Header({
         {/* Card 3: Total Collected */}
         <motion.div 
           whileHover={{ y: -4, scale: 1.01 }}
-          className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4 transition-all duration-200 hover:shadow-md"
+          className={`${currentThemeConfig.cardClass} p-5 rounded-2xl flex items-center gap-4 transition-all duration-200 hover:shadow-md`}
         >
-          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center shrink-0">
             <TrendingUp className="w-6 h-6" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{t('statsCollected')}</p>
+            <p className={`text-xs ${currentThemeConfig.textMuted} font-bold uppercase tracking-wider`}>{t('statsCollected')}</p>
             <div className="mt-1 space-y-0.5">
-              <div className="text-xs font-extrabold text-emerald-600 flex justify-between">
+              <div className="text-xs font-extrabold text-emerald-650 dark:text-emerald-400 flex justify-between">
                 <span>USD:</span>
                 <span>{formatMoney(stats.totalCollectedUSD, 'USD')}</span>
               </div>
-              <div className="text-xs font-extrabold text-emerald-600 flex justify-between">
+              <div className="text-xs font-extrabold text-emerald-650 dark:text-emerald-400 flex justify-between">
                 <span>Riel:</span>
                 <span>{formatMoney(stats.totalCollectedKHR, 'KHR')}</span>
               </div>
@@ -541,19 +542,19 @@ export default function Header({
         {/* Card 4: Total Remaining */}
         <motion.div 
           whileHover={{ y: -4, scale: 1.01 }}
-          className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-4 transition-all duration-200 hover:shadow-md"
+          className={`${currentThemeConfig.cardClass} p-5 rounded-2xl flex items-center gap-4 transition-all duration-200 hover:shadow-md`}
         >
-          <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-full flex items-center justify-center shrink-0">
             <Percent className="w-6 h-6" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">{t('statsRemaining')}</p>
+            <p className={`text-xs ${currentThemeConfig.textMuted} font-bold uppercase tracking-wider`}>{t('statsRemaining')}</p>
             <div className="mt-1 space-y-0.5">
-              <div className="text-xs font-extrabold text-rose-600 flex justify-between">
+              <div className="text-xs font-extrabold text-rose-600 dark:text-rose-400 flex justify-between">
                 <span>USD:</span>
                 <span>{formatMoney(stats.totalExpectedUSD - stats.totalCollectedUSD, 'USD')}</span>
               </div>
-              <div className="text-xs font-extrabold text-rose-600 flex justify-between">
+              <div className="text-xs font-extrabold text-rose-600 dark:text-rose-400 flex justify-between">
                 <span>Riel:</span>
                 <span>{formatMoney(stats.totalExpectedKHR - stats.totalCollectedKHR, 'KHR')}</span>
               </div>

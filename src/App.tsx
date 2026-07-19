@@ -9,7 +9,7 @@ import BorrowerPortal from './components/BorrowerPortal';
 import AdminMembersDashboard from './components/AdminMembersDashboard';
 import PricingPanel from './components/PricingPanel';
 import NotificationBell from './components/NotificationBell';
-import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode } from 'lucide-react';
+import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDoc } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import { useLanguage } from './i18n';
@@ -3234,14 +3234,14 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 min-h-screen p-4 sm:p-6 md:p-8 space-y-6 overflow-y-auto">
         {/* Mobile Header profile bar */}
-        <div className="md:hidden flex flex-col bg-slate-900 text-white p-4 rounded-2xl border border-slate-800 shadow-lg gap-4 relative z-40">
+        <div className={`md:hidden flex flex-col p-4 rounded-2xl border shadow-lg gap-4 relative z-40 ${currentThemeConfig.sidebarClass}`}>
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2.5 border-transparent">
               {memberProfile?.photoURL ? (
                 <img
                   src={memberProfile.photoURL}
                   alt={userDisplayName}
-                  className="w-11 h-11 rounded-xl object-cover border border-slate-700 shadow-md shrink-0"
+                  className="w-11 h-11 rounded-xl object-cover border border-white/20 shadow-md shrink-0"
                   referrerPolicy="no-referrer"
                 />
               ) : (
@@ -3255,7 +3255,7 @@ export default function App() {
                       href="https://www.facebook.com/share/1F4p12PfJx/?mibextid=wwXIfr"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 bg-slate-800 text-slate-300 hover:text-blue-500 rounded-lg hover:bg-slate-750 transition flex items-center justify-center shadow-3xs"
+                      className="p-1.5 bg-white/10 text-current hover:text-blue-400 rounded-lg hover:bg-white/20 transition flex items-center justify-center shadow-3xs"
                       title="Facebook Link"
                     >
                       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -3266,7 +3266,7 @@ export default function App() {
                       href="https://t.me/laymeancamera"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 bg-slate-800 text-slate-300 hover:text-sky-400 rounded-lg hover:bg-slate-750 transition flex items-center justify-center shadow-3xs"
+                      className="p-1.5 bg-white/10 text-current hover:text-sky-400 rounded-lg hover:bg-white/20 transition flex items-center justify-center shadow-3xs"
                       title="Telegram Link"
                     >
                       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -3275,7 +3275,7 @@ export default function App() {
                     </a>
                   </div>
                 </div>
-                <p className="text-[9px] text-slate-400 leading-none mt-0.5">{t('accountLabel')} {userDisplayName} ({currentUser})</p>
+                <p className="text-[9px] opacity-70 leading-none mt-1">{t('accountLabel')} {userDisplayName} ({currentUser})</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -3284,14 +3284,14 @@ export default function App() {
 
               <button
                 onClick={() => setIsSettingsOpen(true)}
-                className="p-2 bg-slate-850 hover:bg-slate-800 text-amber-400 hover:text-amber-300 rounded-xl transition cursor-pointer border-transparent"
+                className="p-2 bg-white/10 hover:bg-white/20 text-amber-400 hover:text-amber-300 rounded-xl transition cursor-pointer border-transparent"
                 title={language === 'kh' ? 'ការកំណត់ / Settings' : 'Settings'}
               >
                 <Key className="w-4 h-4" />
               </button>
               <button
                 onClick={handleLogout}
-                className="p-2 bg-slate-850 hover:bg-slate-800 active:bg-slate-900 text-rose-400 hover:text-rose-300 rounded-xl transition cursor-pointer border-transparent"
+                className="p-2 bg-white/10 hover:bg-white/20 active:bg-rose-500/10 text-rose-400 hover:text-rose-300 rounded-xl transition cursor-pointer border-transparent"
                 title={t('logoutBtnTitle')}
               >
                 <LogOut className="w-4 h-4" />
@@ -3300,17 +3300,17 @@ export default function App() {
           </div>
 
           {/* Mobile Nav buttons row */}
-          <div className="flex items-center gap-2 border-t border-slate-800/60 pt-2.5">
+          <div className="flex items-center gap-2 border-t border-white/10 pt-2.5">
             <button
               onClick={() => setActiveSection('ledger')}
-              className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${activeSection === 'ledger' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-850 text-slate-400 hover:text-white'}`}
+              className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${activeSection === 'ledger' ? `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md` : 'bg-white/10 text-current hover:text-white'}`}
             >
               <span>📝 បញ្ជីកម្ចី</span>
             </button>
             {currentUser === 'sounravin' ? (
               <button
                 onClick={() => setActiveSection('admin_dashboard')}
-                className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all relative cursor-pointer flex items-center justify-center gap-1.5 ${activeSection === 'admin_dashboard' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/10' : 'bg-slate-850 text-slate-400 hover:text-white'}`}
+                className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all relative cursor-pointer flex items-center justify-center gap-1.5 ${activeSection === 'admin_dashboard' ? `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md` : 'bg-white/10 text-current hover:text-white'}`}
               >
                 <span>📊 គ្រប់គ្រងប្រព័ន្ធ</span>
                 {subRequests.filter(r => r.status === 'pending').length > 0 && (
@@ -3323,7 +3323,7 @@ export default function App() {
               isMember && (
                 <button
                   onClick={() => setActiveSection('pricing')}
-                  className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${activeSection === 'pricing' ? 'bg-amber-600 text-white shadow-md shadow-amber-600/10' : 'bg-slate-850 text-slate-400 hover:text-white'}`}
+                  className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${activeSection === 'pricing' ? `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md` : 'bg-white/10 text-current hover:text-white'}`}
                 >
                   <span>💎 គម្រោងកម្មវិធី</span>
                 </button>
@@ -3538,30 +3538,30 @@ export default function App() {
               )}
 
               {/* Dashboard Actions Bar */}
-              <div id="dashboard-controls" className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+              <div id="dashboard-controls" className={`rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm border ${currentThemeConfig.cardClass}`}>
                 {/* Tab filters for mobile view (hidden on desktop) */}
                 <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto md:hidden">
                   <button
                     onClick={() => setFilterTab('active')}
-                    className={`px-3 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterTab === 'active' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                    className={`px-3 py-2 text-xs font-black rounded-xl transition cursor-pointer flex-1 text-center whitespace-nowrap ${filterTab === 'active' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : `${currentThemeConfig.textMuted} hover:bg-slate-800/10 dark:hover:bg-white/5`}`}
                   >
                     📝 {t('activeLoanLabel')} ({borrowers.filter(b => !b.isArchived && (Array.isArray(b.payments) ? b.payments.reduce((sum, p) => sum + (p?.amount || 0), 0) : 0) < b.totalToPay).length})
                   </button>
                   <button
                     onClick={() => setFilterTab('completed')}
-                    className={`px-3 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterTab === 'completed' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                    className={`px-3 py-2 text-xs font-black rounded-xl transition cursor-pointer flex-1 text-center whitespace-nowrap ${filterTab === 'completed' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md' : `${currentThemeConfig.textMuted} hover:bg-slate-800/10 dark:hover:bg-white/5`}`}
                   >
                     ✅ {t('completedLoanLabel')} ({borrowers.filter(b => !b.isArchived && (Array.isArray(b.payments) ? b.payments.reduce((sum, p) => sum + (p?.amount || 0), 0) : 0) >= b.totalToPay).length})
                   </button>
                   <button
                     onClick={() => setFilterTab('archived')}
-                    className={`px-3 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterTab === 'archived' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                    className={`px-3 py-2 text-xs font-black rounded-xl transition cursor-pointer flex-1 text-center whitespace-nowrap ${filterTab === 'archived' ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : `${currentThemeConfig.textMuted} hover:bg-slate-800/10 dark:hover:bg-white/5`}`}
                   >
                     📦 {t('archivedLoanLabel')} ({borrowers.filter(b => b.isArchived).length})
                   </button>
                   <button
                     onClick={() => setFilterTab('all')}
-                    className={`px-3 py-2 text-xs font-bold rounded-xl transition cursor-pointer ${filterTab === 'all' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                    className={`px-3 py-2 text-xs font-black rounded-xl transition cursor-pointer flex-1 text-center whitespace-nowrap ${filterTab === 'all' ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white shadow-md' : `${currentThemeConfig.textMuted} hover:bg-slate-800/10 dark:hover:bg-white/5`}`}
                   >
                     🔍 {t('allLoanLabel')} ({borrowers.length})
                   </button>
@@ -3569,7 +3569,7 @@ export default function App() {
 
                 {/* Search bar */}
                 <div className="relative w-full md:max-w-md">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                  <span className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${currentThemeConfig.textMuted}`}>
                     <Search className="w-4 h-4" />
                   </span>
                   <input
@@ -3577,21 +3577,21 @@ export default function App() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={t('searchPlaceholder')}
-                    className="w-full pl-10 pr-4 py-2.5 text-base md:text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-bold"
+                    className={`w-full pl-10 pr-4 py-2.5 text-base md:text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-bold ${currentThemeConfig.inputClass}`}
                   />
                 </div>
               </div>
 
               {/* Borrower standing sub-filters */}
-              <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-white border border-slate-200 rounded-2xl w-full sm:w-max shadow-sm">
-                <span className="text-[10px] font-extrabold text-slate-400 px-2.5 uppercase tracking-wider">{t('standingFilterLabel')}</span>
+              <div className={`flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl w-full sm:w-max shadow-sm border ${currentThemeConfig.cardClass}`}>
+                <span className={`text-[10px] font-extrabold ${currentThemeConfig.textMuted} px-2.5 uppercase tracking-wider`}>{t('standingFilterLabel')}</span>
                 <div className="flex flex-wrap gap-1">
                   <button
                     onClick={() => setStandingFilter('all')}
                     className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 ${
                       standingFilter === 'all'
-                        ? 'bg-slate-100 text-slate-800'
-                        : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                        ? 'bg-slate-500/10 dark:bg-white/10 text-slate-900 dark:text-white font-extrabold border border-slate-500/20'
+                        : `${currentThemeConfig.textMuted} hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/30`
                     }`}
                   >
                     🌟 {t('allLoanLabel')} ({borrowers.length})
@@ -3600,8 +3600,8 @@ export default function App() {
                     onClick={() => setStandingFilter('good')}
                     className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 ${
                       standingFilter === 'good'
-                        ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/20'
-                        : 'text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50'
+                        ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/20 font-extrabold'
+                        : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10'
                     }`}
                   >
                     🟢 {t('standingGood')} ({borrowers.filter(b => b.statusTag === 'good').length})
@@ -3610,8 +3610,8 @@ export default function App() {
                     onClick={() => setStandingFilter('regular')}
                     className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 ${
                       standingFilter === 'regular'
-                        ? 'bg-amber-500 text-white shadow-sm shadow-amber-500/20'
-                        : 'text-amber-700 hover:text-amber-900 hover:bg-amber-50'
+                        ? 'bg-amber-500 text-white shadow-sm shadow-amber-500/20 font-extrabold'
+                        : 'text-amber-600 dark:text-amber-400 hover:bg-amber-500/10'
                     }`}
                   >
                     🟡 {t('standingRegular')} ({borrowers.filter(b => b.statusTag === 'regular' || b.statusTag === undefined).length})
@@ -3620,8 +3620,8 @@ export default function App() {
                     onClick={() => setStandingFilter('late')}
                     className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 ${
                       standingFilter === 'late'
-                        ? 'bg-rose-500 text-rose-700 border border-rose-200 shadow-sm shadow-rose-500/10'
-                        : 'text-rose-700 hover:text-rose-900 hover:bg-rose-50'
+                        ? 'bg-rose-500 text-white shadow-sm shadow-rose-500/20 font-extrabold'
+                        : 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/10'
                     }`}
                   >
                     🔴 {t('standingLate')} ({borrowers.filter(b => b.statusTag === 'late').length})
@@ -3630,8 +3630,8 @@ export default function App() {
                     onClick={() => setStandingFilter('dueSoon')}
                     className={`px-3 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 ${
                       standingFilter === 'dueSoon'
-                        ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/20'
-                        : 'text-amber-700 hover:text-amber-900 hover:bg-amber-50'
+                        ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/20 font-extrabold'
+                        : 'text-amber-600 dark:text-amber-400 hover:bg-amber-600/10'
                     }`}
                   >
                     ⏰ {t('standingDueSoon')} ({borrowers.filter(b => {
