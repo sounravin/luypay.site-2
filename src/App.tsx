@@ -3279,7 +3279,7 @@ export default function App() {
             </div>
           )}
 
-          <div className="flex items-center justify-between w-full relative z-10">
+          <div className="flex items-center justify-between w-full relative z-30">
             <div className="flex items-center gap-2.5 border-transparent">
               {memberProfile?.photoURL ? (
                 <img

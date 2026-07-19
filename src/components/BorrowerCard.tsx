@@ -83,22 +83,28 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
       )}
 
       {/* Dynamic Top-Left Badge requested by user */}
-      {isSelected && (
+      {isCompleted ? (
+        <div className={`absolute top-1.5 left-1.5 z-10 text-white text-[10px] font-black px-2.5 py-0.5 rounded-md shadow-md flex items-center gap-1 transition-all duration-300 ${
+          isSelected
+            ? 'bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 border border-amber-400 ring-2 ring-emerald-500/30'
+            : 'bg-gradient-to-r from-teal-600 to-emerald-600 border border-teal-400/40'
+        }`}>
+          <CheckCircle className={`w-3.5 h-3.5 stroke-[3] ${isSelected ? 'text-amber-300 animate-pulse' : 'text-teal-200'}`} />
+          <span>{useLanguage().language === 'kh' ? 'បង់រួច' : 'Paid'}</span>
+          {isSelected && (
+            <span className="text-[8px] bg-white/20 px-1 rounded text-white ml-0.5">
+              ✓
+            </span>
+          )}
+        </div>
+      ) : isSelected ? (
         <div className="absolute top-1.5 left-1.5 z-10 bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow-md border border-emerald-400/40 flex items-center gap-1 animate-in fade-in zoom-in duration-150">
           <Check className="w-2.5 h-2.5 stroke-[4]" />
           <span>
-            {useLanguage().language === 'kh' 
-              ? `បានជ្រើសរើស${isCompleted ? ' (បង់រួច)' : ''}` 
-              : `Selected${isCompleted ? ' (Paid)' : ''}`}
+            {useLanguage().language === 'kh' ? 'បានជ្រើសរើស' : 'Selected'}
           </span>
         </div>
-      )}
-      {!isSelected && isCompleted && (
-        <div className="absolute top-1.5 left-1.5 z-10 bg-teal-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow-md border border-teal-400/40 flex items-center gap-1">
-          <CheckCircle className="w-2.5 h-2.5" />
-          <span>{useLanguage().language === 'kh' ? 'បង់រួច' : 'Paid'}</span>
-        </div>
-      )}
+      ) : null}
 
       {/* Top Header Row */}
       <div className="flex items-start gap-3 justify-between">
