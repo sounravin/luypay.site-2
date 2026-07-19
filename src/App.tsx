@@ -251,54 +251,62 @@ export default function App() {
   // Real-time dynamic favicon generator based on logoConfig
   useEffect(() => {
     try {
-      const canvas = document.createElement('canvas');
-      canvas.width = 128;
-      canvas.height = 128;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
       const bgColor = logoConfig.logoBgColor || '#2563EB';
       const textColor = logoConfig.logoTextColor || '#FFFFFF';
       const logoText = logoConfig.logoText || '៚';
 
       const updateFavicon = (url: string) => {
-        let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-        if (!link) {
-          link = document.createElement('link');
-          link.rel = 'icon';
-          document.head.appendChild(link);
+        try {
+          let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+          }
+          link.href = url;
+        } catch (err) {
+          console.warn('Failed to update favicon link href:', err);
         }
-        link.href = url;
       };
 
       const drawTextFavicon = () => {
-        ctx.clearRect(0, 0, 128, 128);
-        
-        // Draw beautiful rounded square background
-        ctx.fillStyle = bgColor;
-        if (typeof ctx.roundRect === 'function') {
-          ctx.beginPath();
-          ctx.roundRect(0, 0, 128, 128, 32);
-          ctx.fill();
-        } else {
-          ctx.fillRect(0, 0, 128, 128);
+        try {
+          const textCanvas = document.createElement('canvas');
+          textCanvas.width = 128;
+          textCanvas.height = 128;
+          const textCtx = textCanvas.getContext('2d');
+          if (!textCtx) return;
+
+          textCtx.clearRect(0, 0, 128, 128);
+          
+          // Draw beautiful rounded square background
+          textCtx.fillStyle = bgColor;
+          if (typeof textCtx.roundRect === 'function') {
+            textCtx.beginPath();
+            textCtx.roundRect(0, 0, 128, 128, 32);
+            textCtx.fill();
+          } else {
+            textCtx.fillRect(0, 0, 128, 128);
+          }
+
+          // Draw text
+          textCtx.fillStyle = textColor;
+          textCtx.textAlign = 'center';
+          textCtx.textBaseline = 'middle';
+          
+          // Adjust font size based on text length to avoid overflow
+          const textLen = logoText.length;
+          let fontSize = 76;
+          if (textLen > 2) fontSize = 48;
+          if (textLen > 4) fontSize = 32;
+
+          textCtx.font = `bold ${fontSize}px "Inter", "Hanuman", "Khmer OS Battambang", sans-serif`;
+          textCtx.fillText(logoText, 64, 64);
+
+          updateFavicon(textCanvas.toDataURL('image/png'));
+        } catch (err) {
+          console.warn('Failed to draw text favicon:', err);
         }
-
-        // Draw text
-        ctx.fillStyle = textColor;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        // Adjust font size based on text length to avoid overflow
-        const textLen = logoText.length;
-        let fontSize = 76;
-        if (textLen > 2) fontSize = 48;
-        if (textLen > 4) fontSize = 32;
-
-        ctx.font = `bold ${fontSize}px "Inter", "Hanuman", "Khmer OS Battambang", sans-serif`;
-        ctx.fillText(logoText, 64, 64);
-
-        updateFavicon(canvas.toDataURL('image/png'));
       };
 
       if (logoConfig.logoType === 'image' && logoConfig.logoImageUrl) {
@@ -307,21 +315,30 @@ export default function App() {
         img.src = logoConfig.logoImageUrl;
         img.onload = () => {
           try {
-            ctx.clearRect(0, 0, 128, 128);
+            const imgCanvas = document.createElement('canvas');
+            imgCanvas.width = 128;
+            imgCanvas.height = 128;
+            const imgCtx = imgCanvas.getContext('2d');
+            if (!imgCtx) {
+              drawTextFavicon();
+              return;
+            }
+
+            imgCtx.clearRect(0, 0, 128, 128);
             
             // Draw a rounded rectangle clipping path for image
-            ctx.beginPath();
-            if (typeof ctx.roundRect === 'function') {
-              ctx.roundRect(0, 0, 128, 128, 32);
+            imgCtx.beginPath();
+            if (typeof imgCtx.roundRect === 'function') {
+              imgCtx.roundRect(0, 0, 128, 128, 32);
             } else {
-              ctx.rect(0, 0, 128, 128);
+              imgCtx.rect(0, 0, 128, 128);
             }
-            ctx.clip();
+            imgCtx.clip();
             
-            ctx.drawImage(img, 0, 0, 128, 128);
-            updateFavicon(canvas.toDataURL('image/png'));
+            imgCtx.drawImage(img, 0, 0, 128, 128);
+            updateFavicon(imgCanvas.toDataURL('image/png'));
           } catch (e) {
-            // Fallback if drawing/clipping fails
+            // Fallback if drawing/clipping/toDataURL fails (e.g. CORS SecurityError)
             drawTextFavicon();
           }
         };
