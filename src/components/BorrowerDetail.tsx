@@ -18,6 +18,7 @@ interface BorrowerDetailProps {
   onUpdateStatus: (borrowerId: string, newStatus: 'good' | 'late' | 'regular') => void;
   onToggleAutoCheckIn?: (borrowerId: string) => void;
   onEditBorrower?: (borrowerId: string, updatedFields: Partial<Borrower>) => void;
+  onShowPaymentQr?: (borrower: Borrower) => void;
 }
 
 export default function BorrowerDetail({
@@ -30,6 +31,7 @@ export default function BorrowerDetail({
   onUpdateStatus,
   onToggleAutoCheckIn,
   onEditBorrower,
+  onShowPaymentQr,
 }: BorrowerDetailProps) {
   const { t, language } = useLanguage();
   const payments = Array.isArray(borrower.payments) ? borrower.payments : [];
@@ -562,6 +564,20 @@ export default function BorrowerDetail({
                   <MessageSquare className="w-4 h-4 shrink-0" />
                   <span className="truncate">{language === 'kh' ? 'ផ្ញើសាររំលឹក & តំណសងប្រាក់' : 'Send Reminder & Link'}</span>
                 </motion.button>
+
+                {/* Show QR Code button */}
+                {onShowPaymentQr && (
+                  <motion.button
+                    id="toolbar-show-qr-btn"
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => onShowPaymentQr(borrower)}
+                    className="px-3.5 py-2.5 text-xs font-black rounded-xl border border-transparent bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md shadow-amber-500/10 flex items-center justify-center gap-1.5 transition-all cursor-pointer w-full sm:w-auto sm:order-2"
+                  >
+                    <QrCode className="w-4 h-4 shrink-0 text-amber-100" />
+                    <span>{language === 'kh' ? 'បង្ហាញ QR សម្រាប់បង់លុយ' : 'Show Payment QR'}</span>
+                  </motion.button>
+                )}
 
                 {/* Edit button */}
                 <motion.button

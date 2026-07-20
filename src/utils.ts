@@ -219,3 +219,34 @@ export function getDaysUntilNextPayment(borrower: Borrower): number | null {
   }
 }
 
+export function backfillShortIds(borrowersList: Borrower[]): { list: Borrower[]; hasChanges: boolean } {
+  let hasChanges = false;
+  const prefix = 'KH-';
+  
+  // Find maximum existing number
+  let maxNum = 1000;
+  (borrowersList || []).forEach(b => {
+    if (b && b.shortId) {
+      const match = b.shortId.match(/KH-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    }
+  });
+
+  const listWithIds = (borrowersList || []).map(b => {
+    if (b && !b.shortId) {
+      maxNum += 1;
+      hasChanges = true;
+      return { ...b, shortId: `${prefix}${maxNum}` };
+    }
+    return b;
+  });
+
+  return { list: listWithIds, hasChanges };
+}
+
+

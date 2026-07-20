@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Borrower } from '../types';
 import { formatMoney, formatKhmerDate } from '../utils';
-import { Calendar, Phone, CheckCircle, Clock, Check } from 'lucide-react';
+import { Calendar, Phone, CheckCircle, Clock, Check, QrCode } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import AvatarWithFrame from './AvatarWithFrame';
 import { motion } from 'motion/react';
@@ -12,6 +12,7 @@ interface BorrowerCardProps {
   borrower: Borrower;
   onSelect: (borrower: Borrower) => void;
   onQuickPay: (borrowerId: string) => void;
+  onShowPaymentQr?: (borrower: Borrower) => void;
   isSelected?: boolean;
   onToggleSelect?: (borrowerId: string) => void;
   buttonStyle?: ButtonStyleType;
@@ -23,13 +24,14 @@ export default function BorrowerCard({
   borrower, 
   onSelect, 
   onQuickPay, 
+  onShowPaymentQr,
   isSelected = false, 
   onToggleSelect, 
   buttonStyle = 'kbach',
   appTheme = 'slate',
   isDark = false
 }: BorrowerCardProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // 10-second ticker to keep cards status up to date in real-time
   const [tick, setTick] = useState<number>(0);
@@ -182,7 +184,7 @@ export default function BorrowerCard({
             : 'bg-gradient-to-r from-teal-600 to-emerald-600 border border-teal-400/40'
         }`}>
           <CheckCircle className={`w-3.5 h-3.5 stroke-[3] ${isSelected ? 'text-amber-300 animate-pulse' : 'text-teal-200'}`} />
-          <span>{useLanguage().language === 'kh' ? 'បង់រួច' : 'Paid'}</span>
+          <span>{language === 'kh' ? 'បង់រួច' : 'Paid'}</span>
           {isSelected && (
             <span className="text-[8px] bg-white/20 px-1 rounded text-white ml-0.5">
               ✓
@@ -193,7 +195,7 @@ export default function BorrowerCard({
         <div className="absolute top-1.5 left-1.5 z-10 bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow-md border border-emerald-400/40 flex items-center gap-1 animate-in fade-in zoom-in duration-150">
           <Check className="w-2.5 h-2.5 stroke-[4]" />
           <span>
-            {useLanguage().language === 'kh' ? 'បានជ្រើសរើស' : 'Selected'}
+            {language === 'kh' ? 'បានជ្រើសរើស' : 'Selected'}
           </span>
         </div>
       ) : null}
@@ -228,7 +230,7 @@ export default function BorrowerCard({
             {isOnline && (
               <span 
                 className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-sm animate-pulse z-10" 
-                title={useLanguage().language === 'kh' ? 'កំពុងអនឡាញ (Online)' : 'Online Now'} 
+                title={language === 'kh' ? 'កំពុងអនឡាញ (Online)' : 'Online Now'} 
               />
             )}
           </div>
@@ -237,9 +239,14 @@ export default function BorrowerCard({
               <h3 className={`font-bold text-base leading-tight ${themeConfig.textTitle}`}>
                 {borrower.name}
               </h3>
+              {borrower.shortId && (
+                <span className="inline-flex items-center text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 uppercase tracking-wider font-mono shadow-xs">
+                  {borrower.shortId}
+                </span>
+              )}
               {isOnline && (
                 <span className="inline-flex items-center text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500 text-white border border-emerald-600 shadow-xs animate-pulse">
-                  🟢 {useLanguage().language === 'kh' ? 'អនឡាញ' : 'Online'}
+                  🟢 {language === 'kh' ? 'អនឡាញ' : 'Online'}
                 </span>
               )}
               {borrower.statusTag && (
@@ -259,12 +266,12 @@ export default function BorrowerCard({
               )}
               {borrower.interestOnlyExtension && (
                 <span className="inline-flex items-center text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-500 text-white border border-amber-600 animate-pulse" title="កូនបំណុលសងការបន្តរ">
-                  ⚠️ {useLanguage().language === 'kh' ? 'កូនបំណុលសងការបន្តរ' : 'Paying Interest Only'}
+                  ⚠️ {language === 'kh' ? 'កូនបំណុលសងការបន្តរ' : 'Paying Interest Only'}
                 </span>
               )}
               {borrower.topUpLoanAmount !== undefined && borrower.topUpLoanAmount > 0 && (
                 <span className="inline-flex items-center text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-600 text-white border border-indigo-700 shadow-sm shadow-indigo-600/25" title="កម្ចីបន្ថែម">
-                  💸 {useLanguage().language === 'kh' ? `ថែម៖ ${formatMoney(borrower.topUpLoanAmount, borrower.currency)}` : `Top-up: ${formatMoney(borrower.topUpLoanAmount, borrower.currency)}`}
+                  💸 {language === 'kh' ? `ថែម៖ ${formatMoney(borrower.topUpLoanAmount, borrower.currency)}` : `Top-up: ${formatMoney(borrower.topUpLoanAmount, borrower.currency)}`}
                 </span>
               )}
             </div>
@@ -379,17 +386,35 @@ export default function BorrowerCard({
         
         {/* Quick payment check button */}
         {!isCompleted ? (
-          <motion.button
-            id={`quick-pay-btn-${borrower.id}`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleQuickPayClick}
-            className={`${getButtonStyleClass(buttonStyle, 'primary')} px-3 py-1 text-xs flex items-center gap-1.5 shadow-sm`}
-            title={t('quickPay')}
-          >
-            <Check className="w-3 h-3 stroke-[3]" />
-            <span>{t('quickPay')}</span>
-          </motion.button>
+          <div className="flex items-center gap-1.5">
+            {onShowPaymentQr && (
+              <motion.button
+                id={`qr-code-btn-${borrower.id}`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShowPaymentQr(borrower);
+                }}
+                className="px-2 py-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-sm shadow-amber-500/10 cursor-pointer"
+                title={language === 'kh' ? 'បង្ហាញ QR សម្រាប់បង់លុយ' : 'Show Payment QR Code'}
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                <span>{language === 'kh' ? 'បង្ហាញ QR' : 'QR'}</span>
+              </motion.button>
+            )}
+            <motion.button
+              id={`quick-pay-btn-${borrower.id}`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleQuickPayClick}
+              className={`${getButtonStyleClass(buttonStyle, 'primary')} px-2.5 py-1 text-xs flex items-center gap-1.5 shadow-sm`}
+              title={t('quickPay')}
+            >
+              <Check className="w-3.5 h-3.5 stroke-[3]" />
+              <span>{t('quickPay')}</span>
+            </motion.button>
+          </div>
         ) : (
           <span className={`font-semibold flex items-center gap-1 ${themeConfig.textMuted}`}>
             {t('totalLabel')} <strong className={themeConfig.textTitle}>{formatMoney(borrower.totalToPay, borrower.currency)}</strong>

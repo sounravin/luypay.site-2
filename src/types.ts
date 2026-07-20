@@ -22,6 +22,7 @@ export interface ReportedPayment {
 
 export interface Borrower {
   id: string;
+  shortId?: string;
   name: string;
   phone: string;
   loanDate: string;

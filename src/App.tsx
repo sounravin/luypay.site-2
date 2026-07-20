@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest } from './types';
-import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound } from './utils';
+import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound, backfillShortIds, formatMoney } from './utils';
 import Header from './components/Header';
 import BorrowerCard from './components/BorrowerCard';
 import BorrowerDetail from './components/BorrowerDetail';
@@ -178,6 +178,192 @@ export default function App() {
     sponsorTitle: '',
     sponsorEnabled: true
   });
+
+  // Telegram Bot integration for auto payment verification
+  const [telegramToken, setTelegramToken] = useState<string>(() => {
+    return safeStorage.getItem('luypay_telegram_token') || '8920488272:AAFyrpT0OG7Z27s9z5P9Wv9Q5RG7Ud094ms';
+  });
+  const [telegramPollingEnabled, setTelegramPollingEnabled] = useState<boolean>(() => {
+    const saved = safeStorage.getItem('luypay_telegram_polling_enabled');
+    return saved === null ? true : saved === 'true';
+  });
+  const [telegramOffset, setTelegramOffset] = useState<number>(() => {
+    return parseInt(safeStorage.getItem('luypay_telegram_offset') || '0', 10);
+  });
+  const [telegramLogs, setTelegramLogs] = useState<any[]>(() => {
+    try {
+      const stored = safeStorage.getItem('luypay_telegram_logs');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Background polling for Telegram Bot messages
+  useEffect(() => {
+    if (!telegramPollingEnabled || !telegramToken) return;
+
+    let isSubscribed = true;
+    let timerId: any = null;
+
+    const pollTelegram = async () => {
+      try {
+        const url = `https://api.telegram.org/bot${telegramToken}/getUpdates?offset=${telegramOffset}&timeout=5`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`Telegram Bot API error: ${res.statusText}`);
+        }
+        const data = await res.json();
+        if (!isSubscribed) return;
+
+        if (data.ok && Array.isArray(data.result) && data.result.length > 0) {
+          let highestUpdateId = telegramOffset;
+          let newPaymentsRegistered = false;
+          const updatedLogs = [...telegramLogs];
+
+          // We'll collect the operations to perform
+          let currentBorrowersState = [...borrowers];
+
+          for (const update of data.result) {
+            highestUpdateId = Math.max(highestUpdateId, update.update_id + 1);
+
+            // Extract text from standard message, channel post, edited message, etc.
+            const msgObj = update.message || update.channel_post || update.edited_message;
+            if (!msgObj) continue;
+
+            const text = msgObj.text || msgObj.caption || '';
+            const dateStr = msgObj.date ? new Date(msgObj.date * 1000).toLocaleString() : new Date().toLocaleString();
+
+            if (!text) continue;
+
+            // Look for borrower code matching KH-XXXX (case-insensitive)
+            const regex = /(KH-\d+)/gi;
+            const matches = text.match(regex);
+
+            if (matches && matches.length > 0) {
+              const matchedId = matches[0].toUpperCase();
+              
+              // Find the borrower
+              const borrowerIdx = currentBorrowersState.findIndex(
+                b => b.shortId && b.shortId.toUpperCase() === matchedId
+              );
+
+              if (borrowerIdx !== -1) {
+                const borrower = currentBorrowersState[borrowerIdx];
+                
+                // Ensure we don't register duplicate payment for same Telegram message
+                const hasDuplicate = (borrower.payments || []).some(
+                  p => p && p.note && p.note.includes(`Telegram Update ID: ${update.update_id}`)
+                );
+
+                if (!hasDuplicate) {
+                  // Calculate the first unpaid slot
+                  const bPayments = Array.isArray(borrower.payments) ? borrower.payments : [];
+                  const paidSlots = bPayments.map(p => p?.installmentIndex);
+                  let nextUnpaidSlot = -1;
+                  for (let i = 0; i < borrower.duration; i++) {
+                    if (!paidSlots.includes(i)) {
+                      nextUnpaidSlot = i;
+                      break;
+                    }
+                  }
+
+                  if (nextUnpaidSlot !== -1) {
+                    const newPayment = {
+                      id: `tg-${update.update_id}-${generateId()}`,
+                      date: getTodayDateString(),
+                      amount: borrower.installmentAmount,
+                      installmentIndex: nextUnpaidSlot,
+                      note: `Telegram Auto Sync (សារ Telegram Update ID: ${update.update_id})`
+                    };
+
+                    const updatedBorrower = {
+                      ...borrower,
+                      payments: [...bPayments, newPayment]
+                    };
+
+                    currentBorrowersState[borrowerIdx] = updatedBorrower;
+                    newPaymentsRegistered = true;
+
+                    // Play success chime
+                    playClickSound();
+
+                    // Log success
+                    updatedLogs.unshift({
+                      id: `${update.update_id}`,
+                      time: dateStr,
+                      message: `បានទូទាត់ស្វ័យប្រវត្ត $${borrower.installmentAmount} សម្រាប់ ${matchedId} (${borrower.name})!`,
+                      status: 'success',
+                      details: text
+                    });
+
+                    showToast(`ទូទាត់ស្វ័យប្រវត្ត $${borrower.installmentAmount} សម្រាប់ ${borrower.name} (${matchedId}) ជោគជ័យ!`, 'success');
+                  } else {
+                    // Already fully paid
+                    updatedLogs.unshift({
+                      id: `${update.update_id}`,
+                      time: dateStr,
+                      message: `រកឃើញ ID ${matchedId} តែបានសងគ្រប់វគ្គរួចរាល់ហើយ`,
+                      status: 'ignored',
+                      details: text
+                    });
+                  }
+                }
+              } else {
+                // Borrower not found in active state
+                updatedLogs.unshift({
+                  id: `${update.update_id}`,
+                  time: dateStr,
+                  message: `រកឃើញ ID ${matchedId} តែគ្មានកូនបំណុលនេះក្នុងប្រព័ន្ធទេ`,
+                  status: 'ignored',
+                  details: text
+                });
+              }
+            } else {
+              // Message does not contain any borrower code
+              // Limit ignored logs to prevent database bloating
+              if (updatedLogs.filter(l => l.status === 'ignored').length < 15) {
+                updatedLogs.unshift({
+                  id: `${update.update_id}`,
+                  time: dateStr,
+                  message: `គ្មានលេខកូដកូនបំណុល (KH-xxxx)`,
+                  status: 'ignored',
+                  details: text.length > 60 ? text.substring(0, 60) + '...' : text
+                });
+              }
+            }
+          }
+
+          // Limit logs count to 50
+          const finalLogs = updatedLogs.slice(0, 50);
+          setTelegramLogs(finalLogs);
+          safeStorage.setItem('luypay_telegram_logs', JSON.stringify(finalLogs));
+
+          setTelegramOffset(highestUpdateId);
+          safeStorage.setItem('luypay_telegram_offset', String(highestUpdateId));
+
+          if (newPaymentsRegistered) {
+            saveBorrowers(currentBorrowersState);
+          }
+        }
+      } catch (err: any) {
+        console.error('Telegram Polling error:', err);
+      }
+
+      // Schedule next poll
+      if (isSubscribed) {
+        timerId = setTimeout(pollTelegram, 10000);
+      }
+    };
+
+    // First poll
+    timerId = setTimeout(pollTelegram, 2000);
+
+    return () => {
+      isSubscribed = false;
+      if (timerId) clearTimeout(timerId);
+    };
+  }, [telegramPollingEnabled, telegramToken, telegramOffset, borrowers]);
 
   useEffect(() => {
     const unsubscribeQR = onSnapshot(doc(db, 'settings', 'qr_config'), (docSnap) => {
@@ -432,6 +618,7 @@ export default function App() {
     return safeStorage.getItem('luypay_enable_animations') !== 'false';
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [qrBorrower, setQrBorrower] = useState<Borrower | null>(null);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
   useEffect(() => {
@@ -1345,6 +1532,15 @@ export default function App() {
     }
   };
 
+  // Automatically backfill any missing short IDs for loaded borrowers
+  useEffect(() => {
+    if (borrowers.length === 0) return;
+    const { list, hasChanges } = backfillShortIds(borrowers);
+    if (hasChanges) {
+      saveBorrowers(list);
+    }
+  }, [borrowers]);
+
   // Toast notification system
   const showToast = (message: string, type: 'success' | 'info' = 'success') => {
     setNotification({ message, type });
@@ -1414,9 +1610,25 @@ export default function App() {
 
   // Actions
   const handleAddNewBorrower = (data: Omit<Borrower, 'id' | 'payments' | 'isArchived'>) => {
+    // Generate sequential unique short ID
+    const prefix = 'KH-';
+    let nextNum = 1001;
+    (borrowers || []).forEach(b => {
+      if (b && b.shortId) {
+        const match = b.shortId.match(/KH-(\d+)/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num >= nextNum) {
+            nextNum = num + 1;
+          }
+        }
+      }
+    });
+
     const newBorrower: Borrower = {
       ...data,
       id: 'b-' + generateId(),
+      shortId: `${prefix}${nextNum}`,
       payments: [],
       isArchived: false,
       applicationId: prefilledData?.applicationId || undefined,
@@ -1425,7 +1637,7 @@ export default function App() {
     saveBorrowers(newList);
     setIsAddModalOpen(false);
     setPrefilledData(null);
-    showToast(`បានបន្ថែមអ្នកខ្ចីថ្មី "${data.name}" ដោយជោគជ័យ!`);
+    showToast(`បានបន្ថែមអ្នកខ្ចីថ្មី "${data.name}" (ID: ${newBorrower.shortId}) ដោយជោគជ័យ!`);
   };
 
   const handleSelectBorrower = (borrower: Borrower) => {
@@ -4022,6 +4234,7 @@ export default function App() {
                       borrower={b}
                       onSelect={handleSelectBorrower}
                       onQuickPay={handleQuickPay}
+                      onShowPaymentQr={setQrBorrower}
                       isSelected={selectedBorrowerIds.includes(b.id)}
                       onToggleSelect={handleToggleSelectBorrower}
                       buttonStyle={buttonStyle}
@@ -4073,6 +4286,7 @@ export default function App() {
             onUpdateStatus={handleUpdateBorrowerStatus}
             onToggleAutoCheckIn={handleToggleAutoCheckIn}
             onEditBorrower={handleEditBorrower}
+            onShowPaymentQr={setQrBorrower}
           />
         )}
       </AnimatePresence>
@@ -4421,6 +4635,111 @@ export default function App() {
                   </button>
                 </div>
               </div>
+
+              {/* Telegram Bot Integration Section */}
+              <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                  <span className="text-base leading-none">🤖</span>
+                  <span>{language === 'kh' ? 'ការតភ្ជាប់ Telegram Bot (ABA Merchant)' : 'Telegram Bot API Integration'}</span>
+                </h4>
+                
+                <div className="bg-slate-50 dark:bg-slate-850 p-4.5 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
+                  <p className="text-[10px] text-slate-500 font-bold leading-relaxed">
+                    {language === 'kh' 
+                      ? 'បញ្ចូល Bot Token របស់អ្នក ដើម្បីឱ្យប្រព័ន្ធឆែកការបង់លុយពី ABA Merchant Group automatically តាមរយៈ Unique ID (KH-xxxx)។' 
+                      : 'Enter your Telegram Bot Token to automatically monitor and auto-approve payments matching Unique IDs (KH-xxxx).'}
+                  </p>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {language === 'kh' ? 'លេខកូដ Bot Token' : 'Telegram Bot Token'}
+                    </label>
+                    <input
+                      type="text"
+                      value={telegramToken}
+                      onChange={(e) => {
+                        const token = e.target.value.trim();
+                        setTelegramToken(token);
+                        safeStorage.setItem('luypay_telegram_token', token);
+                      }}
+                      placeholder="8920488272:AAFyrp..."
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs font-extrabold text-slate-600 dark:text-slate-400">
+                      {language === 'kh' ? 'ស្ថានភាពដំណើរការ' : 'Service Status'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextState = !telegramPollingEnabled;
+                        setTelegramPollingEnabled(nextState);
+                        safeStorage.setItem('luypay_telegram_polling_enabled', nextState ? 'true' : 'false');
+                        showToast(nextState ? 'បានបើកសេវាកម្មត្រួតពិនិត្យ Telegram!' : 'បានបិទសេវាកម្មត្រួតពិនិត្យ Telegram!', 'info');
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition ${
+                        telegramPollingEnabled 
+                          ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-300' 
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                      }`}
+                    >
+                      {telegramPollingEnabled ? (language === 'kh' ? '● កំពុងដំណើរការ (ON)' : 'Active (ON)') : (language === 'kh' ? '● ផ្អាកដំណើរការ (OFF)' : 'Paused (OFF)')}
+                    </button>
+                  </div>
+
+                  {/* Telegram logs */}
+                  <div className="pt-2 border-t border-slate-200/50 dark:border-slate-800/60">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                        {language === 'kh' ? 'របាយការណ៍បាញ់លុយចុងក្រោយ' : 'Recent Transaction Logs'}
+                      </span>
+                      {telegramLogs.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTelegramLogs([]);
+                            safeStorage.setItem('luypay_telegram_logs', JSON.stringify([]));
+                          }}
+                          className="text-[9px] font-extrabold text-rose-500 hover:underline cursor-pointer"
+                        >
+                          {language === 'kh' ? 'សម្អាត' : 'Clear'}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="max-h-32 overflow-y-auto space-y-1.5 scrollbar-thin">
+                      {telegramLogs.length === 0 ? (
+                        <div className="text-center py-4 text-[10px] text-slate-400 font-bold bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                          {language === 'kh' ? 'មិនទាន់មានទិន្នន័យ (រង់ចាំការបាញ់លុយ)' : 'No recent transactions logged yet.'}
+                        </div>
+                      ) : (
+                        telegramLogs.map((log, index) => (
+                          <div 
+                            key={index} 
+                            className={`p-2 rounded-xl text-[10px] border flex flex-col gap-0.5 ${
+                              log.status === 'success' 
+                                ? 'bg-emerald-500/5 border-emerald-200/40 text-emerald-800 dark:text-emerald-400' 
+                                : 'bg-slate-500/5 border-slate-200/40 text-slate-600 dark:text-slate-400'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between font-extrabold">
+                              <span>{log.message}</span>
+                              <span className="text-[8px] opacity-70">{log.time.split(',')[1] || log.time}</span>
+                            </div>
+                            {log.details && (
+                              <p className="text-[9px] opacity-80 bg-black/5 dark:bg-white/5 p-1 rounded font-mono break-all line-clamp-1">
+                                {log.details}
+                              </p>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Modal Footer */}
@@ -4429,6 +4748,166 @@ export default function App() {
                 type="button"
                 onClick={() => setIsSettingsOpen(false)}
                 className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-850 text-white text-xs font-extrabold rounded-xl shadow-md transition cursor-pointer border-transparent"
+              >
+                {language === 'kh' ? 'រួចរាល់' : 'Done'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Borrower Specific Payment QR Modal */}
+      {qrBorrower && (
+        <div id="payment-qr-modal" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-250 text-slate-800 dark:text-slate-100">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850">
+              <div className="flex items-center gap-2">
+                <QrCode className="w-5 h-5 text-amber-500" />
+                <h3 className="font-extrabold text-base">
+                  {language === 'kh' ? 'QR Code សម្រាប់បង់លុយ' : 'Payment QR Code'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setQrBorrower(null)}
+                className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition text-slate-500 dark:text-slate-400 border-transparent cursor-pointer"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-5 overflow-y-auto max-h-[75vh] flex flex-col items-center">
+              {/* Borrower Info Row */}
+              <div className="text-center space-y-1 w-full">
+                <h4 className="text-lg font-black text-slate-900 dark:text-white">
+                  {qrBorrower.name}
+                </h4>
+                <div className="flex items-center justify-center gap-2 text-xs text-slate-500 font-bold">
+                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded font-mono uppercase">
+                    {qrBorrower.shortId || 'KH-XXXX'}
+                  </span>
+                  {qrBorrower.phone && <span>• {qrBorrower.phone}</span>}
+                </div>
+              </div>
+
+              {/* QR Image Display */}
+              <div className="w-64 h-64 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 flex items-center justify-center overflow-hidden p-3 shadow-md relative group">
+                {qrBorrower.paymentQr ? (
+                  <img
+                    src={qrBorrower.paymentQr}
+                    alt="Borrower Custom QR"
+                    className="w-full h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : memberProfile?.paymentQr ? (
+                  <img
+                    src={memberProfile.paymentQr}
+                    alt="Lender Payment QR"
+                    className="w-full h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrConfig.qrString || '00020101021129170013000469096')}`}
+                    alt="Fallback QR"
+                    className="w-full h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+              </div>
+
+              {/* Installment Info Badge */}
+              <div className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-100 dark:border-slate-800 p-3 rounded-2xl flex items-center justify-between text-xs font-extrabold">
+                <span className="text-slate-500">
+                  {language === 'kh' ? 'ទឹកប្រាក់ត្រូវបង់រាល់ដង៖' : 'Installment Due Amount:'}
+                </span>
+                <span className="text-emerald-600 dark:text-emerald-400 text-sm font-black">
+                  {formatMoney(qrBorrower.installmentAmount, qrBorrower.currency)}
+                </span>
+              </div>
+
+              {/* Remark Box */}
+              <div className="w-full bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40 p-4 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 dark:text-amber-400">
+                    {language === 'kh' ? 'លេខសំគាល់ Remark / Description ស្វ័យប្រវត្ត' : 'Payment Remark / Description ID'}
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(qrBorrower.shortId || '');
+                      playClickSound();
+                      showToast(language === 'kh' ? 'ចម្លងលេខកូដ Remark រួចរាល់!' : 'Copied Payment Remark ID!', 'success');
+                    }}
+                    className="text-[10px] font-black px-2 py-1 bg-amber-500/10 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-500/20 transition cursor-pointer border border-transparent"
+                  >
+                    {language === 'kh' ? 'ចម្លង Remark' : 'Copy Remark'}
+                  </button>
+                </div>
+                
+                <div className="bg-white dark:bg-slate-900 border border-amber-200/30 dark:border-amber-900/25 py-2.5 rounded-xl text-center">
+                  <span className="text-xl font-black font-mono tracking-widest text-amber-600 dark:text-amber-400 uppercase select-all">
+                    {qrBorrower.shortId || 'KH-1001'}
+                  </span>
+                </div>
+
+                <p className="text-[10px] text-amber-800/80 dark:text-amber-400/80 font-bold leading-relaxed">
+                  {language === 'kh' 
+                    ? '⚠️ ពេលបង្កើត QR Code តាម ABA Merchant ត្រូវបញ្ចូលលេខ ID ខាងលើនេះទៅក្នុងប្រអប់ Remark/Description នៃ QR នោះ ដើម្បីឱ្យប្រព័ន្ធឆែកឃើញការបង់លុយ automatically ពី Telegram!' 
+                    : '⚠️ When creating the QR Code via ABA Merchant, enter the Unique ID above in the Remark/Description box so the system can auto-approve payments from Telegram!'}
+                </p>
+              </div>
+
+              {/* Custom Borrower QR Upload Option */}
+              <div className="w-full text-center">
+                <label 
+                  htmlFor="borrower-specific-qr-upload" 
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer border border-slate-200/40 dark:border-slate-700"
+                >
+                  <Camera className="w-4 h-4 text-slate-500" />
+                  <span>
+                    {qrBorrower.paymentQr 
+                      ? (language === 'kh' ? 'កែសម្រួលរូបភាព QR កូនបំណុល' : 'Update Borrower Custom QR') 
+                      : (language === 'kh' ? 'ផ្ទុកឡើងរូបភាព QR ផ្ទាល់ខ្លួនសម្រាប់កូនបំណុលនេះ' : 'Upload Custom QR for this Borrower')}
+                  </span>
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    
+                    if (file.size > 2 * 1024 * 1024) {
+                      showToast(language === 'kh' ? 'រូបភាពធំជាង 2MB!' : 'Image exceeds 2MB!', 'info');
+                      return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const base64 = event.target?.result as string;
+                      // Update borrower in state and DB
+                      handleEditBorrower(qrBorrower.id, { paymentQr: base64 });
+                      // Update local modal state to show uploaded QR immediately
+                      setQrBorrower(prev => prev ? { ...prev, paymentQr: base64 } : null);
+                      showToast(language === 'kh' ? 'បានរក្សាទុក QR សម្រាប់កូនបំណុលនេះ!' : 'Saved QR for this borrower!', 'success');
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="hidden"
+                  id="borrower-specific-qr-upload"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-850 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setQrBorrower(null)}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold rounded-xl shadow-md transition cursor-pointer border-transparent"
               >
                 {language === 'kh' ? 'រួចរាល់' : 'Done'}
               </button>
