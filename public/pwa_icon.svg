@@ -84,14 +84,14 @@
     <!-- 6. Golden Shining Star at Top-Right -->
     <path d="M 345 100 Q 345 115, 360 115 Q 345 115, 345 130 Q 345 115, 330 115 Q 345 115, 345 100" fill="url(#gold-grad)" />
 
-    <!-- 7. Main Khmer Text: "លុយឆក&លុយលរ" -->
+    <!-- 7. Main Khmer Text: "លុយឆក់&លុយឈរ" -->
     <text x="256" y="322" 
           font-family="'Kantumruy Pro', 'Khmer OS Muol Light', 'Hanuman', 'Inter', sans-serif" 
           font-size="52" 
           font-weight="900" 
           fill="#0e3760" 
           text-anchor="middle"
-          letter-spacing="-1">លុយឆក&amp;លុយលរ</text>
+          letter-spacing="-1">លុយឆក់&amp;លុយឈរ</text>
 
     <!-- 8. Bottom Badge with "កម្មវិធីកត់ត្រា" -->
     <rect x="136" y="352" width="240" height="48" rx="12" fill="url(#badge-grad)" stroke="#ffffff" stroke-width="2" filter="url(#shadow)" />

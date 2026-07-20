@@ -236,88 +236,93 @@ export default function App() {
 
             if (!text) continue;
 
-            // Look for borrower code matching KH-XXXX (case-insensitive)
-            const regex = /(KH-\d+)/gi;
+            // Look for borrower code matching KH-XXXX, KH XXXX, KH_XXXX, KHXXXX (case-insensitive)
+            const regex = /(KH[-_\s]?\d+)/gi;
             const matches = text.match(regex);
 
             if (matches && matches.length > 0) {
-              const matchedId = matches[0].toUpperCase();
+              const rawMatch = matches[0].toUpperCase();
+              const numPartMatch = rawMatch.match(/\d+/);
               
-              // Find the borrower
-              const borrowerIdx = currentBorrowersState.findIndex(
-                b => b.shortId && b.shortId.toUpperCase() === matchedId
-              );
-
-              if (borrowerIdx !== -1) {
-                const borrower = currentBorrowersState[borrowerIdx];
+              if (numPartMatch) {
+                const matchedId = `KH-${numPartMatch[0]}`;
                 
-                // Ensure we don't register duplicate payment for same Telegram message
-                const hasDuplicate = (borrower.payments || []).some(
-                  p => p && p.note && p.note.includes(`Telegram Update ID: ${update.update_id}`)
+                // Find the borrower
+                const borrowerIdx = currentBorrowersState.findIndex(
+                  b => b.shortId && b.shortId.toUpperCase() === matchedId
                 );
 
-                if (!hasDuplicate) {
-                  // Calculate the first unpaid slot
-                  const bPayments = Array.isArray(borrower.payments) ? borrower.payments : [];
-                  const paidSlots = bPayments.map(p => p?.installmentIndex);
-                  let nextUnpaidSlot = -1;
-                  for (let i = 0; i < borrower.duration; i++) {
-                    if (!paidSlots.includes(i)) {
-                      nextUnpaidSlot = i;
-                      break;
+                if (borrowerIdx !== -1) {
+                  const borrower = currentBorrowersState[borrowerIdx];
+                  
+                  // Ensure we don't register duplicate payment for same Telegram message
+                  const hasDuplicate = (borrower.payments || []).some(
+                    p => p && p.note && p.note.includes(`Telegram Update ID: ${update.update_id}`)
+                  );
+
+                  if (!hasDuplicate) {
+                    // Calculate the first unpaid slot
+                    const bPayments = Array.isArray(borrower.payments) ? borrower.payments : [];
+                    const paidSlots = bPayments.map(p => p?.installmentIndex);
+                    let nextUnpaidSlot = -1;
+                    for (let i = 0; i < borrower.duration; i++) {
+                      if (!paidSlots.includes(i)) {
+                        nextUnpaidSlot = i;
+                        break;
+                      }
+                    }
+
+                    if (nextUnpaidSlot !== -1) {
+                      const newPayment = {
+                        id: `tg-${update.update_id}-${generateId()}`,
+                        date: getTodayDateString(),
+                        amount: borrower.installmentAmount,
+                        installmentIndex: nextUnpaidSlot,
+                        note: `Telegram Auto Sync (សារ Telegram Update ID: ${update.update_id})`
+                      };
+
+                      const updatedBorrower = {
+                        ...borrower,
+                        payments: [...bPayments, newPayment]
+                      };
+
+                      currentBorrowersState[borrowerIdx] = updatedBorrower;
+                      newPaymentsRegistered = true;
+
+                      // Play success chime
+                      playClickSound();
+
+                      // Log success
+                      updatedLogs.unshift({
+                        id: `${update.update_id}`,
+                        time: dateStr,
+                        message: `បានទូទាត់ស្វ័យប្រវត្ត $${borrower.installmentAmount} សម្រាប់ ${matchedId} (${borrower.name})!`,
+                        status: 'success',
+                        details: text
+                      });
+
+                      showToast(`ទូទាត់ស្វ័យប្រវត្ត $${borrower.installmentAmount} សម្រាប់ ${borrower.name} (${matchedId}) ជោគជ័យ!`, 'success');
+                    } else {
+                      // Already fully paid
+                      updatedLogs.unshift({
+                        id: `${update.update_id}`,
+                        time: dateStr,
+                        message: `រកឃើញ ID ${matchedId} តែបានសងគ្រប់វគ្គរួចរាល់ហើយ`,
+                        status: 'ignored',
+                        details: text
+                      });
                     }
                   }
-
-                  if (nextUnpaidSlot !== -1) {
-                    const newPayment = {
-                      id: `tg-${update.update_id}-${generateId()}`,
-                      date: getTodayDateString(),
-                      amount: borrower.installmentAmount,
-                      installmentIndex: nextUnpaidSlot,
-                      note: `Telegram Auto Sync (សារ Telegram Update ID: ${update.update_id})`
-                    };
-
-                    const updatedBorrower = {
-                      ...borrower,
-                      payments: [...bPayments, newPayment]
-                    };
-
-                    currentBorrowersState[borrowerIdx] = updatedBorrower;
-                    newPaymentsRegistered = true;
-
-                    // Play success chime
-                    playClickSound();
-
-                    // Log success
-                    updatedLogs.unshift({
-                      id: `${update.update_id}`,
-                      time: dateStr,
-                      message: `បានទូទាត់ស្វ័យប្រវត្ត $${borrower.installmentAmount} សម្រាប់ ${matchedId} (${borrower.name})!`,
-                      status: 'success',
-                      details: text
-                    });
-
-                    showToast(`ទូទាត់ស្វ័យប្រវត្ត $${borrower.installmentAmount} សម្រាប់ ${borrower.name} (${matchedId}) ជោគជ័យ!`, 'success');
-                  } else {
-                    // Already fully paid
-                    updatedLogs.unshift({
-                      id: `${update.update_id}`,
-                      time: dateStr,
-                      message: `រកឃើញ ID ${matchedId} តែបានសងគ្រប់វគ្គរួចរាល់ហើយ`,
-                      status: 'ignored',
-                      details: text
-                    });
-                  }
+                } else {
+                  // Borrower not found in active state
+                  updatedLogs.unshift({
+                    id: `${update.update_id}`,
+                    time: dateStr,
+                    message: `រកឃើញ ID ${matchedId} តែគ្មានកូនបំណុលនេះក្នុងប្រព័ន្ធទេ`,
+                    status: 'ignored',
+                    details: text
+                  });
                 }
-              } else {
-                // Borrower not found in active state
-                updatedLogs.unshift({
-                  id: `${update.update_id}`,
-                  time: dateStr,
-                  message: `រកឃើញ ID ${matchedId} តែគ្មានកូនបំណុលនេះក្នុងប្រព័ន្ធទេ`,
-                  status: 'ignored',
-                  details: text
-                });
               }
             } else {
               // Message does not contain any borrower code
@@ -368,7 +373,14 @@ export default function App() {
   useEffect(() => {
     const unsubscribeQR = onSnapshot(doc(db, 'settings', 'qr_config'), (docSnap) => {
       if (docSnap.exists()) {
-        setQrConfig(docSnap.data());
+        const data = docSnap.data();
+        setQrConfig(data);
+        if (data.telegramToken) {
+          setTelegramToken(data.telegramToken);
+        }
+        if (data.telegramPollingEnabled !== undefined) {
+          setTelegramPollingEnabled(data.telegramPollingEnabled);
+        }
       }
     }, (err) => {
       console.warn('Unable to subscribe to settings/qr_config in real-time (using default offline values):', err.message || err);
@@ -4661,6 +4673,11 @@ export default function App() {
                         const token = e.target.value.trim();
                         setTelegramToken(token);
                         safeStorage.setItem('luypay_telegram_token', token);
+                        if (isLoggedIn) {
+                          setDoc(doc(db, 'settings', 'qr_config'), { telegramToken: token }, { merge: true }).catch(err => {
+                            console.error('Error saving telegramToken:', err);
+                          });
+                        }
                       }}
                       placeholder="8920488272:AAFyrp..."
                       className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -4678,6 +4695,11 @@ export default function App() {
                         setTelegramPollingEnabled(nextState);
                         safeStorage.setItem('luypay_telegram_polling_enabled', nextState ? 'true' : 'false');
                         showToast(nextState ? 'បានបើកសេវាកម្មត្រួតពិនិត្យ Telegram!' : 'បានបិទសេវាកម្មត្រួតពិនិត្យ Telegram!', 'info');
+                        if (isLoggedIn) {
+                          setDoc(doc(db, 'settings', 'qr_config'), { telegramPollingEnabled: nextState }, { merge: true }).catch(err => {
+                            console.error('Error saving telegramPollingEnabled:', err);
+                          });
+                        }
                       }}
                       className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition ${
                         telegramPollingEnabled 
