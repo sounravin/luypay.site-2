@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { safeStorage } from './lib/safeStorage';
 
 export type Language = 'kh' | 'en';
 
@@ -357,13 +358,13 @@ export function useLanguage() {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem('app_language');
+    const saved = safeStorage.getItem('app_language');
     return (saved === 'en' || saved === 'kh') ? saved : 'kh';
   });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('app_language', lang);
+    safeStorage.setItem('app_language', lang);
   };
 
   const t = (key: keyof typeof translations['kh']): string => {

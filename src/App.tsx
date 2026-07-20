@@ -16,6 +16,7 @@ import { LoanApplication } from './types';
 import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDoc } from 'firebase/firestore';
 import { db } from './lib/firebase';
+import { safeStorage } from './lib/safeStorage';
 import { useLanguage } from './i18n';
 import { motion, AnimatePresence } from 'motion/react';
 import { SignInForm, RegisterForm, ForgotPasswordForm } from './components/AuthForms';
@@ -108,11 +109,11 @@ export default function App() {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
 
   // Secure Auth State
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => localStorage.getItem('luypay_logged_in') === 'true');
-  const [currentUser, setCurrentUser] = useState<string>(() => localStorage.getItem('luypay_current_user') || 'sounravin');
-  const [userDisplayName, setUserDisplayName] = useState<string>(() => localStorage.getItem('luypay_user_display_name') || 'Soun Ravin');
-  const [userAuthType, setUserAuthType] = useState<'credentials' | 'google' | 'facebook'>(() => (localStorage.getItem('luypay_auth_type') as any) || 'credentials');
-  const [isMember, setIsMember] = useState<boolean>(() => localStorage.getItem('luypay_is_member') === 'true');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => safeStorage.getItem('luypay_logged_in') === 'true');
+  const [currentUser, setCurrentUser] = useState<string>(() => safeStorage.getItem('luypay_current_user') || 'sounravin');
+  const [userDisplayName, setUserDisplayName] = useState<string>(() => safeStorage.getItem('luypay_user_display_name') || 'Soun Ravin');
+  const [userAuthType, setUserAuthType] = useState<'credentials' | 'google' | 'facebook'>(() => (safeStorage.getItem('luypay_auth_type') as any) || 'credentials');
+  const [isMember, setIsMember] = useState<boolean>(() => safeStorage.getItem('luypay_is_member') === 'true');
 
   const [activeSection, setActiveSection] = useState<'ledger' | 'admin_dashboard' | 'pricing' | 'loan_applications'>('ledger');
   const [prefilledData, setPrefilledData] = useState<{
@@ -147,7 +148,7 @@ export default function App() {
   const [blockScreenPaymentStep, setBlockScreenPaymentStep] = useState<'scan' | 'counting' | 'select_plan' | 'success'>('scan');
   const [blockScreenCountdown, setBlockScreenCountdown] = useState<number>(56);
   const [blockScreenQrScanDetected, setBlockScreenQrScanDetected] = useState<boolean>(false);
-  const [mobileHeaderStyle, setMobileHeaderStyle] = useState<'default' | 'angkor'>(() => (localStorage.getItem('luypay_mobile_header_style') as 'default' | 'angkor') || 'default');
+  const [mobileHeaderStyle, setMobileHeaderStyle] = useState<'default' | 'angkor'>(() => (safeStorage.getItem('luypay_mobile_header_style') as 'default' | 'angkor') || 'default');
 
   // Real-time QR Configuration from Firestore settings/qr_config
   const [qrConfig, setQrConfig] = useState<any>({
@@ -419,16 +420,16 @@ export default function App() {
 
   // Theme & Settings state
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('luypay_theme') as 'light' | 'dark') || 'light';
+    return (safeStorage.getItem('luypay_theme') as 'light' | 'dark') || 'light';
   });
   const [appTheme, setAppTheme] = useState<AppThemeType>(() => {
-    return (localStorage.getItem('luypay_app_theme') as AppThemeType) || 'slate';
+    return (safeStorage.getItem('luypay_app_theme') as AppThemeType) || 'slate';
   });
   const [buttonStyle, setButtonStyle] = useState<ButtonStyleType>(() => {
-    return (localStorage.getItem('luypay_button_style') as ButtonStyleType) || 'kbach';
+    return (safeStorage.getItem('luypay_button_style') as ButtonStyleType) || 'kbach';
   });
   const [enableAnimations, setEnableAnimations] = useState<boolean>(() => {
-    return localStorage.getItem('luypay_enable_animations') !== 'false';
+    return safeStorage.getItem('luypay_enable_animations') !== 'false';
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
@@ -441,7 +442,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('luypay_theme', theme);
+    safeStorage.setItem('luypay_theme', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -450,15 +451,15 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem('luypay_app_theme', appTheme);
+    safeStorage.setItem('luypay_app_theme', appTheme);
   }, [appTheme]);
 
   useEffect(() => {
-    localStorage.setItem('luypay_button_style', buttonStyle);
+    safeStorage.setItem('luypay_button_style', buttonStyle);
   }, [buttonStyle]);
 
   useEffect(() => {
-    localStorage.setItem('luypay_enable_animations', String(enableAnimations));
+    safeStorage.setItem('luypay_enable_animations', String(enableAnimations));
   }, [enableAnimations]);
 
   const [loginUsername, setLoginUsername] = useState('');
@@ -509,7 +510,7 @@ export default function App() {
         setSharedBorrowerLoading(false);
       } else {
         // 2. Fallback to Local Storage if document doesn't exist in Firestore
-        const stored = localStorage.getItem(getUserLocalStorageKey(currentUser));
+        const stored = safeStorage.getItem(getUserLocalStorageKey(currentUser));
         if (stored) {
           try {
             const list: Borrower[] = JSON.parse(stored);
@@ -529,7 +530,7 @@ export default function App() {
     }, (error) => {
       console.warn('Firestore subscription failed, falling back to local storage:', error);
       // 3. Fallback to Local Storage on network error
-      const stored = localStorage.getItem(getUserLocalStorageKey(currentUser));
+      const stored = safeStorage.getItem(getUserLocalStorageKey(currentUser));
       if (stored) {
         try {
           const list: Borrower[] = JSON.parse(stored);
@@ -557,11 +558,11 @@ export default function App() {
     
     // 1. Check default admin
     if (cleanUsername === 'sounravin' && passwordInput === 'Ravin012348981') {
-      localStorage.setItem('luypay_logged_in', 'true');
-      localStorage.setItem('luypay_current_user', 'sounravin');
-      localStorage.setItem('luypay_user_display_name', 'Soun Ravin');
-      localStorage.setItem('luypay_auth_type', 'credentials');
-      localStorage.removeItem('luypay_is_member');
+      safeStorage.setItem('luypay_logged_in', 'true');
+      safeStorage.setItem('luypay_current_user', 'sounravin');
+      safeStorage.setItem('luypay_user_display_name', 'Soun Ravin');
+      safeStorage.setItem('luypay_auth_type', 'credentials');
+      safeStorage.removeItem('luypay_is_member');
       setIsLoggedIn(true);
       setCurrentUser('sounravin');
       setUserDisplayName('Soun Ravin');
@@ -582,11 +583,11 @@ export default function App() {
           return;
         }
         if (memberData.password === passwordInput) {
-          localStorage.setItem('luypay_logged_in', 'true');
-          localStorage.setItem('luypay_current_user', cleanUsername);
-          localStorage.setItem('luypay_user_display_name', memberData.displayName || cleanUsername);
-          localStorage.setItem('luypay_auth_type', 'credentials');
-          localStorage.setItem('luypay_is_member', 'true');
+          safeStorage.setItem('luypay_logged_in', 'true');
+          safeStorage.setItem('luypay_current_user', cleanUsername);
+          safeStorage.setItem('luypay_user_display_name', memberData.displayName || cleanUsername);
+          safeStorage.setItem('luypay_auth_type', 'credentials');
+          safeStorage.setItem('luypay_is_member', 'true');
           setIsLoggedIn(true);
           setCurrentUser(cleanUsername);
           setUserDisplayName(memberData.displayName || cleanUsername);
@@ -600,8 +601,8 @@ export default function App() {
       console.error('Error logging in from Firestore:', err);
     }
 
-    // 3. Fallback check from localStorage just in case
-    const localMemberStr = localStorage.getItem(`luypay_member_acc_${cleanUsername}`);
+    // 3. Fallback check from safeStorage just in case
+    const localMemberStr = safeStorage.getItem(`luypay_member_acc_${cleanUsername}`);
     if (localMemberStr) {
       try {
         const localMember = JSON.parse(localMemberStr);
@@ -610,11 +611,11 @@ export default function App() {
           return;
         }
         if (localMember.password === passwordInput) {
-          localStorage.setItem('luypay_logged_in', 'true');
-          localStorage.setItem('luypay_current_user', cleanUsername);
-          localStorage.setItem('luypay_user_display_name', localMember.displayName || cleanUsername);
-          localStorage.setItem('luypay_auth_type', 'credentials');
-          localStorage.setItem('luypay_is_member', 'true');
+          safeStorage.setItem('luypay_logged_in', 'true');
+          safeStorage.setItem('luypay_current_user', cleanUsername);
+          safeStorage.setItem('luypay_user_display_name', localMember.displayName || cleanUsername);
+          safeStorage.setItem('luypay_auth_type', 'credentials');
+          safeStorage.setItem('luypay_is_member', 'true');
           setIsLoggedIn(true);
           setCurrentUser(cleanUsername);
           setUserDisplayName(localMember.displayName || cleanUsername);
@@ -675,20 +676,20 @@ export default function App() {
 
       await setDoc(docRef, newMember);
       
-      // Also save to localStorage as local copy for redundancy
-      localStorage.setItem(`luypay_member_acc_${cleanUsername}`, JSON.stringify(newMember));
+      // Also save to safeStorage as local copy for redundancy
+      safeStorage.setItem(`luypay_member_acc_${cleanUsername}`, JSON.stringify(newMember));
       // Save reverse mapping of email -> username for password reset lookup
-      localStorage.setItem(`luypay_member_email_${cleanEmail}`, cleanUsername);
+      safeStorage.setItem(`luypay_member_email_${cleanEmail}`, cleanUsername);
 
       const emailDocRef = doc(db, 'member_emails', cleanEmail);
       await setDoc(emailDocRef, { username: cleanUsername });
 
       // Automatically login
-      localStorage.setItem('luypay_logged_in', 'true');
-      localStorage.setItem('luypay_current_user', cleanUsername);
-      localStorage.setItem('luypay_user_display_name', usernameInput.trim());
-      localStorage.setItem('luypay_auth_type', 'credentials');
-      localStorage.setItem('luypay_is_member', 'true');
+      safeStorage.setItem('luypay_logged_in', 'true');
+      safeStorage.setItem('luypay_current_user', cleanUsername);
+      safeStorage.setItem('luypay_user_display_name', usernameInput.trim());
+      safeStorage.setItem('luypay_auth_type', 'credentials');
+      safeStorage.setItem('luypay_is_member', 'true');
 
       setIsLoggedIn(true);
       setCurrentUser(cleanUsername);
@@ -730,7 +731,7 @@ export default function App() {
       if (emailSnap.exists()) {
         foundUsername = emailSnap.data().username;
       } else {
-        foundUsername = localStorage.getItem(`luypay_member_email_${cleanEmail}`) || '';
+        foundUsername = safeStorage.getItem(`luypay_member_email_${cleanEmail}`) || '';
       }
 
       if (!foundUsername) {
@@ -797,7 +798,7 @@ export default function App() {
       if (emailSnap.exists()) {
         foundUsername = emailSnap.data().username;
       } else {
-        foundUsername = localStorage.getItem(`luypay_member_email_${cleanEmail}`) || '';
+        foundUsername = safeStorage.getItem(`luypay_member_email_${cleanEmail}`) || '';
       }
 
       if (foundUsername) {
@@ -814,11 +815,11 @@ export default function App() {
         }
 
         // Also update local storage
-        const localMemberStr = localStorage.getItem(`luypay_member_acc_${foundUsername}`);
+        const localMemberStr = safeStorage.getItem(`luypay_member_acc_${foundUsername}`);
         if (localMemberStr) {
           const localMember = JSON.parse(localMemberStr);
           localMember.password = cleanPassword;
-          localStorage.setItem(`luypay_member_acc_${foundUsername}`, JSON.stringify(localMember));
+          safeStorage.setItem(`luypay_member_acc_${foundUsername}`, JSON.stringify(localMember));
         }
       }
 
@@ -854,11 +855,11 @@ export default function App() {
         await setDoc(docRef, newMember);
       }
       
-      localStorage.setItem('luypay_logged_in', 'true');
-      localStorage.setItem('luypay_current_user', cleanId);
-      localStorage.setItem('luypay_user_display_name', name);
-      localStorage.setItem('luypay_auth_type', type);
-      localStorage.setItem('luypay_is_member', 'true');
+      safeStorage.setItem('luypay_logged_in', 'true');
+      safeStorage.setItem('luypay_current_user', cleanId);
+      safeStorage.setItem('luypay_user_display_name', name);
+      safeStorage.setItem('luypay_auth_type', type);
+      safeStorage.setItem('luypay_is_member', 'true');
       setIsLoggedIn(true);
       setCurrentUser(cleanId);
       setUserDisplayName(name);
@@ -911,11 +912,11 @@ export default function App() {
 
       await setDoc(docRef, newMember);
       
-      localStorage.setItem('luypay_logged_in', 'true');
-      localStorage.setItem('luypay_current_user', cleanId);
-      localStorage.setItem('luypay_user_display_name', cleanName);
-      localStorage.setItem('luypay_auth_type', authModalType);
-      localStorage.setItem('luypay_is_member', 'true');
+      safeStorage.setItem('luypay_logged_in', 'true');
+      safeStorage.setItem('luypay_current_user', cleanId);
+      safeStorage.setItem('luypay_user_display_name', cleanName);
+      safeStorage.setItem('luypay_auth_type', authModalType);
+      safeStorage.setItem('luypay_is_member', 'true');
       
       setIsLoggedIn(true);
       setCurrentUser(cleanId);
@@ -930,7 +931,7 @@ export default function App() {
       showToast(`បានចុះឈ្មោះ និងភ្ជាប់គណនី ${authModalType === 'google' ? 'Google' : 'Facebook'} ដោយជោគជ័យ!`);
     } catch (err) {
       console.error(err);
-      setRegError('មានបញ្ហាបច្គេកទេសក្នុងការចុះឈ្មោះសមាជិក!');
+      setRegError('មានបញ្ហាបច្ចេកទេសក្នុងការចុះឈ្មោះសមាជិក!');
     } finally {
       setAuthLoading(false);
     }
@@ -938,11 +939,11 @@ export default function App() {
 
   const handleLogout = () => {
     if (confirm('តើអ្នកពិតជាចង់ចាកចេញពីគណនីមែនទេ? (ទិន្នន័យត្រូវបានរក្សាទុកដោយសុវត្ថិភាព)')) {
-      localStorage.removeItem('luypay_logged_in');
-      localStorage.removeItem('luypay_current_user');
-      localStorage.removeItem('luypay_user_display_name');
-      localStorage.removeItem('luypay_auth_type');
-      localStorage.removeItem('luypay_is_member');
+      safeStorage.removeItem('luypay_logged_in');
+      safeStorage.removeItem('luypay_current_user');
+      safeStorage.removeItem('luypay_user_display_name');
+      safeStorage.removeItem('luypay_auth_type');
+      safeStorage.removeItem('luypay_is_member');
       setIsLoggedIn(false);
       setCurrentUser('sounravin');
       setUserDisplayName('Soun Ravin');
@@ -961,7 +962,7 @@ export default function App() {
   useEffect(() => {
     if (!isLoggedIn) {
       setCloudSyncStatus('offline');
-      const stored = localStorage.getItem(getUserLocalStorageKey(null));
+      const stored = safeStorage.getItem(getUserLocalStorageKey(null));
       let currentBorrowers: Borrower[] = [];
       if (stored) {
         try {
@@ -976,11 +977,11 @@ export default function App() {
       const { updatedList, hasChanges } = runAutoCheckInForBorrowers(currentBorrowers);
       if (hasChanges) {
         setBorrowers(updatedList);
-        localStorage.setItem(getUserLocalStorageKey(null), JSON.stringify(updatedList));
+        safeStorage.setItem(getUserLocalStorageKey(null), JSON.stringify(updatedList));
       } else {
         setBorrowers(currentBorrowers);
         if (!stored) {
-          localStorage.setItem(getUserLocalStorageKey(null), JSON.stringify(SEED_BORROWERS));
+          safeStorage.setItem(getUserLocalStorageKey(null), JSON.stringify(SEED_BORROWERS));
         }
       }
       return;
@@ -1005,7 +1006,7 @@ export default function App() {
       if (fbBorrowers.length === 0) {
         if (currentUser === 'sounravin') {
           // Default admin user Soun Ravin can migrate local storage data to Firestore
-          const stored = localStorage.getItem(userStorageKey);
+          const stored = safeStorage.getItem(userStorageKey);
           let localData: Borrower[] = [];
           if (stored) {
             try {
@@ -1033,7 +1034,7 @@ export default function App() {
         } else {
           // Any other dynamic/registered user starts with 0 borrowers (completely clean slate)
           setBorrowers([]);
-          localStorage.setItem(userStorageKey, JSON.stringify([]));
+          safeStorage.setItem(userStorageKey, JSON.stringify([]));
           setCloudSyncStatus('synced');
         }
       } else {
@@ -1042,7 +1043,7 @@ export default function App() {
           saveBorrowers(updatedList);
         } else {
           setBorrowers(fbBorrowers);
-          localStorage.setItem(userStorageKey, JSON.stringify(fbBorrowers));
+          safeStorage.setItem(userStorageKey, JSON.stringify(fbBorrowers));
           setCloudSyncStatus('synced');
         }
       }
@@ -1052,7 +1053,7 @@ export default function App() {
       
       // Fallback to local storage on Firestore errors (like quota exceeded)
       const userStorageKey = getUserLocalStorageKey(currentUser);
-      const stored = localStorage.getItem(userStorageKey);
+      const stored = safeStorage.getItem(userStorageKey);
       if (stored) {
         try {
           const localData = JSON.parse(stored);
@@ -1256,7 +1257,7 @@ export default function App() {
       showToast(language === 'kh' ? 'បានផ្លាស់ប្តូររូបថតកម្រងព័ត៌មានជោគជ័យ!' : 'Profile photo updated successfully!', 'success');
     } catch (err) {
       console.error('Error saving profile photo:', err);
-      localStorage.setItem(`luypay_profile_photo_${currentUser}`, url);
+      safeStorage.setItem(`luypay_profile_photo_${currentUser}`, url);
       showToast(language === 'kh' ? 'បានរក្សាទុករូបថតនៅក្នុងឧបករណ៍មូលដ្ឋាន!' : 'Saved profile photo locally!', 'success');
     }
   };
@@ -1321,7 +1322,7 @@ export default function App() {
   // Save to local storage and sync to Firestore if logged in
   const saveBorrowers = async (newList: Borrower[]) => {
     setBorrowers(newList);
-    localStorage.setItem(getUserLocalStorageKey(currentUser), JSON.stringify(newList));
+    safeStorage.setItem(getUserLocalStorageKey(currentUser), JSON.stringify(newList));
     
     if (isLoggedIn) {
       setCloudSyncStatus('syncing');
@@ -1573,7 +1574,7 @@ export default function App() {
   const handleDeleteBorrower = async (borrowerId: string) => {
     const newList = borrowers.filter((b) => b.id !== borrowerId);
     setBorrowers(newList);
-    localStorage.setItem(getUserLocalStorageKey(currentUser), JSON.stringify(newList));
+    safeStorage.setItem(getUserLocalStorageKey(currentUser), JSON.stringify(newList));
     
     if (isLoggedIn) {
       setCloudSyncStatus('syncing');
@@ -3452,7 +3453,7 @@ export default function App() {
                 onClick={() => {
                   const nextStyle = mobileHeaderStyle === 'default' ? 'angkor' : 'default';
                   setMobileHeaderStyle(nextStyle);
-                  localStorage.setItem('luypay_mobile_header_style', nextStyle);
+                  safeStorage.setItem('luypay_mobile_header_style', nextStyle);
                   playClickSound();
                 }}
                 className={`p-2 rounded-xl transition cursor-pointer border flex items-center justify-center gap-1 shadow-3xs ${
