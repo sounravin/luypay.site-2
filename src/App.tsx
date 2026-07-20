@@ -4794,7 +4794,7 @@ export default function App() {
               </div>
 
               {/* QR Image Display */}
-              <div className="w-64 h-64 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 flex items-center justify-center overflow-hidden p-3 shadow-md relative group">
+              <div className="w-full max-w-[240px] xs:max-w-[256px] aspect-square rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 flex items-center justify-center overflow-hidden p-3 shadow-md relative group">
                 {qrBorrower.paymentQr ? (
                   <img
                     src={qrBorrower.paymentQr}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Borrower, Payment, ReportedPayment } from '../types';
 import { formatMoney, formatKhmerDate, getFrequencyLabel } from '../utils';
-import { Phone, Calendar, ArrowLeft, ShieldCheck, Check, Clock, TrendingUp, DollarSign, RefreshCw, AlertCircle, MessageCircle, QrCode, X, Upload, Camera, CheckCircle2, Sparkles } from 'lucide-react';
+import { Phone, Calendar, ArrowLeft, ShieldCheck, Check, Clock, TrendingUp, DollarSign, RefreshCw, AlertCircle, MessageCircle, QrCode, X, Upload, Camera, CheckCircle2, Sparkles, Copy } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -22,6 +22,21 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
   const [isQrZoomOpen, setIsQrZoomOpen] = useState(false);
   const [isFrameModalOpen, setIsFrameModalOpen] = useState(false);
   const [lenderProfile, setLenderProfile] = useState<any>(null);
+  const [globalQrConfig, setGlobalQrConfig] = useState<any>(null);
+  
+  // Real-time QR Configuration from Firestore settings/qr_config
+  useEffect(() => {
+    const unsubscribeQr = onSnapshot(doc(db, 'settings', 'qr_config'), (docSnap) => {
+      if (docSnap.exists()) {
+        setGlobalQrConfig(docSnap.data());
+      }
+    }, (err) => {
+      console.error('Error listening to qr config in BorrowerPortal:', err);
+    });
+    return () => unsubscribeQr();
+  }, []);
+
+  const activePaymentQr = borrower.paymentQr || lenderProfile?.paymentQr || globalQrConfig?.qrImageUrl;
   
   // Payment reporting states
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -422,14 +437,14 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
           </div>
 
           {/* Payment QR Code inside Hero Card */}
-          {(borrower.paymentQr || lenderProfile?.paymentQr) && (
+          {activePaymentQr && (
             <div 
               onClick={() => setIsQrZoomOpen(true)}
               className="shrink-0 flex items-center gap-3 bg-slate-50 border border-slate-200/60 p-3 rounded-2xl shadow-xs hover:shadow-md hover:border-slate-300 transition duration-200 max-w-xs cursor-pointer"
             >
               <div className="w-14 h-14 bg-white border border-slate-200 rounded-xl overflow-hidden shrink-0 shadow-inner flex items-center justify-center p-1 relative group">
                 <img
-                  src={borrower.paymentQr || lenderProfile?.paymentQr}
+                  src={activePaymentQr}
                   alt="Scan QR"
                   className="w-full h-full object-contain cursor-zoom-in"
                   referrerPolicy="no-referrer"
@@ -573,6 +588,84 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
           {/* Stats column (5 cols) */}
           <div className="lg:col-span-5 space-y-6">
             
+            {/* Beautiful KHQR Payment Card Frame */}
+            {activePaymentQr && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <QrCode className="w-4 h-4 text-blue-600" />
+                    <span>{language === 'kh' ? 'ព័ត៌មានគណនី និង QR សងប្រាក់' : 'Account Details & QR Code'}</span>
+                  </h3>
+                  <span className="text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    {language === 'kh' ? 'បង់លុយសង' : 'REPAY'}
+                  </span>
+                </div>
+
+                {/* KHQR Card Frame */}
+                <div className="bg-[#071324] text-white p-5 rounded-3xl border border-slate-800 shadow-xl space-y-4 flex flex-col items-center relative overflow-hidden group">
+                  {/* Bank Banner Accent */}
+                  <div 
+                    className="absolute top-0 left-0 right-0 h-2"
+                    style={{ backgroundColor: globalQrConfig?.bankColor || '#E61A22' }}
+                  />
+                  
+                  <div className="text-center space-y-1 w-full pt-1">
+                    <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: globalQrConfig?.bankColor || '#E61A22' }}>
+                      {globalQrConfig?.bankName || (language === 'kh' ? 'គណនីទទួលប្រាក់' : 'RECEIVING BANK')}
+                    </p>
+                    <h4 className="text-base font-black text-white tracking-wide uppercase truncate max-w-full">
+                      {globalQrConfig?.accountName || 'SOUN RAVIN'}
+                    </h4>
+                    {/* KHQR standard big bold "0" */}
+                    <div className="text-4xl font-black text-white select-none font-mono leading-none">0</div>
+                  </div>
+
+                  {/* Dotted Divider */}
+                  <div className="w-full border-t border-dashed border-slate-800/80" />
+
+                  {/* QR Image Container (Guaranteed square and never cut off) */}
+                  <div 
+                    onClick={() => setIsQrZoomOpen(true)}
+                    className="bg-white p-3 rounded-2xl shadow-xl flex items-center justify-center relative select-none cursor-zoom-in transition hover:scale-[1.02] active:scale-[0.98] w-full max-w-[190px] aspect-square mx-auto overflow-hidden"
+                  >
+                    <img
+                      src={activePaymentQr}
+                      alt="Payment QR"
+                      className="w-full h-full object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+
+                  {/* Copyable account details inside card */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full pt-1">
+                    <div className="py-2 px-3 bg-[#0C1A2E] text-slate-300 rounded-xl text-center border border-slate-850 flex flex-col items-center justify-center gap-0.5">
+                      <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">{language === 'kh' ? 'លេខគណនី' : 'Account ID'}</span>
+                      <div className="flex items-center gap-1.5 min-w-0 max-w-full">
+                        <span className="text-xs font-mono font-black text-white truncate">{globalQrConfig?.accountId || '000469096'}</span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(globalQrConfig?.accountId || '000469096');
+                            setToastMessage(language === 'kh' ? 'បានចម្លងលេខគណនីជោគជ័យ!' : 'Copied account ID!');
+                            setToastType('success');
+                            setTimeout(() => setToastMessage(null), 3000);
+                          }}
+                          className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded transition cursor-pointer"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="py-2 px-3 bg-[#0C1A2E] text-slate-300 rounded-xl text-center border border-slate-850 flex flex-col items-center justify-center gap-0.5">
+                      <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">{language === 'kh' ? 'ឈ្មោះគណនី' : 'Account Name'}</span>
+                      <span className="text-[10px] font-black text-white truncate max-w-full block uppercase">{globalQrConfig?.accountName || 'SOUN RAVIN'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Financial Stats box */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200 space-y-5 shadow-sm">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -1086,9 +1179,9 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
               <QrCode className="w-4 h-4 text-blue-600" />
               <span>{language === 'kh' ? 'ស្កេនដើម្បីទូទាត់ប្រាក់' : 'Scan to Repay'}</span>
             </h3>
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner flex items-center justify-center aspect-square max-w-[280px] mx-auto overflow-hidden bg-white">
+            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner flex items-center justify-center aspect-square w-full max-w-[260px] sm:max-w-[280px] mx-auto overflow-hidden bg-white">
               <img
-                src={borrower.paymentQr || lenderProfile?.paymentQr}
+                src={activePaymentQr}
                 alt="Payment QR Code"
                 className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"
