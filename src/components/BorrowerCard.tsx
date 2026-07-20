@@ -5,8 +5,8 @@ import { Calendar, Phone, CheckCircle, Clock, Check } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import AvatarWithFrame from './AvatarWithFrame';
 import { motion } from 'motion/react';
-import { getButtonStyleClass } from '../utils/theme';
-import type { ButtonStyleType } from '../utils/theme';
+import { getButtonStyleClass, THEMES } from '../utils/theme';
+import type { ButtonStyleType, AppThemeType } from '../utils/theme';
 
 interface BorrowerCardProps {
   borrower: Borrower;
@@ -15,9 +15,20 @@ interface BorrowerCardProps {
   isSelected?: boolean;
   onToggleSelect?: (borrowerId: string) => void;
   buttonStyle?: ButtonStyleType;
+  appTheme?: AppThemeType;
+  isDark?: boolean;
 }
 
-export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelected = false, onToggleSelect, buttonStyle = 'kbach' }: BorrowerCardProps) {
+export default function BorrowerCard({ 
+  borrower, 
+  onSelect, 
+  onQuickPay, 
+  isSelected = false, 
+  onToggleSelect, 
+  buttonStyle = 'kbach',
+  appTheme = 'slate',
+  isDark = false
+}: BorrowerCardProps) {
   const { t } = useLanguage();
 
   // 10-second ticker to keep cards status up to date in real-time
@@ -69,29 +80,94 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
     }
   };
 
-  const cardBorderClass = isSelected
-    ? 'border-emerald-500 ring-2 ring-emerald-500/10'
+  const themeConfig = THEMES[appTheme] || THEMES.slate;
+
+  // Dynamic Kbach corners ornament color
+  const kbachColor = appTheme === 'angkor'
+    ? 'text-[#dfb035]'
+    : appTheme === 'apsara'
+      ? 'text-[#b48bf5]'
+      : appTheme === 'emerald'
+        ? 'text-[#6ee7b7]'
+        : 'text-slate-400 dark:text-slate-500';
+
+  // Dynamic Card Background (combining Theme background with Button Style structure)
+  const cardBgClass = isSelected
+    ? (buttonStyle === 'kbach'
+        ? (appTheme === 'angkor' ? 'bg-[#fffdf9] dark:bg-[#1e160a]' : appTheme === 'apsara' ? 'bg-[#faf8fe] dark:bg-[#140e2b]' : appTheme === 'emerald' ? 'bg-[#f7fdfa] dark:bg-[#06291a]' : 'bg-white dark:bg-slate-900')
+        : (appTheme === 'angkor' ? 'bg-[#faf6eb]/90 dark:bg-[#120e06]/90' : appTheme === 'apsara' ? 'bg-[#f4f1fc]/90 dark:bg-[#080514]/90' : appTheme === 'emerald' ? 'bg-[#f0fcf5]/90 dark:bg-[#02120b]/90' : 'bg-slate-50 dark:bg-slate-900/95'))
     : buttonStyle === 'kbach'
-      ? 'border-[#dfb035]/40 hover:border-[#dfb035] bg-gradient-to-br from-white to-[#fffcf3] dark:from-[#1b1409] dark:to-[#3a2a12] shadow-inner'
+      ? (appTheme === 'angkor'
+          ? 'bg-gradient-to-br from-[#fffdf9] to-[#faf6eb] dark:from-[#1c140a] dark:to-[#332511]'
+          : appTheme === 'apsara'
+            ? 'bg-gradient-to-br from-[#faf8fe] to-[#f4f1fc] dark:from-[#110c26] dark:to-[#22164d]'
+            : appTheme === 'emerald'
+              ? 'bg-gradient-to-br from-[#f7fdfa] to-[#f0fcf5] dark:from-[#052216] dark:to-[#093c26]'
+              : 'bg-gradient-to-br from-white to-slate-50 dark:from-[#1e293b] dark:to-slate-900')
       : buttonStyle === 'neon'
-        ? 'border-cyan-500/30 hover:border-cyan-400 hover:shadow-cyan-500/10 dark:bg-[#071329] shadow-cyan-500/5 shadow-md'
-        : 'border-slate-200 dark:border-slate-800 dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-lg';
+        ? (appTheme === 'angkor'
+            ? 'bg-[#faf6eb]/80 dark:bg-[#120e06]/95'
+            : appTheme === 'apsara'
+              ? 'bg-[#f4f1fc]/80 dark:bg-[#080514]/95'
+              : appTheme === 'emerald'
+                ? 'bg-[#f0fcf5]/80 dark:bg-[#02120b]/95'
+                : 'bg-white/80 dark:bg-slate-900/95')
+        : (appTheme === 'angkor'
+            ? 'bg-[#fffdf9] dark:bg-[#1a130a]'
+            : appTheme === 'apsara'
+              ? 'bg-[#faf8fe] dark:bg-[#110c26]'
+              : appTheme === 'emerald'
+                ? 'bg-[#f7fdfa] dark:bg-[#052216]'
+                : 'bg-white dark:bg-slate-900');
+
+  // Dynamic Card Border & Shadow (giving exact contrast, theme colors and styles)
+  const cardBorderClass = isSelected
+    ? (appTheme === 'angkor'
+        ? 'border-[#dfb035] ring-2 ring-[#dfb035]/30'
+        : appTheme === 'apsara'
+          ? 'border-[#b48bf5] ring-2 ring-[#b48bf5]/30'
+          : appTheme === 'emerald'
+            ? 'border-[#6ee7b7] ring-2 ring-[#6ee7b7]/30'
+            : 'border-blue-500 ring-2 ring-blue-500/30')
+    : buttonStyle === 'kbach'
+      ? (appTheme === 'angkor'
+          ? 'border-[#dfb035]/40 hover:border-[#dfb035] shadow-md shadow-amber-950/5'
+          : appTheme === 'apsara'
+            ? 'border-purple-500/40 hover:border-purple-400 shadow-md shadow-purple-950/5'
+            : appTheme === 'emerald'
+              ? 'border-emerald-500/40 hover:border-emerald-400 shadow-md shadow-emerald-950/5'
+              : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700')
+      : buttonStyle === 'neon'
+        ? (appTheme === 'angkor'
+            ? 'border-amber-500/30 hover:border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.06)]'
+            : appTheme === 'apsara'
+              ? 'border-purple-500/30 hover:border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.06)]'
+              : appTheme === 'emerald'
+                ? 'border-emerald-500/30 hover:border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.06)]'
+                : 'border-blue-500/30 hover:border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.06)]')
+        : (appTheme === 'angkor'
+            ? 'border-[#e2b037]/25 dark:border-[#e2b037]/20 hover:border-[#dfb035] shadow-xs'
+            : appTheme === 'apsara'
+              ? 'border-purple-500/25 dark:border-purple-500/20 hover:border-purple-400 shadow-xs'
+              : appTheme === 'emerald'
+                ? 'border-emerald-500/25 dark:border-emerald-500/20 hover:border-emerald-400 shadow-xs'
+                : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-xs');
 
   return (
     <div
       id={`borrower-card-${borrower.id}`}
       onClick={() => onSelect(borrower)}
-      className={`bg-white dark:bg-slate-900 border rounded-2xl p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4 shadow-sm relative overflow-hidden ${cardBorderClass}`}
+      className={`${cardBgClass} border rounded-2xl p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4 relative overflow-hidden ${cardBorderClass}`}
     >
       {buttonStyle === 'kbach' && (
         <>
           <div className="absolute top-0 left-0 w-4 h-4 opacity-40 pointer-events-none">
-            <svg viewBox="0 0 16 16" fill="none" className="text-[#dfb035] w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 16 16" fill="none" className={`${kbachColor} w-full h-full`} xmlns="http://www.w3.org/2000/svg">
               <path d="M0 0 L16 0 C12 1, 8 3, 5 6 C3 8, 1 12, 0 16 Z" fill="currentColor"/>
             </svg>
           </div>
           <div className="absolute top-0 right-0 w-4 h-4 opacity-40 pointer-events-none rotate-90">
-            <svg viewBox="0 0 16 16" fill="none" className="text-[#dfb035] w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 16 16" fill="none" className={`${kbachColor} w-full h-full`} xmlns="http://www.w3.org/2000/svg">
               <path d="M0 0 L16 0 C12 1, 8 3, 5 6 C3 8, 1 12, 0 16 Z" fill="currentColor"/>
             </svg>
           </div>
@@ -131,8 +207,8 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
               onClick={handleCheckboxClick}
               className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all cursor-pointer ${
                 isSelected
-                  ? 'bg-emerald-500 border-emerald-500 text-white'
-                  : 'border-slate-300 hover:border-slate-400 bg-slate-50'
+                  ? (appTheme === 'angkor' ? 'bg-[#b37e1b] border-[#dfb035] text-white' : appTheme === 'apsara' ? 'bg-[#6d28d9] border-[#b48bf5] text-white' : appTheme === 'emerald' ? 'bg-[#047857] border-[#6ee7b7] text-white' : 'bg-blue-600 border-blue-500 text-white')
+                  : (appTheme === 'angkor' ? 'border-amber-600/45 dark:border-[#dfb035]/30 hover:border-[#dfb035] bg-amber-50/50 dark:bg-amber-950/20' : appTheme === 'apsara' ? 'border-purple-600/45 dark:border-purple-500/30 hover:border-purple-500 bg-purple-50/50 dark:bg-purple-950/20' : appTheme === 'emerald' ? 'border-emerald-600/45 dark:border-emerald-500/30 hover:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20' : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-900/50')
               }`}
             >
               {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -158,7 +234,7 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-slate-800 text-base leading-tight">
+              <h3 className={`font-bold text-base leading-tight ${themeConfig.textTitle}`}>
                 {borrower.name}
               </h3>
               {isOnline && (
@@ -169,10 +245,10 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
               {borrower.statusTag && (
                 <span className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded ${
                   borrower.statusTag === 'good'
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
                     : borrower.statusTag === 'late'
-                      ? 'bg-rose-50 text-rose-700 border border-rose-100 animate-pulse'
-                      : 'bg-amber-50 text-amber-700 border border-amber-100'
+                      ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/20 animate-pulse'
+                      : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20'
                 }`}>
                   {borrower.statusTag === 'good'
                     ? t('goodLabel')
@@ -193,24 +269,32 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
               )}
             </div>
             {borrower.phone ? (
-              <div className="flex items-center gap-1 text-xs text-slate-400">
-                <Phone className="w-3.5 h-3.5 text-slate-400" />
+              <div className={`flex items-center gap-1 text-xs ${themeConfig.textMuted}`}>
+                <Phone className="w-3.5 h-3.5 shrink-0 opacity-80" />
                 <span>{borrower.phone}</span>
               </div>
             ) : (
-              <span className="text-xs text-slate-300 italic">{t('noPhone')}</span>
+              <span className={`text-xs italic ${themeConfig.textMuted} opacity-60`}>{t('noPhone')}</span>
             )}
           </div>
         </div>
 
         {/* Status Badge */}
         {isCompleted ? (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100 shrink-0">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full border border-emerald-500/20 shrink-0">
             <CheckCircle className="w-3.5 h-3.5" />
             {t('completedLabel')}
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-blue-50 text-blue-700 rounded-full border border-blue-100 shrink-0">
+          <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full border shrink-0 ${
+            appTheme === 'angkor'
+              ? 'bg-amber-500/10 text-amber-700 dark:text-[#f3d37a] border-amber-500/20'
+              : appTheme === 'apsara'
+                ? 'bg-purple-500/10 text-purple-700 dark:text-[#d3adff] border-purple-500/20'
+                : appTheme === 'emerald'
+                  ? 'bg-emerald-500/10 text-[#065f46] dark:text-[#a7f3d0] border-emerald-500/20'
+                  : 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20'
+          }`}>
             <Clock className="w-3.5 h-3.5" />
             {t('activeLabel')
               .replace('{current}', String(payments.length))
@@ -221,40 +305,75 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
 
       {/* Progress Section */}
       <div className="space-y-1.5">
-        <div className="flex justify-between items-end text-xs font-semibold text-slate-500">
+        <div className={`flex justify-between items-end text-xs font-semibold ${themeConfig.textMuted}`}>
           <span>{t('progressLabel')}</span>
-          <span className={isCompleted ? 'text-emerald-600 font-bold' : 'text-blue-600 font-bold'}>
+          <span className={isCompleted ? 'text-emerald-600 dark:text-emerald-400 font-bold' : (
+            appTheme === 'angkor' ? 'text-amber-600 dark:text-[#dfb035] font-bold' :
+            appTheme === 'apsara' ? 'text-purple-600 dark:text-[#b48bf5] font-bold' :
+            appTheme === 'emerald' ? 'text-emerald-600 dark:text-[#6ee7b7] font-bold' :
+            'text-blue-600 dark:text-blue-400 font-bold'
+          )}>
             {progressPercent}%
           </span>
         </div>
-        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+        <div className={`w-full h-2 rounded-full overflow-hidden ${
+          appTheme === 'angkor'
+            ? 'bg-amber-100/50 dark:bg-amber-950/45'
+            : appTheme === 'apsara'
+              ? 'bg-purple-100/50 dark:bg-purple-950/45'
+              : appTheme === 'emerald'
+                ? 'bg-emerald-100/50 dark:bg-emerald-950/45'
+                : 'bg-slate-100 dark:bg-slate-800'
+        }`}>
           <div
-            className={`h-full rounded-full transition-all duration-300 ${isCompleted ? 'bg-emerald-500' : 'bg-blue-600'}`}
+            className={`h-full rounded-full transition-all duration-300 ${
+              isCompleted
+                ? 'bg-emerald-500'
+                : appTheme === 'angkor'
+                  ? 'bg-gradient-to-r from-[#b37e1b] to-[#dfb035]'
+                  : appTheme === 'apsara'
+                    ? 'bg-gradient-to-r from-[#5b21b6] to-[#7c3aed]'
+                    : appTheme === 'emerald'
+                      ? 'bg-gradient-to-r from-[#047857] to-[#059669]'
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-600'
+            }`}
             style={{ width: `${progressPercent}%` }}
           />
         </div>
       </div>
 
       {/* Money Statistics Row */}
-      <div className="grid grid-cols-2 gap-3 py-1 bg-slate-50/80 rounded-xl p-3 text-xs border border-slate-100">
+      <div className={`grid grid-cols-2 gap-3 py-1 rounded-xl p-3 text-xs ${
+        appTheme === 'angkor'
+          ? 'bg-amber-50/60 dark:bg-[#120c04]/60 border border-amber-200/20 dark:border-[#dfb035]/15'
+          : appTheme === 'apsara'
+            ? 'bg-purple-50/60 dark:bg-[#0c071d]/60 border border-purple-200/20 dark:border-purple-500/15'
+            : appTheme === 'emerald'
+              ? 'bg-emerald-50/60 dark:bg-[#02140c]/60 border border-emerald-200/20 dark:border-emerald-500/15'
+              : 'bg-slate-50/80 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800/80'
+      }`}>
         <div>
-          <span className="text-slate-400 block mb-0.5 font-medium">{t('paidAmountLabel')}</span>
-          <span className="font-bold text-slate-700">
+          <span className={`block mb-0.5 font-medium ${themeConfig.textMuted} opacity-85`}>{t('paidAmountLabel')}</span>
+          <span className={`font-bold ${themeConfig.textTitle}`}>
             {formatMoney(totalPaid, borrower.currency)}
           </span>
         </div>
         <div>
-          <span className="text-slate-400 block mb-0.5 font-medium">{t('remainingAmountLabel')}</span>
-          <span className={`font-bold ${isCompleted ? 'text-slate-300' : 'text-orange-600'}`}>
+          <span className={`block mb-0.5 font-medium ${themeConfig.textMuted} opacity-85`}>{t('remainingAmountLabel')}</span>
+          <span className={`font-bold ${
+            isCompleted 
+              ? 'text-slate-400/60 dark:text-slate-500/60' 
+              : 'text-orange-600 dark:text-orange-400'
+          }`}>
             {formatMoney(remaining, borrower.currency)}
           </span>
         </div>
       </div>
 
       {/* Footer Info & Quick Action */}
-      <div className="flex items-center justify-between text-xs border-t border-slate-100 pt-3">
-        <div className="flex items-center gap-1 text-slate-400">
-          <Calendar className="w-3.5 h-3.5" />
+      <div className={`flex items-center justify-between text-xs border-t pt-3 ${themeConfig.borderClass}`}>
+        <div className={`flex items-center gap-1 ${themeConfig.textMuted}`}>
+          <Calendar className="w-3.5 h-3.5 opacity-80" />
           <span>{t('loanDateLabel')} {formatKhmerDate(borrower.loanDate)}</span>
         </div>
         
@@ -272,8 +391,8 @@ export default function BorrowerCard({ borrower, onSelect, onQuickPay, isSelecte
             <span>{t('quickPay')}</span>
           </motion.button>
         ) : (
-          <span className="text-slate-400 font-semibold flex items-center gap-1">
-            {t('totalLabel')} {formatMoney(borrower.totalToPay, borrower.currency)}
+          <span className={`font-semibold flex items-center gap-1 ${themeConfig.textMuted}`}>
+            {t('totalLabel')} <strong className={themeConfig.textTitle}>{formatMoney(borrower.totalToPay, borrower.currency)}</strong>
           </span>
         )}
       </div>

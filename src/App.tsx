@@ -122,6 +122,7 @@ export default function App() {
     profilePhoto?: string;
     notes?: string;
     applicationId?: string;
+    loanDuration?: number;
   } | null>(null);
 
   const [isApplyMode, setIsApplyMode] = useState<boolean>(() => {
@@ -2963,9 +2964,11 @@ export default function App() {
           </div>
         </div>
 
-        {/* Sidebar Navigation Links (Filter State Control) */}
-        <div className="space-y-2 flex-1">
-          <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider px-2.5 mb-2">{t('categoryTitle')}</p>
+        {/* Scrollable Sidebar Navigation Container */}
+        <div className="flex-1 overflow-y-auto pr-1 space-y-6 scrollbar-none">
+          {/* Sidebar Navigation Links (Filter State Control) */}
+          <div className="space-y-2">
+            <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider px-2.5 mb-2">{t('categoryTitle')}</p>
           
           <motion.button
             whileHover={{ scale: 1.02, x: 4 }}
@@ -3061,7 +3064,7 @@ export default function App() {
         </div>
 
         {/* Sidebar Standing Filter Options */}
-        <div className="space-y-2 mt-5">
+        <div className="space-y-2">
           <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider px-2.5 mb-2">{t('standingTitle')}</p>
           
           <motion.button
@@ -3165,7 +3168,7 @@ export default function App() {
         </div>
 
         {/* Sidebar System & Subscription Management Section */}
-        <div className="space-y-2 mt-5">
+        <div className="space-y-2">
           <p className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider px-2.5 mb-2">
             {currentUser === 'sounravin' ? 'គ្រប់គ្រងប្រព័ន្ធ' : 'គណនី & សមាជិកភាព'}
           </p>
@@ -3244,6 +3247,7 @@ export default function App() {
               <span>បញ្ជីកម្ចីប្រាក់ (Ledger)</span>
             </span>
           </motion.button>
+        </div>
         </div>
 
         {/* Sidebar Footer Info box - collected amounts */}
@@ -4020,6 +4024,8 @@ export default function App() {
                       isSelected={selectedBorrowerIds.includes(b.id)}
                       onToggleSelect={handleToggleSelectBorrower}
                       buttonStyle={buttonStyle}
+                      appTheme={appTheme}
+                      isDark={isDark}
                     />
                   ))}
                 </div>

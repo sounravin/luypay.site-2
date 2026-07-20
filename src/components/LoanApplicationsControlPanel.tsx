@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { LoanApplication } from '../types';
 import { useLanguage } from '../i18n';
 import { motion, AnimatePresence } from 'motion/react';
@@ -110,6 +110,83 @@ export default function LoanApplicationsControlPanel({
     } catch (err) {
       console.error("Error rejecting loan application:", err);
       alert("Error rejecting application");
+    }
+  };
+
+  const [selectedAppIds, setSelectedAppIds] = useState<string[]>([]);
+
+  // Clear selections when tab changes
+  useEffect(() => {
+    setSelectedAppIds([]);
+  }, [activeTab]);
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedAppIds(prev => 
+      prev.includes(id) 
+        ? prev.filter(item => item !== id) 
+        : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectAll = () => {
+    const allFilteredIds = filteredApps.map(app => app.id);
+    const areAllSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedAppIds.includes(id));
+
+    if (areAllSelected) {
+      setSelectedAppIds(prev => prev.filter(id => !allFilteredIds.includes(id)));
+    } else {
+      setSelectedAppIds(prev => Array.from(new Set([...prev, ...allFilteredIds])));
+    }
+  };
+
+  const handleDeleteIndividual = async (app: LoanApplication) => {
+    const confirmMessage = language === 'kh'
+      ? `តើអ្នកប្រាកដជាចង់លុបសំណើសុំកម្ចីរបស់ ${app.name} ឬទេ? ការលុបនេះមិនអាចយកមកវិញបានឡើយ។`
+      : `Are you sure you want to delete the loan application of ${app.name}? This action cannot be undone.`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const docRef = doc(db, 'loan_applications', app.id);
+      await deleteDoc(docRef);
+
+      setSelectedAppIds(prev => prev.filter(id => id !== app.id));
+
+      showToast(
+        language === 'kh'
+          ? `🗑️ បានលុបសំណើសុំកម្ចីរបស់ ${app.name} រួចរាល់!`
+          : `🗑️ Deleted loan application of ${app.name} successfully!`,
+        'success'
+      );
+    } catch (err) {
+      console.error("Error deleting loan application:", err);
+      alert(language === 'kh' ? "មានបញ្ហាក្នុងការលុប!" : "Error deleting application!");
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    const confirmMessage = language === 'kh'
+      ? `តើអ្នកប្រាកដជាចង់លុបសំណើសុំកម្ចីដែលបានជ្រើសរើសទាំង ${selectedAppIds.length} នេះឬទេ? ការលុបនេះមិនអាចយកមកវិញបានឡើយ។`
+      : `Are you sure you want to delete the ${selectedAppIds.length} selected loan applications? This action cannot be undone.`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      await Promise.all(
+        selectedAppIds.map(id => deleteDoc(doc(db, 'loan_applications', id)))
+      );
+
+      setSelectedAppIds([]);
+
+      showToast(
+        language === 'kh'
+          ? `🗑️ បានលុបសំណើសុំកម្ចីចំនួន ${selectedAppIds.length} រួចរាល់!`
+          : `🗑️ Deleted ${selectedAppIds.length} loan applications successfully!`,
+        'success'
+      );
+    } catch (err) {
+      console.error("Error deleting selected applications:", err);
+      alert(language === 'kh' ? "មានបញ្ហាក្នុងការលុបសំណើដែលបានជ្រើសរើស!" : "Error deleting selected applications!");
     }
   };
 
@@ -250,6 +327,41 @@ export default function LoanApplicationsControlPanel({
         </div>
       </div>
 
+      {/* Bulk actions and select-all bar for Approved, Rejected, and All tabs */}
+      {!loading && filteredApps.length > 0 && activeTab !== 'pending' && (
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-900 border border-slate-800 p-4 rounded-3xl shadow-xl">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="selectAllApps"
+              checked={filteredApps.length > 0 && filteredApps.every(app => selectedAppIds.includes(app.id))}
+              onChange={handleToggleSelectAll}
+              className="w-4.5 h-4.5 rounded border-slate-700 bg-slate-950 text-blue-600 focus:ring-blue-500/20 cursor-pointer"
+            />
+            <label htmlFor="selectAllApps" className="text-xs font-bold text-slate-300 cursor-pointer select-none flex items-center gap-2">
+              {language === 'kh' 
+                ? `ជ្រើសរើសទាំងអស់ (បានជ្រើសរើស ${selectedAppIds.length}/${filteredApps.length})` 
+                : `Select All (Selected ${selectedAppIds.length}/${filteredApps.length})`}
+            </label>
+          </div>
+          
+          {selectedAppIds.length > 0 && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={handleDeleteSelected}
+              className="w-full sm:w-auto px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-rose-600/10 active:scale-95"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {language === 'kh' 
+                ? `លុបសំណើដែលបានជ្រើសរើស (${selectedAppIds.length})` 
+                : `Delete Selected (${selectedAppIds.length})`}
+            </motion.button>
+          )}
+        </div>
+      )}
+
       {/* Applications Grid / Table list */}
       {loading ? (
         <div className="p-12 text-center bg-slate-900 border border-slate-800 rounded-3xl shadow-xl flex flex-col items-center justify-center">
@@ -283,14 +395,39 @@ export default function LoanApplicationsControlPanel({
                 {/* Header Information Card */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-start gap-2 border-b border-slate-800/80 pb-3">
-                    <div className="space-y-1">
-                      <h3 className="text-base font-black text-white tracking-tight">{app.name}</h3>
-                      <p className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-blue-400" />
-                        {app.phone}
-                      </p>
+                    <div className="flex items-start gap-3">
+                      {/* Checkbox for Bulk Deletion - only for approved, rejected, or all tabs (non-pending) */}
+                      {activeTab !== 'pending' && (
+                        <input
+                          type="checkbox"
+                          checked={selectedAppIds.includes(app.id)}
+                          onChange={() => handleToggleSelect(app.id)}
+                          className="mt-1 w-4.5 h-4.5 rounded border-slate-700 bg-slate-950 text-blue-600 focus:ring-blue-500/20 cursor-pointer"
+                        />
+                      )}
+                      <div className="space-y-1">
+                        <h3 className="text-base font-black text-white tracking-tight">{app.name}</h3>
+                        <p className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 text-blue-400" />
+                          {app.phone}
+                        </p>
+                      </div>
                     </div>
-                    {getStatusBadge(app.status)}
+                    
+                    <div className="flex items-center gap-2 shrink-0">
+                      {getStatusBadge(app.status)}
+                      
+                      {/* Individual Delete Option */}
+                      {activeTab !== 'pending' && (
+                        <button
+                          onClick={() => handleDeleteIndividual(app)}
+                          className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 rounded-lg transition cursor-pointer border border-rose-500/10"
+                          title={language === 'kh' ? 'លុបសំណើនេះ' : 'Delete this request'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Body stats block */}
