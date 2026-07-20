@@ -3830,12 +3830,11 @@ export default function App() {
               <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-black">
                 <video
                   src={sponsorVideoData || ''}
-                  controls
                   loop
                   muted
                   autoPlay
                   playsInline
-                  className="w-full h-auto max-h-[420px] object-contain rounded-2xl block"
+                  className="w-full h-auto max-h-[420px] object-contain rounded-2xl block pointer-events-none"
                 />
               </div>
             ) : sponsorConfig.sponsorLinkUrl ? (

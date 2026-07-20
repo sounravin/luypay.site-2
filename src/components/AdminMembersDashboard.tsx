@@ -1656,12 +1656,11 @@ export default function AdminMembersDashboard({
                           {sponsorMediaType === 'video' ? (
                             <video
                               src={sponsorVideoUrl}
-                              controls
                               loop
                               muted
                               autoPlay
                               playsInline
-                              className="w-full h-auto max-h-[240px] object-contain block"
+                              className="w-full h-auto max-h-[240px] object-contain block pointer-events-none"
                             />
                           ) : (
                             <img
