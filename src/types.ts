@@ -127,5 +127,7 @@ export interface LoanApplication {
   approvedAt?: string;
   rejectedReason?: string;
   loanDuration?: number; // Duration of loan in days
+  paymentType?: string;
+  interestMethod?: string;
 }
 

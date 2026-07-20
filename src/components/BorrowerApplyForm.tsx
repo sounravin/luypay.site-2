@@ -16,7 +16,9 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [amountRequested, setAmountRequested] = useState('');
-  const [loanDuration, setLoanDuration] = useState('30');
+  const [loanDuration, setLoanDuration] = useState('0');
+  const [paymentType, setPaymentType] = useState('daily');
+  const [interestMethod, setInterestMethod] = useState('flat');
   const [lastCreatedAppId, setLastCreatedAppId] = useState('');
   
   const [idCardPhoto, setIdCardPhoto] = useState<string>('');
@@ -164,7 +166,9 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
         idCardPhoto,
         selfiePhoto,
         amountRequested: amt,
-        loanDuration: parseInt(loanDuration) || 30,
+        loanDuration: parseInt(loanDuration) || 0,
+        paymentType,
+        interestMethod,
         lenderId,
         status: 'pending',
         createdAt: new Date().toISOString()
@@ -212,6 +216,24 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
             <span>{language === 'kh' ? 'រយះពេលនៃការខ្ចី' : 'Loan Duration'}</span>
             <span className="text-slate-200 font-bold">{loanDuration} {language === 'kh' ? 'ថ្ងៃ' : 'Days'}</span>
           </div>
+          <div className="flex justify-between border-b border-slate-800 pb-1.5 text-slate-400">
+            <span>{language === 'kh' ? 'ប្រភេទនៃការបង់ប្រាក់' : 'Payment Type'}</span>
+            <span className="text-slate-200 font-bold">
+              {paymentType === 'daily' ? (language === 'kh' ? 'បង់រាល់ថ្ងៃ' : 'Daily') :
+               paymentType === 'weekly' ? (language === 'kh' ? 'បង់រាល់សប្តាហ៍' : 'Weekly') :
+               paymentType === 'monthly' ? (language === 'kh' ? 'បង់រាល់ខែ' : 'Monthly') :
+               paymentType === 'every_2_days' ? (language === 'kh' ? 'បង់រាល់២ថ្ងៃ' : 'Every 2 days') :
+               (language === 'kh' ? 'ផ្សេងៗ' : 'Custom')}
+            </span>
+          </div>
+          <div className="flex justify-between border-b border-slate-800 pb-1.5 text-slate-400">
+            <span>{language === 'kh' ? 'របៀបគណនាការប្រាក់' : 'Interest Method'}</span>
+            <span className="text-slate-200 font-bold">
+              {interestMethod === 'flat' ? (language === 'kh' ? 'ការប្រាក់ថេរ' : 'Flat Rate') :
+               interestMethod === 'declining' ? (language === 'kh' ? 'ការប្រាក់ថយចុះ' : 'Declining') :
+               (language === 'kh' ? 'គ្មានការប្រាក់' : 'No Interest')}
+            </span>
+          </div>
           <div className="flex justify-between text-slate-400">
             <span>{language === 'kh' ? 'ទឹកប្រាក់ស្នើសុំ' : 'Amount Requested'}</span>
             <span className="text-emerald-400 font-bold">${parseFloat(amountRequested).toLocaleString()} USD</span>
@@ -226,7 +248,9 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
               setName('');
               setPhone('');
               setAmountRequested('');
-              setLoanDuration('30');
+              setLoanDuration('0');
+              setPaymentType('daily');
+              setInterestMethod('flat');
               setIdCardPhoto('');
               setSelfiePhoto('');
               setSubmitStatus('idle');
@@ -272,8 +296,8 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
           
           {/* Full Name Input */}
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-blue-400" />
+            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <User className="w-4 h-4 text-blue-400" />
               {language === 'kh' ? 'ឈ្មោះពេញរបស់កូនបំណុល' : 'Borrower Full Name'} <span className="text-rose-500">*</span>
             </label>
             <input
@@ -282,14 +306,14 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ ចាន់ ម៉ារី' : 'e.g., Chan Mary'}
-              className="w-full px-4 py-3 text-sm bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium placeholder-slate-600"
+              className="w-full px-4 py-3 text-base bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium placeholder-slate-600"
             />
           </div>
 
           {/* Phone Number Input */}
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-blue-400" />
+            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Phone className="w-4 h-4 text-blue-400" />
               {language === 'kh' ? 'លេខទូរស័ព្ទកូនបំណុល' : 'Phone Number'} <span className="text-rose-500">*</span>
             </label>
             <input
@@ -298,14 +322,14 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="e.g., 089 778 221"
-              className="w-full px-4 py-3 text-sm bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium placeholder-slate-600"
+              className="w-full px-4 py-3 text-base bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium placeholder-slate-600"
             />
           </div>
 
           {/* Amount Requested USD */}
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <DollarSign className="w-4 h-4 text-emerald-400" />
               {language === 'kh' ? 'ទឹកប្រាក់ដែលចង់ខ្ចី (គិតជាដុល្លារ)' : 'Requested Loan Amount ($)'} <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
@@ -317,9 +341,9 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                 value={amountRequested}
                 onChange={(e) => setAmountRequested(e.target.value)}
                 placeholder="e.g., 200"
-                className="w-full pl-10 pr-4 py-3 text-sm bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-bold text-emerald-400 placeholder-slate-600"
+                className="w-full pl-10 pr-4 py-3 text-base bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-bold text-emerald-400 placeholder-slate-600"
               />
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-bold">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base text-slate-500 font-bold">
                 $
               </span>
             </div>
@@ -327,24 +351,60 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
 
           {/* Loan Duration in Days */}
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <span className="text-blue-400">📅</span>
+            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-blue-400 text-sm">📅</span>
               {language === 'kh' ? 'រយះពេលនៃការខ្ចី (ចំនួនថ្ងៃ)' : 'Loan Duration (Days)'} <span className="text-rose-500">*</span>
             </label>
             <input
               type="number"
               required
-              min="1"
+              min="0"
               value={loanDuration}
               onChange={(e) => setLoanDuration(e.target.value)}
-              placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ ៣០' : 'e.g., 30'}
-              className="w-full px-4 py-3 text-sm bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-bold text-slate-100 placeholder-slate-600"
+              placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ ០' : 'e.g., 0'}
+              className="w-full px-4 py-3 text-base bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-bold text-slate-100 placeholder-slate-600"
             />
+          </div>
+
+          {/* New Payment Type Select Option */}
+          <div className="space-y-1.5">
+            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-blue-400 text-sm">🔄</span>
+              {language === 'kh' ? 'ប្រភេទនៃការបង់ប្រាក់' : 'Payment Type'} <span className="text-rose-500">*</span>
+            </label>
+            <select
+              value={paymentType}
+              onChange={(e) => setPaymentType(e.target.value)}
+              className="w-full px-4 py-3 text-base bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-bold text-slate-100"
+            >
+              <option value="daily">{language === 'kh' ? 'បង់រាល់ថ្ងៃ (Daily)' : 'Daily'}</option>
+              <option value="every_2_days">{language === 'kh' ? 'បង់រាល់២ថ្ងៃ (Every 2 Days)' : 'Every 2 Days'}</option>
+              <option value="weekly">{language === 'kh' ? 'បង់រាល់សប្តាហ៍ (Weekly)' : 'Weekly'}</option>
+              <option value="monthly">{language === 'kh' ? 'បង់រាល់ខែ (Monthly)' : 'Monthly'}</option>
+              <option value="custom">{language === 'kh' ? 'ផ្សេងៗ (Custom)' : 'Custom'}</option>
+            </select>
+          </div>
+
+          {/* New Interest Calculation Method Select Option */}
+          <div className="space-y-1.5">
+            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-blue-400 text-sm">📈</span>
+              {language === 'kh' ? 'របៀបគណនាការប្រាក់' : 'Interest Calculation'} <span className="text-rose-500">*</span>
+            </label>
+            <select
+              value={interestMethod}
+              onChange={(e) => setInterestMethod(e.target.value)}
+              className="w-full px-4 py-3 text-base bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-bold text-slate-100"
+            >
+              <option value="flat">{language === 'kh' ? 'ការប្រាក់ថេរ (Flat Rate)' : 'Flat Rate'}</option>
+              <option value="declining">{language === 'kh' ? 'ការប្រាក់ថយចុះ (Declining Rate)' : 'Declining Rate'}</option>
+              <option value="none">{language === 'kh' ? 'គ្មានការប្រាក់ (No Interest)' : 'No Interest'}</option>
+            </select>
           </div>
 
           {/* ID Card Upload Card */}
           <div className="space-y-2">
-            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider">
+            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider">
               {language === 'kh' ? 'រូបអត្តសញ្ញាណប័ណ្ណ (ID Card Photo)' : 'National ID Card Photo'} <span className="text-rose-500">*</span>
             </label>
             <div className="relative border-2 border-dashed border-slate-800 hover:border-blue-500/40 rounded-2xl bg-slate-950 p-4 transition text-center flex flex-col items-center justify-center space-y-2">
@@ -383,7 +443,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
 
           {/* Selfie Capture Card */}
           <div className="space-y-2">
-            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider">
+            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider">
               {language === 'kh' ? 'ថតរូបមុខខ្លួនឯងផ្ទាល់ (Selfie Photo)' : 'Selfie Face Photo'} <span className="text-rose-500">*</span>
             </label>
             
@@ -447,13 +507,12 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                       <input
                         type="file"
                         accept="image/*"
-                        capture="user"
                         onChange={(e) => handleImageUpload(e, 'selfie')}
                         className="hidden"
                       />
                     </label>
                   </div>
-                  <p className="text-[10px] text-slate-500 font-semibold">
+                  <p className="text-[11px] text-slate-400 font-semibold">
                     {language === 'kh' ? 'សូមថត ឬជ្រើសរើសរូបថតផ្ទៃមុខអោយបានច្បាស់ល្អ' : 'Take a clear camera selfie or select face photo'}
                   </p>
                 </div>

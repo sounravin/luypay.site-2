@@ -450,6 +450,34 @@ export default function LoanApplicationsControlPanel({
                         })}
                       </p>
                     </div>
+
+                    {app.paymentType && (
+                      <div className="space-y-0.5 pt-1.5 border-t border-slate-800/40">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                          {language === 'kh' ? 'ប្រភេទនៃការបង់ប្រាក់' : 'Payment Type'}
+                        </span>
+                        <p className="text-xs font-bold text-slate-300">
+                          {app.paymentType === 'daily' ? (language === 'kh' ? 'បង់រាល់ថ្ងៃ' : 'Daily') :
+                           app.paymentType === 'weekly' ? (language === 'kh' ? 'បង់រាល់សប្តាហ៍' : 'Weekly') :
+                           app.paymentType === 'monthly' ? (language === 'kh' ? 'បង់រាល់ខែ' : 'Monthly') :
+                           app.paymentType === 'every_2_days' ? (language === 'kh' ? 'បង់រាល់២ថ្ងៃ' : 'Every 2 days') :
+                           (language === 'kh' ? 'ផ្សេងៗ' : 'Custom')}
+                        </p>
+                      </div>
+                    )}
+
+                    {app.interestMethod && (
+                      <div className="space-y-0.5 pt-1.5 border-t border-slate-800/40">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                          {language === 'kh' ? 'របៀបគណនាការប្រាក់' : 'Interest Method'}
+                        </span>
+                        <p className="text-xs font-bold text-slate-300">
+                          {app.interestMethod === 'flat' ? (language === 'kh' ? 'ការប្រាក់ថេរ' : 'Flat Rate') :
+                           app.interestMethod === 'declining' ? (language === 'kh' ? 'ការប្រាក់ថយចុះ' : 'Declining') :
+                           (language === 'kh' ? 'គ្មានការប្រាក់' : 'No Interest')}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Attachment Images Previews */}

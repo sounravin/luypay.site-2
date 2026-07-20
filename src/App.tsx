@@ -16,7 +16,7 @@ import { LoanApplication } from './types';
 import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDoc } from 'firebase/firestore';
 import { db } from './lib/firebase';
-import { safeStorage } from './lib/safeStorage';
+import { safeStorage, largeMediaStorage } from './lib/safeStorage';
 import { useLanguage } from './i18n';
 import { motion, AnimatePresence } from 'motion/react';
 import { SignInForm, RegisterForm, ForgotPasswordForm } from './components/AuthForms';
@@ -176,8 +176,25 @@ export default function App() {
     sponsorImageUrl: '',
     sponsorLinkUrl: '',
     sponsorTitle: '',
-    sponsorEnabled: true
+    sponsorEnabled: true,
+    sponsorMediaType: 'image'
   });
+
+  const [sponsorVideoData, setSponsorVideoData] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (sponsorConfig && sponsorConfig.sponsorEnabled && sponsorConfig.sponsorMediaType === 'video') {
+      largeMediaStorage.get('sponsor_video_data')
+        .then((data) => {
+          setSponsorVideoData(data);
+        })
+        .catch((err) => {
+          console.error('Error loading sponsor video from IndexedDB:', err);
+        });
+    } else {
+      setSponsorVideoData(null);
+    }
+  }, [sponsorConfig]);
 
   // Telegram Bot integration for auto payment verification
   const [telegramToken, setTelegramToken] = useState<string>(() => {
@@ -3794,8 +3811,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* Dynamic Sponsor Promotion Banner (Visible if enabled and image is uploaded) */}
-        {sponsorConfig && sponsorConfig.sponsorEnabled && sponsorConfig.sponsorImageUrl && (
+        {/* Dynamic Sponsor Promotion Banner (Visible if enabled and image/video is uploaded) */}
+        {sponsorConfig && sponsorConfig.sponsorEnabled && (sponsorConfig.sponsorMediaType === 'video' ? sponsorVideoData : sponsorConfig.sponsorImageUrl) && (
           <div id="system-sponsor-banner" className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-3.5 shadow-sm flex flex-col gap-2.5 animate-in fade-in duration-300">
             <div className="flex items-center justify-between px-1">
               <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
@@ -3809,7 +3826,19 @@ export default function App() {
               )}
             </div>
             
-            {sponsorConfig.sponsorLinkUrl ? (
+            {sponsorConfig.sponsorMediaType === 'video' ? (
+              <div className="w-full max-w-4xl mx-auto overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-black">
+                <video
+                  src={sponsorVideoData || ''}
+                  controls
+                  loop
+                  muted
+                  autoPlay
+                  playsInline
+                  className="w-full h-auto max-h-[420px] object-contain rounded-2xl block"
+                />
+              </div>
+            ) : sponsorConfig.sponsorLinkUrl ? (
               <a
                 href={sponsorConfig.sponsorLinkUrl}
                 target="_blank"

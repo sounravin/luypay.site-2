@@ -3,6 +3,7 @@ import { Users, UserX, UserCheck, ShieldAlert, Check, X, Search, Calendar, Award
 import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Member, SubscriptionRequest } from '../types';
+import { largeMediaStorage } from '../lib/safeStorage';
 
 interface AdminMembersDashboardProps {
   members: Member[];
@@ -49,6 +50,8 @@ export default function AdminMembersDashboard({
   const [sponsorLinkUrl, setSponsorLinkUrl] = useState('');
   const [sponsorTitle, setSponsorTitle] = useState('');
   const [sponsorEnabled, setSponsorEnabled] = useState(true);
+  const [sponsorMediaType, setSponsorMediaType] = useState<'image' | 'video'>('image');
+  const [sponsorVideoUrl, setSponsorVideoUrl] = useState('');
   const [isSponsorSaving, setIsSponsorSaving] = useState(false);
 
   // Borrower Portal Config states
@@ -95,6 +98,18 @@ export default function AdminMembersDashboard({
           setSponsorLinkUrl(data.sponsorLinkUrl || '');
           setSponsorTitle(data.sponsorTitle || '');
           setSponsorEnabled(data.sponsorEnabled !== false);
+          const mediaType = data.sponsorMediaType || 'image';
+          setSponsorMediaType(mediaType);
+          if (mediaType === 'video') {
+            try {
+              const videoData = await largeMediaStorage.get('sponsor_video_data');
+              if (videoData) {
+                setSponsorVideoUrl(videoData);
+              }
+            } catch (vErr) {
+              console.error('Error loading sponsor video from DB:', vErr);
+            }
+          }
         }
 
         // Load Borrower Portal Config
@@ -174,8 +189,14 @@ export default function AdminMembersDashboard({
         sponsorImageUrl,
         sponsorLinkUrl,
         sponsorTitle,
-        sponsorEnabled
+        sponsorEnabled,
+        sponsorMediaType
       }, { merge: true });
+
+      if (sponsorMediaType === 'video' && sponsorVideoUrl) {
+        await largeMediaStorage.save('sponsor_video_data', sponsorVideoUrl);
+      }
+
       showToast(language === 'kh' ? 'បានរក្សាទុកការកំណត់ផ្ទាំង Sponsor ជោគជ័យ!' : 'Sponsor banner configuration saved successfully!', 'success');
     } catch (err) {
       console.error('Error saving sponsor config:', err);
@@ -183,6 +204,30 @@ export default function AdminMembersDashboard({
     } finally {
       setIsSponsorSaving(false);
     }
+  };
+
+  // Convert uploaded sponsor video file to Base64
+  const handleSponsorVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Size limit check: 20MB
+    const limitBytes = 20 * 1024 * 1024;
+    if (file.size > limitBytes) {
+      alert(language === 'kh' 
+        ? `ទំហំវីដេអូត្រូវតែតូចជាង ឬស្មើ 20MB! (ឯកសារបច្ចុប្បន្ន៖ ${(file.size / (1024 * 1024)).toFixed(2)}MB)` 
+        : `Video size must be less than or equal to 20MB! (Current file is ${(file.size / (1024 * 1024)).toFixed(2)}MB)`
+      );
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const res = event.target?.result as string;
+      setSponsorVideoUrl(res);
+      showToast(language === 'kh' ? 'បានផ្ទុកឡើងវីដេអូផ្ទាំង Sponsor ជោគជ័យ!' : 'Sponsor video uploaded successfully!', 'success');
+    };
+    reader.readAsDataURL(file);
   };
 
   // Convert uploaded sponsor image file to Base64 with canvas compression
@@ -1446,33 +1491,98 @@ export default function AdminMembersDashboard({
                       </button>
                     </div>
 
-                    {/* File Upload */}
-                    <div className="space-y-2">
+                    {/* Media Type Selection */}
+                    <div className="space-y-1.5 pb-3 border-b border-slate-200/60">
                       <label className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wide block">
-                        {language === 'kh' ? 'ឯកសាររូបភាពបដា (អតិបរមា 2MB)' : 'Sponsor Image (Max 2MB, 1200x627 aspect ratio)'}
+                        {language === 'kh' ? 'ប្រភេទឯកសារផ្សព្វផ្សាយ (Sponsor Media Type)' : 'Sponsor Media Type'}
                       </label>
-                      <div className="flex items-center gap-3">
-                        <label className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-800 font-black text-xs rounded-xl cursor-pointer flex items-center gap-1.5 transition">
-                          <Upload className="w-4 h-4" />
-                          <span>{language === 'kh' ? 'អាប់ឡូតរូបភាព' : 'Upload Image'}</span>
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-1.5 text-xs text-slate-800 font-bold cursor-pointer">
                           <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleSponsorImageUpload}
-                            className="hidden"
+                            type="radio"
+                            name="sponsorMediaType"
+                            value="image"
+                            checked={sponsorMediaType === 'image'}
+                            onChange={() => setSponsorMediaType('image')}
+                            className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
                           />
+                          <span>{language === 'kh' ? '🖼️ រូបភាពបដា' : '🖼️ Image Banner'}</span>
                         </label>
-                        {sponsorImageUrl && (
-                          <button
-                            type="button"
-                            onClick={() => setSponsorImageUrl('')}
-                            className="px-3 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 font-extrabold text-[10px] rounded-lg transition"
-                          >
-                            {language === 'kh' ? 'លុបរូបភាព' : 'Remove Image'}
-                          </button>
-                        )}
+                        <label className="flex items-center gap-1.5 text-xs text-slate-800 font-bold cursor-pointer">
+                          <input
+                            type="radio"
+                            name="sponsorMediaType"
+                            value="video"
+                            checked={sponsorMediaType === 'video'}
+                            onChange={() => setSponsorMediaType('video')}
+                            className="w-4 h-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
+                          />
+                          <span>{language === 'kh' ? '🎥 វីដេអូផ្សាយ (អតិបរមា 20MB)' : '🎥 Video (Max 20MB)'}</span>
+                        </label>
                       </div>
                     </div>
+
+                    {/* Conditionally show File Upload based on selection */}
+                    {sponsorMediaType === 'image' ? (
+                      <div className="space-y-2">
+                        <label className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wide block">
+                          {language === 'kh' ? 'ឯកសាររូបភាពបដា (អតិបរមា 2MB)' : 'Sponsor Image (Max 2MB, 1200x627 aspect ratio)'}
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <label className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-800 font-black text-xs rounded-xl cursor-pointer flex items-center gap-1.5 transition">
+                            <Upload className="w-4 h-4" />
+                            <span>{language === 'kh' ? 'អាប់ឡូតរូបភាព' : 'Upload Image'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleSponsorImageUpload}
+                              className="hidden"
+                            />
+                          </label>
+                          {sponsorImageUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setSponsorImageUrl('')}
+                              className="px-3 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 font-extrabold text-[10px] rounded-lg transition"
+                            >
+                              {language === 'kh' ? 'លុបរូបភាព' : 'Remove Image'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <label className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wide block">
+                          {language === 'kh' ? 'ឯកសារវីដេអូផ្សាយ (អតិបរមា 20MB)' : 'Sponsor Video (Max 20MB)'}
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <label className="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-800 font-black text-xs rounded-xl cursor-pointer flex items-center gap-1.5 transition">
+                            <Upload className="w-4 h-4" />
+                            <span>{language === 'kh' ? 'អាប់ឡូតវីដេអូ' : 'Upload Video'}</span>
+                            <input
+                              type="file"
+                              accept="video/*"
+                              onChange={handleSponsorVideoUpload}
+                              className="hidden"
+                            />
+                          </label>
+                          {sponsorVideoUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setSponsorVideoUrl('')}
+                              className="px-3 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 font-extrabold text-[10px] rounded-lg transition"
+                            >
+                              {language === 'kh' ? 'លុបវីដេអូ' : 'Remove Video'}
+                            </button>
+                          )}
+                        </div>
+                        {sponsorVideoUrl && (
+                          <div className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-1">
+                            <span>✅ {language === 'kh' ? 'បានអាប់ឡូតវីដេអូដោយជោគជ័យ' : 'Video uploaded successfully'}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Link URL */}
                     <div className="space-y-1.5">
@@ -1541,20 +1651,42 @@ export default function AdminMembersDashboard({
                         )}
                       </div>
                       
-                      {sponsorEnabled && sponsorImageUrl ? (
-                        <div className="w-full bg-slate-100 rounded-xl overflow-hidden border border-slate-100">
-                          <img
-                            src={sponsorImageUrl}
-                            alt="Sponsor Promotion Banner"
-                            className="w-full h-auto object-contain block"
-                            referrerPolicy="no-referrer"
-                          />
+                      {sponsorEnabled && (sponsorMediaType === 'video' ? sponsorVideoUrl : sponsorImageUrl) ? (
+                        <div className="w-full bg-slate-100 rounded-xl overflow-hidden border border-slate-100 bg-black">
+                          {sponsorMediaType === 'video' ? (
+                            <video
+                              src={sponsorVideoUrl}
+                              controls
+                              loop
+                              muted
+                              autoPlay
+                              playsInline
+                              className="w-full h-auto max-h-[240px] object-contain block"
+                            />
+                          ) : (
+                            <img
+                              src={sponsorImageUrl}
+                              alt="Sponsor Promotion Banner"
+                              className="w-full h-auto object-contain block"
+                              referrerPolicy="no-referrer"
+                            />
+                          )}
                         </div>
                       ) : (
                         <div className="aspect-[1200/627] bg-slate-100 rounded-xl flex flex-col items-center justify-center text-slate-300 border-2 border-dashed border-slate-200 p-4 text-center">
                           <Image className="w-8 h-8 mb-1.5 text-slate-300 animate-pulse" />
-                          <span className="text-[10px] font-black text-slate-400">{language === 'kh' ? 'មិនមានរូបភាព Sponsor ឬបិទការបង្ហាញ' : 'No sponsor image uploaded or disabled'}</span>
-                          <span className="text-[8px] font-medium text-slate-400 mt-0.5">{language === 'kh' ? 'ទំហំសមស្រប 1200x627' : 'Aspect ratio: 1200x627'}</span>
+                          <span className="text-[10px] font-black text-slate-400">
+                            {sponsorMediaType === 'video'
+                              ? (language === 'kh' ? 'មិនមានវីដេអូ Sponsor ឬបិទការបង្ហាញ' : 'No sponsor video uploaded or disabled')
+                              : (language === 'kh' ? 'មិនមានរូបភាព Sponsor ឬបិទការបង្ហាញ' : 'No sponsor image uploaded or disabled')
+                            }
+                          </span>
+                          <span className="text-[8px] font-medium text-slate-400 mt-0.5">
+                            {sponsorMediaType === 'video'
+                              ? (language === 'kh' ? 'ទំហំវីដេអូអតិបរមា 20MB' : 'Max size 20MB')
+                              : (language === 'kh' ? 'ទំហំសមស្រប 1200x627' : 'Aspect ratio: 1200x627')
+                            }
+                          </span>
                         </div>
                       )}
                     </div>

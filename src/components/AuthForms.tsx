@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { safeStorage } from '../lib/safeStorage';
 
 interface SignInFormProps {
   onSubmit: (username: string, password: string) => void;
@@ -19,11 +20,29 @@ export function SignInForm({
   t,
   onForgotPasswordClick,
 }: SignInFormProps) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState(() => {
+    const isRemembered = safeStorage.getItem('luypay_remember_me') === 'true';
+    return isRemembered ? safeStorage.getItem('luypay_remember_username') || '' : '';
+  });
+  const [password, setPassword] = useState(() => {
+    const isRemembered = safeStorage.getItem('luypay_remember_me') === 'true';
+    return isRemembered ? safeStorage.getItem('luypay_remember_password') || '' : '';
+  });
+  const [rememberMe, setRememberMe] = useState(() => {
+    return safeStorage.getItem('luypay_remember_me') === 'true';
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (rememberMe) {
+      safeStorage.setItem('luypay_remember_me', 'true');
+      safeStorage.setItem('luypay_remember_username', username);
+      safeStorage.setItem('luypay_remember_password', password);
+    } else {
+      safeStorage.setItem('luypay_remember_me', 'false');
+      safeStorage.removeItem('luypay_remember_username');
+      safeStorage.removeItem('luypay_remember_password');
+    }
     onSubmit(username, password);
   };
 
@@ -80,6 +99,21 @@ export function SignInForm({
             required
           />
         </div>
+      </div>
+
+      {/* Remember Me Checkbox Option */}
+      <div className="flex items-center justify-between py-1 px-1">
+        <label className="flex items-center gap-2 cursor-pointer select-none group">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="w-4 h-4 rounded-md border-slate-800 bg-slate-950/70 text-blue-500 focus:ring-2 focus:ring-blue-500/20 transition cursor-pointer"
+          />
+          <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider group-hover:text-slate-200 transition">
+            {language === 'kh' ? 'ចងចាំគណនី (Remember me)' : 'Remember me'}
+          </span>
+        </label>
       </div>
 
       {loginError && (

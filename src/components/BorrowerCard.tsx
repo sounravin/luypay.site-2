@@ -384,6 +384,14 @@ export default function BorrowerCard({
           <span>{t('loanDateLabel')} {formatKhmerDate(borrower.loanDate)}</span>
         </div>
         
+        {/* Dynamic Payment Status when checked */}
+        {isSelected && (
+          <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-[11px] font-black border border-emerald-500/20 animate-in fade-in zoom-in duration-200">
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-500 stroke-[3]" />
+            <span>{language === 'kh' ? 'បានបង់រួចរាល់' : 'Paid'}</span>
+          </div>
+        )}
+        
         {/* Quick payment check button */}
         {!isCompleted ? (
           <div className="flex items-center gap-1.5">
