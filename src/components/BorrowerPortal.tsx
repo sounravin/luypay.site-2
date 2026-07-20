@@ -436,34 +436,7 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
             </div>
           </div>
 
-          {/* Payment QR Code inside Hero Card */}
-          {activePaymentQr && (
-            <div 
-              onClick={() => setIsQrZoomOpen(true)}
-              className="shrink-0 flex items-center gap-3 bg-slate-50 border border-slate-200/60 p-3 rounded-2xl shadow-xs hover:shadow-md hover:border-slate-300 transition duration-200 max-w-xs cursor-pointer"
-            >
-              <div className="w-14 h-14 bg-white border border-slate-200 rounded-xl overflow-hidden shrink-0 shadow-inner flex items-center justify-center p-1 relative group">
-                <img
-                  src={activePaymentQr}
-                  alt="Scan QR"
-                  className="w-full h-full object-contain cursor-zoom-in"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-              <div className="space-y-0.5 min-w-0">
-                <span className="text-[10px] font-black text-blue-600 uppercase tracking-wider block flex items-center gap-1">
-                  <QrCode className="w-3.5 h-3.5" />
-                  <span>{language === 'kh' ? 'ស្កេនដើម្បីទូទាត់' : 'Scan to Repay'}</span>
-                </span>
-                <p className="text-[11px] font-bold text-slate-700 leading-snug">
-                  {language === 'kh' ? 'QR Code សងប្រាក់' : 'Payment QR Code'}
-                </p>
-                <p className="text-[9px] text-slate-400 font-semibold leading-tight">
-                  {language === 'kh' ? 'ចុចលើរូបដើម្បីពង្រីក' : 'Click image to zoom'}
-                </p>
-              </div>
-            </div>
-          )}
+
 
           {/* Custom notice from Lender */}
           <div className="flex-1 max-w-md bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 items-start shadow-sm mx-0 md:mx-4 animate-in fade-in slide-in-from-top-2 duration-300">
