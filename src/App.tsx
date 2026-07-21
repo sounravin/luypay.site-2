@@ -13,7 +13,7 @@ import BorrowerApplyForm from './components/BorrowerApplyForm';
 import LoanApplicationTracker from './components/LoanApplicationTracker';
 import LoanApplicationsControlPanel from './components/LoanApplicationsControlPanel';
 import { LoanApplication } from './types';
-import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText } from 'lucide-react';
+import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText, X } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDoc, getDocs } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import { safeStorage, largeMediaStorage } from './lib/safeStorage';
@@ -680,6 +680,12 @@ export default function App() {
   const [enableAnimations, setEnableAnimations] = useState<boolean>(() => {
     return safeStorage.getItem('luypay_enable_animations') !== 'false';
   });
+  const [enableKhmerArt, setEnableKhmerArt] = useState<boolean>(() => {
+    return safeStorage.getItem('luypay_enable_khmer_art') !== 'false';
+  });
+  const [isSponsorDismissed, setIsSponsorDismissed] = useState<boolean>(() => {
+    return safeStorage.getItem('luypay_sponsor_dismissed') === 'true';
+  });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const useMobileAppUi = false;
 
@@ -713,6 +719,14 @@ export default function App() {
   useEffect(() => {
     safeStorage.setItem('luypay_enable_animations', String(enableAnimations));
   }, [enableAnimations]);
+
+  useEffect(() => {
+    safeStorage.setItem('luypay_enable_khmer_art', String(enableKhmerArt));
+  }, [enableKhmerArt]);
+
+  useEffect(() => {
+    safeStorage.setItem('luypay_sponsor_dismissed', String(isSponsorDismissed));
+  }, [isSponsorDismissed]);
 
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -3840,7 +3854,7 @@ export default function App() {
       )}
 
       {/* Decorative Traditional Khmer Night Lights and Lanterns (glowing effects) */}
-      {theme === 'dark' && (
+      {theme === 'dark' && enableKhmerArt && (
         <div className="absolute top-0 inset-x-0 h-64 pointer-events-none overflow-hidden z-20 select-none">
           {/* Subtle hanging branch accent */}
           <div className="absolute top-0 right-0 left-0 h-2 bg-gradient-to-b from-[#1c2c54]/40 to-transparent" />
@@ -3895,41 +3909,43 @@ export default function App() {
       )}
 
       {/* Marquee Banner */}
-      <div id="global-marquee-banner" className="bg-purple-600 text-white font-bold text-xs py-2 shadow-sm border-b border-purple-700/20 select-none shrink-0 z-40 overflow-hidden w-full">
-        <div className="animate-marquee-smooth flex">
-          {isSuperAdmin ? (
-            <>
-              <span className="inline-block mr-12 shrink-0">
-                ✨ <span className="font-extrabold text-amber-200">សេចក្តីជូនដំណឹង៖</span> មានទទួលដាក់លុយឈរលុយឆក ចាប់ពី 50$ រហូតដល់ 500$ | Facebook: ឈ្មោះ <span className="font-extrabold text-amber-300 underline">Pich Rachana</span>
-              </span>
-              <span className="inline-block mr-12 shrink-0">
-                ✨ <span className="font-extrabold text-amber-200">សេចក្តីជូនដំណឹង៖</span> មានទទួលដាក់លុយឈរលុយឆក ចាប់ពី 50$ រហូតដល់ 500$ | Facebook: ឈ្មោះ <span className="font-extrabold text-amber-300 underline">Pich Rachana</span>
-              </span>
-              <span className="inline-block mr-12 shrink-0">
-                ✨ <span className="font-extrabold text-amber-200">សេចក្តីជូនដំណឹង៖</span> មានទទួលដាក់លុយឈរលុយឆក ចាប់ពី 50$ រហូតដល់ 500$ | Facebook: ឈ្មោះ <span className="font-extrabold text-amber-300 underline">Pich Rachana</span>
-              </span>
-              <span className="inline-block mr-12 shrink-0">
-                ✨ <span className="font-extrabold text-amber-200">សេចក្តីជូនដំណឹង៖</span> មានទទួលដាក់លុយឈរលុយឆក ចាប់ពី 50$ រហូតដល់ 500$ | Facebook: ឈ្មោះ <span className="font-extrabold text-amber-300 underline">Pich Rachana</span>
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="inline-block mr-12 shrink-0">
-                ✨ <span className="font-extrabold text-amber-200">ស្វាគមន៍មកកាន់ LUYPAY & លុយឆក់</span> «រហ័សទាន់ចិត្ត សុវត្ថិភាព និងទំនុកចិត្តខ្ពស់»
-              </span>
-              <span className="inline-block mr-12 shrink-0">
-                ✨ <span className="font-extrabold text-amber-200">ស្វាគមន៍មកកាន់ LUYPAY & លុយឆក់</span> «រហ័សទាន់ចិត្ត សុវត្ថិភាព និងទំនុកចិត្តខ្ពស់»
-              </span>
-              <span className="inline-block mr-12 shrink-0">
-                ✨ <span className="font-extrabold text-amber-200">ស្វាគមន៍មកកាន់ LUYPAY & លុយឆក់</span> «រហ័សទាន់ចិត្ត សុវត្ថិភាព និងទំនុកចិត្តខ្ពស់»
-              </span>
-              <span className="inline-block mr-12 shrink-0">
-                ✨ <span className="font-extrabold text-amber-200">ស្វាគមន៍មកកាន់ LUYPAY & លុយឆក់</span> «រហ័សទាន់ចិត្ត សុវត្ថិភាព និងទំនុកចិត្តខ្ពស់»
-              </span>
-            </>
-          )}
+      {enableKhmerArt && (
+        <div id="global-marquee-banner" className="bg-purple-600 text-white font-bold text-xs py-2 shadow-sm border-b border-purple-700/20 select-none shrink-0 z-40 overflow-hidden w-full">
+          <div className="animate-marquee-smooth flex">
+            {isSuperAdmin ? (
+              <>
+                <span className="inline-block mr-12 shrink-0">
+                  ✨ <span className="font-extrabold text-amber-200">សេចក្តីជូនដំណឹង៖</span> មានទទួលដាក់លុយឈរលុយឆក ចាប់ពី 50$ រហូតដល់ 500$ | Facebook: ឈ្មោះ <span className="font-extrabold text-amber-300 underline">Pich Rachana</span>
+                </span>
+                <span className="inline-block mr-12 shrink-0">
+                  ✨ <span className="font-extrabold text-amber-200">សេចក្តីជូនដំណឹង៖</span> មានទទួលដាក់លុយឈរលុយឆក ចាប់ពី 50$ រហូតដល់ 500$ | Facebook: ឈ្មោះ <span className="font-extrabold text-amber-300 underline">Pich Rachana</span>
+                </span>
+                <span className="inline-block mr-12 shrink-0">
+                  ✨ <span className="font-extrabold text-amber-200">សេចក្តីជូនដំណឹង៖</span> មានទទួលដាក់លុយឈរលុយឆក ចាប់ពី 50$ រហូតដល់ 500$ | Facebook: ឈ្មោះ <span className="font-extrabold text-amber-300 underline">Pich Rachana</span>
+                </span>
+                <span className="inline-block mr-12 shrink-0">
+                  ✨ <span className="font-extrabold text-amber-200">សេចក្តីជូនដំណឹង៖</span> មានទទួលដាក់លុយឈរលុយឆក ចាប់ពី 50$ រហូតដល់ 500$ | Facebook: ឈ្មោះ <span className="font-extrabold text-amber-300 underline">Pich Rachana</span>
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="inline-block mr-12 shrink-0">
+                  ✨ <span className="font-extrabold text-amber-200">ស្វាគមន៍មកកាន់ LUYPAY & លុយឆក់</span> «រហ័សទាន់ចិត្ត សុវត្ថិភាព និងទំនុកចិត្តខ្ពស់»
+                </span>
+                <span className="inline-block mr-12 shrink-0">
+                  ✨ <span className="font-extrabold text-amber-200">ស្វាគមន៍មកកាន់ LUYPAY & លុយឆក់</span> «រហ័សទាន់ចិត្ត សុវត្ថិភាព និងទំនុកចិត្តខ្ពស់»
+                </span>
+                <span className="inline-block mr-12 shrink-0">
+                  ✨ <span className="font-extrabold text-amber-200">ស្វាគមន៍មកកាន់ LUYPAY & លុយឆក់</span> «រហ័សទាន់ចិត្ត សុវត្ថិភាព និងទំនុកចិត្តខ្ពស់»
+                </span>
+                <span className="inline-block mr-12 shrink-0">
+                  ✨ <span className="font-extrabold text-amber-200">ស្វាគមន៍មកកាន់ LUYPAY & លុយឆក់</span> «រហ័សទាន់ចិត្ត សុវត្ថិភាព និងទំនុកចិត្តខ្ពស់»
+                </span>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex flex-1 min-h-0 relative">
         {/* Toast Notification */}
@@ -4596,9 +4612,21 @@ export default function App() {
         </div>
 
         {/* Dynamic Sponsor Promotion Banner (Visible if enabled and image/video is uploaded) */}
-        {sponsorConfig && sponsorConfig.sponsorEnabled && (sponsorConfig.sponsorMediaType === 'video' ? sponsorVideoData : sponsorConfig.sponsorImageUrl) && (
-          <div id="system-sponsor-banner" className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-3.5 shadow-sm flex flex-col gap-2.5 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between px-1">
+        {!isSponsorDismissed && sponsorConfig && sponsorConfig.sponsorEnabled && (sponsorConfig.sponsorMediaType === 'video' ? sponsorVideoData : sponsorConfig.sponsorImageUrl) && (
+          <div id="system-sponsor-banner" className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-3.5 shadow-sm flex flex-col gap-2.5 animate-in fade-in duration-300 relative">
+            <button
+              onClick={() => {
+                setIsSponsorDismissed(true);
+                safeStorage.setItem('luypay_sponsor_dismissed', 'true');
+                playClickSound();
+              }}
+              className="absolute top-2.5 right-2.5 p-1 rounded-full bg-slate-100/80 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition duration-150 z-20 cursor-pointer"
+              title={language === 'kh' ? 'បិទផ្ទាំង' : 'Close Banner'}
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+
+            <div className="flex items-center justify-between px-1 pr-8">
               <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
                 {language === 'kh' ? 'ឧបត្ថម្ភគាំទ្រ' : 'Sponsored'}
@@ -5458,6 +5486,58 @@ export default function App() {
                   >
                     <span className="w-2 h-2 rounded-full bg-slate-400"></span>
                     <span>{language === 'kh' ? 'បិទចលនា (OFF)' : 'Animations OFF'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Khmer Art Decoration Toggle */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  <span>{language === 'kh' ? 'គ្រឿងលម្អសោភ័ណភាពខ្មែរ (Khmer Art Ornaments)' : 'Khmer Art & Ornaments'}</span>
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setEnableKhmerArt(true); playClickSound(); }}
+                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${enableKhmerArt ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-300 dark:border-purple-800 text-purple-600 dark:text-purple-400 font-black' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600'}`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                    <span>{language === 'kh' ? 'បើកគ្រឿងលម្អ (ON)' : 'Ornaments ON'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setEnableKhmerArt(false); playClickSound(); }}
+                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${!enableKhmerArt ? 'bg-slate-100 dark:bg-slate-850 border-slate-350 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-black' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600'}`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <span>{language === 'kh' ? 'បិទទៅលំនាំដើម (OFF)' : 'Ornaments OFF (Default)'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Sponsor Banner Toggle */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                  <Info className="w-4 h-4 text-indigo-500" />
+                  <span>{language === 'kh' ? 'ផ្ទាំងផ្សាយពាណិជ្ជកម្ម (Sponsor Banner)' : 'Sponsor Banner'}</span>
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { setIsSponsorDismissed(false); playClickSound(); }}
+                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${!isSponsorDismissed ? 'bg-indigo-50 dark:bg-indigo-950/20 border-indigo-300 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 font-black' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600'}`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                    <span>{language === 'kh' ? 'បង្ហាញផ្ទាំង (Show)' : 'Show Banner'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setIsSponsorDismissed(true); playClickSound(); }}
+                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${isSponsorDismissed ? 'bg-slate-100 dark:bg-slate-850 border-slate-350 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-black' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600'}`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <span>{language === 'kh' ? 'បិទផ្ទាំង (Hide)' : 'Hide Banner'}</span>
                   </button>
                 </div>
               </div>
