@@ -31,8 +31,6 @@ export default function BorrowerCard({
   appTheme = 'slate',
   isDark = false
 }: BorrowerCardProps) {
-  const { t, language } = useLanguage();
-
   // 10-second ticker to keep cards status up to date in real-time
   const [tick, setTick] = useState<number>(0);
   useEffect(() => {
@@ -41,6 +39,8 @@ export default function BorrowerCard({
     }, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  const { t, language } = useLanguage();
 
   // Calculate if the borrower is currently Online (with clock drift protection)
   const isOnline = !!(

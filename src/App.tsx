@@ -1657,6 +1657,32 @@ export default function App() {
     });
   }, [borrowers, language]);
 
+  // Automatically clean up inactive borrower online statuses in Firestore (Heartbeat Timeout)
+  useEffect(() => {
+    if (!currentUser || borrowers.length === 0) return;
+
+    const interval = setInterval(async () => {
+      const now = Date.now();
+      const inactiveOnlineBorrowers = borrowers.filter(
+        (b) => b.isOnline && b.lastActive && (now - b.lastActive) > 50000
+      );
+
+      if (inactiveOnlineBorrowers.length === 0) return;
+
+      for (const b of inactiveOnlineBorrowers) {
+        try {
+          const docRef = doc(db, 'borrowers', b.id);
+          await setDoc(docRef, { isOnline: false }, { merge: true });
+          console.log(`Automatically set inactive borrower ${b.name} to offline.`);
+        } catch (err) {
+          console.warn(`Failed to clean up online status for ${b.name}:`, err);
+        }
+      }
+    }, 15000); // Check every 15 seconds
+
+    return () => clearInterval(interval);
+  }, [borrowers, currentUser]);
+
   // Compute ledger statistics
   const [stats, setStats] = useState<LedgerStats>({
     totalActiveLoansCount: 0,

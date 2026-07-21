@@ -21,5 +21,8 @@ service cloud.firestore {
     match /settings/{settingsId} {
       allow read, write: if true;
     }
+    match /sponsor_video_chunks/{chunkId} {
+      allow read, write: if true;
+    }
   }
 }
