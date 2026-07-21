@@ -249,6 +249,7 @@ export default function App() {
       return [];
     }
   });
+  const [telegramError, setTelegramError] = useState<string | null>(null);
 
   // Background polling for Telegram Bot messages
   useEffect(() => {
@@ -262,8 +263,24 @@ export default function App() {
         const url = `https://api.telegram.org/bot${telegramToken}/getUpdates?offset=${telegramOffset}&timeout=5`;
         const res = await fetch(url);
         if (!res.ok) {
-          throw new Error(`Telegram Bot API error: ${res.statusText}`);
+          let errorMsg = `HTTP ${res.status}`;
+          try {
+            const errData = await res.json();
+            if (errData && errData.description) {
+              errorMsg = errData.description;
+            }
+          } catch (_) {}
+          setTelegramError(errorMsg);
+          console.warn('Telegram Bot API update warning:', errorMsg);
+          if (isSubscribed) {
+            timerId = setTimeout(pollTelegram, 25000);
+          }
+          return;
         }
+        
+        // Success
+        setTelegramError(null);
+        
         const data = await res.json();
         if (!isSubscribed) return;
 
@@ -403,7 +420,8 @@ export default function App() {
           }
         }
       } catch (err: any) {
-        console.error('Telegram Polling error:', err);
+        setTelegramError(err?.message || 'Connection Error');
+        console.warn('Telegram Connection status warning:', err?.message || err);
       }
 
       // Schedule next poll
@@ -1583,6 +1601,40 @@ export default function App() {
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleForceUpdateSystem = async () => {
+    playClickSound();
+    showToast(language === 'kh' ? 'កំពុងសម្អាត Cache និងទាញយកប្រព័ន្ធថ្មី...' : 'Clearing cache and hard updating...', 'info');
+    
+    try {
+      // 1. Unregister any service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          await registration.unregister();
+        }
+      }
+      
+      // 2. Clear all browser cache storage
+      if ('caches' in window) {
+        const names = await caches.keys();
+        for (const name of names) {
+          await caches.delete(name);
+        }
+      }
+      
+      // 3. Clear session storage & partial safeStorage items if needed, but keep core login session to avoid forcing logout
+      window.sessionStorage.clear();
+      
+      // 4. Force hard reload (cache-bypassing reload)
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err) {
+      console.error('Error during hard update:', err);
+      window.location.reload();
+    }
   };
 
   // Save to local storage and sync to Firestore if logged in
@@ -5605,6 +5657,13 @@ export default function App() {
                     </button>
                   </div>
 
+                  {telegramPollingEnabled && telegramError && (
+                    <div className="p-2.5 bg-rose-50 dark:bg-rose-950/10 border border-rose-100 dark:border-rose-950/20 rounded-xl text-[10px] font-bold text-rose-600 dark:text-rose-400 flex flex-col gap-0.5 animate-in fade-in duration-200">
+                      <span className="uppercase tracking-wider font-black">{language === 'kh' ? 'បញ្ហាប្រព័ន្ធភ្ជាប់ Telegram:' : 'Telegram Connection Alert:'}</span>
+                      <span className="font-mono text-[9px] break-all">{telegramError}</span>
+                    </div>
+                  )}
+
                   {/* Telegram logs */}
                   <div className="pt-2 border-t border-slate-200/50 dark:border-slate-800/60">
                     <div className="flex items-center justify-between mb-2">
@@ -5654,6 +5713,31 @@ export default function App() {
                       )}
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Cache Clear & Force Update Section */}
+              <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                  <RefreshCw className="w-4 h-4 text-rose-500" />
+                  <span>{language === 'kh' ? 'សម្អាត Cache និងធ្វើបច្ចុប្បន្នភាព' : 'Clear Cache & Update System'}</span>
+                </h4>
+                
+                <div className="bg-rose-50/40 dark:bg-rose-950/5 p-4 rounded-2xl border border-rose-100 dark:border-rose-950/20 space-y-3">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold leading-relaxed">
+                    {language === 'kh' 
+                      ? 'ប្រសិនបើលោកអ្នកកែប្រែប្រព័ន្ធហើយ Browser មិនបង្ហាញទិន្នន័យថ្មី ឬរក្សាទុកទិន្នន័យចាស់ សូមចុចប៊ូតុងខាងក្រោមដើម្បីសម្អាត Cache ទាំងអស់ និងទាញយកប្រព័ន្ធថ្មីចុងក្រោយបង្អស់ពី Cloud (Server) ដោយស្វ័យប្រវត្តិ។' 
+                      : 'If you modified the system and your browser still displays outdated pages or content, click below to clean all caches and automatically force-load the latest updates from the Cloud (Server).'}
+                  </p>
+                  
+                  <button
+                    type="button"
+                    onClick={handleForceUpdateSystem}
+                    className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs font-black rounded-xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer border-transparent"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>{language === 'kh' ? 'ទាញយកប្រព័ន្ធថ្មីចុងក្រោយ (Force Update)' : 'Force Update Latest Version'}</span>
+                  </button>
                 </div>
               </div>
             </div>

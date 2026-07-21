@@ -15,16 +15,31 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-// Register Progressive Web App (PWA) Service Worker
+// Active Unregistration and Cache Clearing to prevent browser caching of old website versions.
+// This solves the issue where iPhones and desktop browsers display outdated code/data.
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => {
-        console.log('Luypay PWA Service Worker Registered successfully:', reg.scope);
-      })
-      .catch(err => {
-        console.warn('Luypay PWA Service Worker registration failed:', err);
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) {
+      registration.unregister().then((success) => {
+        if (success) {
+          console.log('Successfully unregistered stale service worker to ensure latest code is loaded.');
+        }
       });
+    }
+  }).catch((err) => {
+    console.warn('Error fetching service worker registrations:', err);
+  });
+}
+
+if ('caches' in window) {
+  caches.keys().then((names) => {
+    for (const name of names) {
+      caches.delete(name).then(() => {
+        console.log('Successfully deleted browser cache bucket:', name);
+      });
+    }
+  }).catch((err) => {
+    console.warn('Error clearing caches:', err);
   });
 }
 
