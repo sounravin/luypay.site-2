@@ -1324,7 +1324,7 @@ export default function BorrowerDetail({
                       <span className="block text-xs font-bold text-amber-800 uppercase tracking-wider">
                         {language === 'kh' ? 'ពន្យារពេលសងដើម (សងការបន្តរ)' : 'Defer Principal (Interest Only)'}
                       </span>
-                      <p className="text-[10px] text-amber-700/85 font-semibold mt-0.5">
+                      <p className="text-[10px] text-amber-700 font-semibold mt-0.5">
                         {language === 'kh' ? 'សម្គាល់កូនបំណុលដែលសុំបង់តែការប្រាក់បន្តសិន' : 'Mark borrower paying interest only continuously'}
                       </p>
                     </div>
@@ -2163,7 +2163,7 @@ export default function BorrowerDetail({
                           <span>📄</span>
                           <span>{language === 'kh' ? 'ផ្ទាំងរបាយការណ៍លិខិតសងប្រាក់អេឡិចត្រូនិច' : 'Electronic Repayment Statement Panel'}</span>
                         </h3>
-                        <p className="text-xs text-blue-700/80 font-semibold mt-0.5">
+                        <p className="text-xs text-blue-700 font-semibold mt-0.5">
                           {language === 'kh' 
                             ? 'ត្រួតពិនិត្យវត្តមាន Online របស់កូនបំណុល និងមើលរបាយការណ៍លិខិតសងប្រាក់អេឡិចត្រូនិចក្នុងពេលជាក់ស្តែង' 
                             : 'Monitor debtor live activity and view their dynamic electronic repayment statement receipt page.'}

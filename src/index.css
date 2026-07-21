@@ -120,7 +120,14 @@ input:focus, select:focus, textarea:focus {
 .dark.theme-angkor .bg-emerald-50,
 .dark.theme-angkor .bg-rose-50,
 .dark.theme-angkor .bg-slate-850,
-.dark.theme-angkor .bg-slate-750 {
+.dark.theme-angkor .bg-slate-750,
+.dark.theme-angkor [class*="bg-indigo-50"],
+.dark.theme-angkor [class*="bg-blue-50"],
+.dark.theme-angkor [class*="bg-amber-50"],
+.dark.theme-angkor [class*="bg-slate-50"],
+.dark.theme-angkor [class*="bg-slate-100"],
+.dark.theme-angkor [class*="bg-emerald-50"],
+.dark.theme-angkor [class*="bg-rose-50"] {
   background-color: rgba(20, 35, 73, 0.6) !important;
   border: 1px solid rgba(223, 176, 53, 0.15) !important;
 }
@@ -142,10 +149,25 @@ input:focus, select:focus, textarea:focus {
   color: #94a3b8 !important;
 }
 
-.dark.theme-angkor .text-blue-600 {
+.dark.theme-angkor .text-blue-600,
+.dark.theme-angkor .text-blue-700,
+.dark.theme-angkor .text-blue-800,
+.dark.theme-angkor .text-blue-900,
+.dark.theme-angkor .text-blue-950 {
   color: #38bdf8 !important;
 }
-.dark.theme-angkor .text-amber-600 {
+.dark.theme-angkor .text-indigo-600,
+.dark.theme-angkor .text-indigo-700,
+.dark.theme-angkor .text-indigo-800,
+.dark.theme-angkor .text-indigo-900,
+.dark.theme-angkor .text-indigo-950 {
+  color: #818cf8 !important;
+}
+.dark.theme-angkor .text-amber-600,
+.dark.theme-angkor .text-amber-700,
+.dark.theme-angkor .text-amber-800,
+.dark.theme-angkor .text-amber-900,
+.dark.theme-angkor .text-amber-950 {
   color: #fcd34d !important;
 }
 .dark.theme-angkor .text-emerald-600 {
@@ -198,7 +220,14 @@ input:focus, select:focus, textarea:focus {
 }
 
 .dark:not(.theme-angkor) .bg-slate-50,
-.dark:not(.theme-angkor) .bg-slate-100 {
+.dark:not(.theme-angkor) .bg-slate-100,
+.dark:not(.theme-angkor) [class*="bg-indigo-50"],
+.dark:not(.theme-angkor) [class*="bg-blue-50"],
+.dark:not(.theme-angkor) [class*="bg-amber-50"],
+.dark:not(.theme-angkor) [class*="bg-slate-50"],
+.dark:not(.theme-angkor) [class*="bg-slate-100"],
+.dark:not(.theme-angkor) [class*="bg-emerald-50"],
+.dark:not(.theme-angkor) [class*="bg-rose-50"] {
   background-color: rgba(2, 6, 23, 0.5) !important;
   border-color: rgba(255, 255, 255, 0.05) !important;
 }
@@ -207,6 +236,30 @@ input:focus, select:focus, textarea:focus {
 .dark:not(.theme-angkor) .text-slate-800,
 .dark:not(.theme-angkor) .text-slate-700 {
   color: #f1f5f9 !important;
+}
+
+.dark:not(.theme-angkor) .text-indigo-600,
+.dark:not(.theme-angkor) .text-indigo-700,
+.dark:not(.theme-angkor) .text-indigo-800,
+.dark:not(.theme-angkor) .text-indigo-900,
+.dark:not(.theme-angkor) .text-indigo-950 {
+  color: #a5b4fc !important;
+}
+
+.dark:not(.theme-angkor) .text-blue-600,
+.dark:not(.theme-angkor) .text-blue-700,
+.dark:not(.theme-angkor) .text-blue-800,
+.dark:not(.theme-angkor) .text-blue-900,
+.dark:not(.theme-angkor) .text-blue-950 {
+  color: #38bdf8 !important;
+}
+
+.dark:not(.theme-angkor) .text-amber-600,
+.dark:not(.theme-angkor) .text-amber-700,
+.dark:not(.theme-angkor) .text-amber-800,
+.dark:not(.theme-angkor) .text-amber-900,
+.dark:not(.theme-angkor) .text-amber-950 {
+  color: #fbbf24 !important;
 }
 
 .dark:not(.theme-angkor) .text-slate-500,
