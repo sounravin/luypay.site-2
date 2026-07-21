@@ -148,7 +148,11 @@ export default function App() {
   const [blockScreenPaymentStep, setBlockScreenPaymentStep] = useState<'scan' | 'counting' | 'select_plan' | 'success'>('scan');
   const [blockScreenCountdown, setBlockScreenCountdown] = useState<number>(56);
   const [blockScreenQrScanDetected, setBlockScreenQrScanDetected] = useState<boolean>(false);
-  const [mobileHeaderStyle, setMobileHeaderStyle] = useState<'default' | 'angkor'>(() => (safeStorage.getItem('luypay_mobile_header_style') as 'default' | 'angkor') || 'default');
+  const [mobileHeaderStyle, setMobileHeaderStyle] = useState<'default' | 'angkor'>(() => {
+    const saved = safeStorage.getItem('luypay_mobile_header_style');
+    if (saved === 'angkor') return 'default';
+    return (saved as 'default' | 'angkor') || 'default';
+  });
 
   // Real-time QR Configuration from Firestore settings/qr_config
   const [qrConfig, setQrConfig] = useState<any>({
@@ -690,16 +694,20 @@ export default function App() {
     return (safeStorage.getItem('luypay_theme') as 'light' | 'dark') || 'light';
   });
   const [appTheme, setAppTheme] = useState<AppThemeType>(() => {
-    return (safeStorage.getItem('luypay_app_theme') as AppThemeType) || 'slate';
+    const saved = safeStorage.getItem('luypay_app_theme');
+    if (saved === 'angkor') return 'slate';
+    return (saved as AppThemeType) || 'slate';
   });
   const [buttonStyle, setButtonStyle] = useState<ButtonStyleType>(() => {
-    return (safeStorage.getItem('luypay_button_style') as ButtonStyleType) || 'kbach';
+    const saved = safeStorage.getItem('luypay_button_style');
+    if (saved === 'kbach') return 'modern';
+    return (saved as ButtonStyleType) || 'modern';
   });
   const [enableAnimations, setEnableAnimations] = useState<boolean>(() => {
     return safeStorage.getItem('luypay_enable_animations') !== 'false';
   });
   const [enableKhmerArt, setEnableKhmerArt] = useState<boolean>(() => {
-    return safeStorage.getItem('luypay_enable_khmer_art') !== 'false';
+    return safeStorage.getItem('luypay_enable_khmer_art') === 'true';
   });
   const [isSponsorDismissed, setIsSponsorDismissed] = useState<boolean>(() => {
     return safeStorage.getItem('luypay_sponsor_dismissed') === 'true';
@@ -914,7 +922,13 @@ export default function App() {
     setLoginError('ឈ្មោះអ្នកប្រើប្រាស់ ឬលេខកូដសម្ងាត់មិនត្រឹមត្រូវឡើយ!');
   };
 
-  const handleMemberRegister = async (usernameInput: string, emailInput: string, passwordInput: string) => {
+  const handleMemberRegister = async (
+    usernameInput: string,
+    emailInput: string,
+    passwordInput: string,
+    selectedPlan: '1_month' | '3_months' | '1_year',
+    invoiceImageUrl: string
+  ) => {
     const cleanUsername = usernameInput.trim().toLowerCase();
     const cleanEmail = emailInput.trim().toLowerCase();
     const cleanPassword = passwordInput;
@@ -955,7 +969,12 @@ export default function App() {
         displayName: usernameInput.trim(),
         createdAt: new Date().toISOString(),
         invitesCount: 0,
-        inviteLink: `${window.location.origin}/?ref=${cleanUsername}`
+        inviteLink: `${window.location.origin}/?ref=${cleanUsername}`,
+        isApproved: false, // Must be approved by Admin
+        selectedPlan: selectedPlan,
+        invoiceImageUrl: invoiceImageUrl,
+        isBlocked: false,
+        subscriptionExpires: "" // Set when approved
       };
 
       await setDoc(docRef, newMember);
@@ -987,7 +1006,7 @@ export default function App() {
       setRegPassword('');
       setLoginMode('signin');
 
-      showToast('ការចុះឈ្មោះសមាជិកបានជោគជ័យ! សូមស្វាគមន៍មកកាន់ Dashboard ពិសេសរបស់អ្នក!');
+      showToast('បានផ្ញើសំណើចុះឈ្មោះសមាជិករួចរាល់! សូមរង់ចាំ Admin ពិនិត្យវិក្កយបត្រ និងអនុម័តជូន។');
     } catch (err) {
       console.error('Error during registration:', err);
       setRegError('មានបញ្ហាបច្ចេកទេសក្នុងការចុះឈ្មោះសមាជិក!');
@@ -1635,6 +1654,40 @@ export default function App() {
       console.error('Error during hard update:', err);
       window.location.reload();
     }
+  };
+
+  const handleResetToDefaults = () => {
+    setTheme('light');
+    setAppTheme('slate');
+    setButtonStyle('modern');
+    setEnableAnimations(true);
+    setEnableKhmerArt(false);
+    setMobileHeaderStyle('default');
+    setIsSponsorDismissed(false);
+
+    safeStorage.setItem('luypay_theme', 'light');
+    safeStorage.setItem('luypay_app_theme', 'slate');
+    safeStorage.setItem('luypay_button_style', 'modern');
+    safeStorage.setItem('luypay_enable_animations', 'true');
+    safeStorage.setItem('luypay_enable_khmer_art', 'false');
+    safeStorage.setItem('luypay_mobile_header_style', 'default');
+    safeStorage.setItem('luypay_sponsor_dismissed', 'false');
+
+    document.documentElement.classList.remove('dark');
+
+    playClickSound();
+    showToast(
+      language === 'kh' 
+        ? 'បានកំណត់ការរចនាបទមកលំនាំដើមវិញរួចរាល់!' 
+        : 'UI interface has been reset to default classic design!', 
+      'success'
+    );
+    
+    // Close the settings modal and force a clean browser reload to ensure 100% style state synchronization
+    setIsSettingsOpen(false);
+    setTimeout(() => {
+      window.location.reload();
+    }, 800);
   };
 
   // Save to local storage and sync to Firestore if logged in
@@ -2514,6 +2567,7 @@ export default function App() {
                     authLoading={authLoading}
                     language={language}
                     t={t}
+                    qrConfig={qrConfig}
                   />
 
                   <div className="border-t border-slate-800/60 pt-4 text-center">
@@ -2686,6 +2740,79 @@ export default function App() {
             </div>
           </div>
         )}
+      </div>
+    );
+  }
+
+  const isPendingApproval = memberProfile && memberProfile.isApproved === false && !isSuperAdmin;
+
+  if (isPendingApproval) {
+    const planLabel = memberProfile.selectedPlan === '1_month' ? 'គម្រោង ១ ខែ ($5)' : memberProfile.selectedPlan === '3_months' ? 'គម្រោង ៣ ខែ ($12)' : 'គម្រោង ១ ឆ្នាំ ($35)';
+    return (
+      <div className="min-h-screen bg-[#071324] text-white p-4 md:p-8 flex items-center justify-center">
+        <div className="max-w-md w-full space-y-6 animate-in fade-in duration-300">
+          <div className="text-center space-y-4">
+            <div className="inline-flex p-4 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-3xl text-4xl animate-pulse">
+              ⏳
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">គណនីរបស់អ្នកកំពុងរង់ចាំការអនុម័ត!</h3>
+              <p className="text-xs font-semibold text-slate-300 leading-relaxed">
+                គណនីឈ្មោះ <span className="text-emerald-400 font-extrabold">@{currentUser}</span> ត្រូវបានបង្កើតរួចរាល់ហើយ និងកំពុងរង់ចាំការផ្ទៀងផ្ទាត់ការបង់ប្រាក់ពី Admin។
+              </p>
+            </div>
+          </div>
+
+          {/* Plan and Invoice summary card */}
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4.5 space-y-4 text-left">
+            <div className="flex justify-between items-center text-xs font-bold border-b border-slate-800/60 pb-2.5">
+              <span className="text-slate-400">គម្រោងដែលបានជ្រើសរើស៖</span>
+              <span className="text-amber-400 font-extrabold uppercase">{planLabel}</span>
+            </div>
+
+            {memberProfile.invoiceImageUrl && (
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">វិក្កយបត្រដែលបានផ្ទុកឡើង៖</span>
+                <div className="bg-slate-950/40 p-2 rounded-xl border border-slate-800/50 flex justify-center">
+                  <img
+                    src={memberProfile.invoiceImageUrl}
+                    alt="Transaction Slip"
+                    className="max-h-56 object-contain rounded-lg"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Contact and instant approval note */}
+          <div className="bg-[#052e16]/40 border border-emerald-500/20 rounded-2xl p-4 text-center space-y-2.5">
+            <p className="text-xs font-bold text-emerald-400 leading-normal">
+              💡 ដើម្បីទទួលបានការអនុម័តភ្លាមៗ សូមផ្ញើវិក្កយបត្រ ABA ទៅកាន់តេឡេក្រាម Admin!
+            </p>
+            <a
+              href="https://t.me/laymeancamera"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl transition shadow-lg shadow-emerald-600/15"
+            >
+              <span>ឆាតទៅកាន់ Telegram Admin ឡាយមាន</span>
+            </a>
+          </div>
+
+          <button
+            onClick={async () => {
+              safeStorage.removeItem('luypay_logged_in');
+              safeStorage.removeItem('luypay_current_user');
+              safeStorage.removeItem('luypay_user_display_name');
+              safeStorage.removeItem('luypay_auth_type');
+              safeStorage.removeItem('luypay_is_member');
+              window.location.reload();
+            }}
+            className="w-full py-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white font-bold rounded-xl text-xs transition cursor-pointer"
+          >
+            ចាកចេញពីគណនី (Logout)
+          </button>
+        </div>
       </div>
     );
   }
@@ -5743,7 +5870,15 @@ export default function App() {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 bg-slate-50 dark:bg-slate-850 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+            <div className="p-4 bg-slate-50 dark:bg-slate-850 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={handleResetToDefaults}
+                className="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-extrabold rounded-xl transition cursor-pointer border border-rose-500/20 flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-3.5 h-3.5 animate-spin-slow" />
+                <span>{language === 'kh' ? 'កំណត់លំនាំដើមឡើងវិញ (Reset)' : 'Reset to Defaults'}</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setIsSettingsOpen(false)}

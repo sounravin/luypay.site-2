@@ -549,13 +549,65 @@ export default function AdminMembersDashboard({
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editPaymentQr, setEditPaymentQr] = useState('');
+  const [selectedInvoiceUrl, setSelectedInvoiceUrl] = useState<string | null>(null);
 
   // 1. Core metrics calculation
   const totalMembersCount = members.length;
   const activeMembersCount = members.filter(m => !m.isBlocked && !getSubscriptionStatusInfo(m).isExpired).length;
   const blockedMembersCount = members.filter(m => m.isBlocked).length;
   const expiredMembersCount = members.filter(m => !m.isBlocked && getSubscriptionStatusInfo(m).isExpired).length;
-  const pendingRequestsCount = subRequests.filter(r => r.status === 'pending').length;
+  
+  const pendingMembers = members.filter(m => m.isApproved === false);
+  const pendingMembersCount = pendingMembers.length;
+  const pendingRequestsCount = subRequests.filter(r => r.status === 'pending').length + pendingMembersCount;
+
+  // New registration approval helper
+  const handleApproveNewMember = async (member: Member) => {
+    const confirmMsg = `តើអ្នកពិតជាចង់អនុម័តការចុះឈ្មោះរបស់ ${member.displayName || member.username} មែនទេ?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      let daysToAdd = 30;
+      if (member.selectedPlan === '3_months') daysToAdd = 90;
+      if (member.selectedPlan === '1_year') daysToAdd = 365;
+
+      const newExpiry = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000);
+
+      const memberRef = doc(db, 'members', member.username);
+      await setDoc(memberRef, {
+        isApproved: true,
+        subscriptionExpires: newExpiry.toISOString(),
+        isBlocked: false
+      }, { merge: true });
+
+      showToast(`បានអនុម័តការចុះឈ្មោះ និងបើកគណនីជូន ${member.displayName || member.username} ជោគជ័យ!`, 'success');
+    } catch (err) {
+      console.error('Error approving new member:', err);
+      alert('មានបញ្ហាក្នុងការអនុម័តការចុះឈ្មោះសមាជិកថ្មី!');
+    }
+  };
+
+  // New registration rejection/deletion helper
+  const handleRejectNewMember = async (member: Member) => {
+    const confirmMsg = `តើអ្នកពិតជាចង់លុប/បដិសេធការចុះឈ្មោះរបស់ ${member.displayName || member.username} មែនទេ?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const memberRef = doc(db, 'members', member.username);
+      await deleteDoc(memberRef);
+
+      // Also clean email index if exists
+      if (member.email) {
+        const emailDocRef = doc(db, 'member_emails', member.email.trim().toLowerCase());
+        await deleteDoc(emailDocRef);
+      }
+
+      showToast('បានបដិសេធ និងលុបការចុះឈ្មោះសមាជិកថ្មីរួចរាល់។', 'info');
+    } catch (err) {
+      console.error('Error rejecting new member:', err);
+      alert('មានបញ្ហាក្នុងការលុបសមាជិក!');
+    }
+  };
 
   // 2. Approve Request logic
   const handleApproveRequest = async (req: SubscriptionRequest) => {
@@ -874,71 +926,174 @@ export default function AdminMembersDashboard({
 
         {/* Tab Contents */}
         <div className="p-6">
-          {/* TAB 1: Pending Purchase Requests */}
+          {/* TAB 1: Pending Purchase Requests & Registrations */}
           {activeTab === 'requests' && (
-            <div className="space-y-4">
-              {subRequests.filter(r => r.status === 'pending').length === 0 ? (
+            <div className="space-y-6">
+              {pendingMembersCount === 0 && subRequests.filter(r => r.status === 'pending').length === 0 ? (
                 <div className="py-20 text-center space-y-2">
                   <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400 text-xl">
                     📁
                   </div>
-                  <p className="text-sm font-black text-slate-800">មិនទាន់មានសំណើទិញគម្រោងឡើយ</p>
-                  <p className="text-xs text-slate-400 font-medium">រាល់សំណើរបស់សមាជិកដែលបានចុចផ្ញើ នឹងបង្ហាញឡើងនៅទីនេះដើម្បីអនុម័ត។</p>
+                  <p className="text-sm font-black text-slate-800">មិនទាន់មានសំណើទិញគម្រោង ឬចុះឈ្មោះឡើយ</p>
+                  <p className="text-xs text-slate-400 font-medium">រាល់សំណើរបស់សមាជិកដែលបានចុះឈ្មោះ ឬទិញគម្រោង នឹងបង្ហាញឡើងនៅទីនេះដើម្បីអនុម័ត។</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {subRequests.filter(r => r.status === 'pending').map((req) => (
-                    <div
-                      key={req.id}
-                      className="border border-slate-200 hover:border-slate-300 bg-white p-5 rounded-2xl text-left flex flex-col justify-between gap-4 shadow-sm"
-                    >
-                      <div className="space-y-3.5">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-extrabold text-slate-900 text-sm">
-                              {req.displayName || req.username}
-                            </h4>
-                            <p className="text-[10px] text-slate-400 font-bold">
-                              ឈ្មោះអ្នកប្រើប្រាស់៖ @{req.username}
-                            </p>
-                          </div>
-                          <span className="inline-block px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 font-black rounded-lg text-[10px]">
-                            {req.plan === '1_month' ? 'គម្រោង ១ ខែ ($5)' : req.plan === '3_months' ? 'គម្រោង ៣ ខែ ($12)' : 'គម្រោង ១ ឆ្នាំ ($35)'}
-                          </span>
-                        </div>
+                <div className="space-y-6">
+                  {/* Section A: New Registrations Pending Approval */}
+                  {pendingMembersCount > 0 && (
+                    <div className="space-y-3 text-left">
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span>ការចុះឈ្មោះសមាជិកថ្មីរង់ចាំការអនុម័ត ({pendingMembersCount})</span>
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {pendingMembers.map((m) => {
+                          const planLabel = m.selectedPlan === '1_month' ? 'គម្រោង ១ ខែ ($5)' : m.selectedPlan === '3_months' ? 'គម្រោង ៣ ខែ ($12)' : 'គម្រោង ១ ឆ្នាំ ($35)';
+                          return (
+                            <div
+                              key={m.username}
+                              className="border border-slate-200 hover:border-slate-300 bg-white p-5 rounded-2xl text-left flex flex-col justify-between gap-4 shadow-sm"
+                            >
+                              <div className="space-y-3.5">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="font-extrabold text-slate-900 text-sm">
+                                      {m.displayName || m.username}
+                                    </h4>
+                                    <p className="text-[10px] text-slate-400 font-bold">
+                                      ឈ្មោះអ្នកប្រើប្រាស់៖ @{m.username}
+                                    </p>
+                                    {m.email && (
+                                      <p className="text-[9px] text-slate-400 font-medium italic">
+                                        {m.email}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <span className="inline-block px-3 py-1 bg-amber-50 border border-amber-100 text-amber-700 font-black rounded-lg text-[10px] shrink-0">
+                                    {planLabel}
+                                  </span>
+                                </div>
 
-                        <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl font-bold text-xs space-y-1.5 text-slate-600">
-                          <div className="flex justify-between">
-                            <span>កាលបរិច្ឆេទផ្ញើ៖</span>
-                            <span className="text-slate-800 font-extrabold">{new Date(req.createdAt).toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>គម្រោងបច្ចុប្បន្ន៖</span>
-                            <span className="text-slate-800 font-extrabold">
-                              {getSubscriptionStatusInfo(members.find(m => m.username === req.username) || null).text}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                                <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl font-bold text-[11px] space-y-1.5 text-slate-600">
+                                  <div className="flex justify-between">
+                                    <span>កាលបរិច្ឆេទចុះឈ្មោះ៖</span>
+                                    <span className="text-slate-800 font-extrabold">
+                                      {m.createdAt ? new Date(m.createdAt).toLocaleString() : 'មិនមាន'}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>ស្ថានភាពគណនី៖</span>
+                                    <span className="text-amber-600 font-extrabold">រង់ចាំការអនុម័ត (Pending)</span>
+                                  </div>
+                                </div>
 
-                      <div className="flex gap-2 border-t border-slate-100 pt-3">
-                        <button
-                          onClick={() => handleApproveRequest(req)}
-                          className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1 cursor-pointer"
-                        >
-                          <Check className="w-4 h-4" />
-                          <span>អនុម័តគម្រោង</span>
-                        </button>
-                        <button
-                          onClick={() => handleRejectRequest(req)}
-                          className="px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 font-extrabold text-xs rounded-xl flex items-center justify-center gap-1 cursor-pointer"
-                        >
-                          <X className="w-4 h-4" />
-                          <span>បដិសេធ</span>
-                        </button>
+                                {m.invoiceImageUrl && (
+                                  <div className="space-y-1">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">វិក្កយបត្របង់ប្រាក់៖</span>
+                                    <div 
+                                      onClick={() => setSelectedInvoiceUrl(m.invoiceImageUrl || null)}
+                                      className="relative bg-slate-950/5 border border-slate-200 rounded-xl p-1.5 flex justify-center cursor-zoom-in group hover:bg-slate-950/10 transition"
+                                    >
+                                      <img
+                                        src={m.invoiceImageUrl}
+                                        alt="Registration Slip"
+                                        className="max-h-24 object-contain rounded-md"
+                                        referrerPolicy="no-referrer"
+                                      />
+                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition rounded-xl text-white text-[10px] font-black">
+                                        🔍 ចុចដើម្បីពង្រីក (Click to zoom)
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex gap-2 border-t border-slate-100 pt-3 shrink-0">
+                                <button
+                                  onClick={() => handleApproveNewMember(m)}
+                                  className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <Check className="w-4 h-4" />
+                                  <span>អនុម័តការចុះឈ្មោះ</span>
+                                </button>
+                                <button
+                                  onClick={() => handleRejectNewMember(m)}
+                                  className="px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 font-extrabold text-xs rounded-xl flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <X className="w-4 h-4" />
+                                  <span>បដិសេធ</span>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
+                  )}
+
+                  {/* Section B: Upgrade & Renewal Requests */}
+                  {subRequests.filter(r => r.status === 'pending').length > 0 && (
+                    <div className="space-y-3 text-left">
+                      <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                        <span>សំណើទិញ/បន្តគម្រោងសមាជិកចាស់ ({subRequests.filter(r => r.status === 'pending').length})</span>
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {subRequests.filter(r => r.status === 'pending').map((req) => (
+                          <div
+                            key={req.id}
+                            className="border border-slate-200 hover:border-slate-300 bg-white p-5 rounded-2xl text-left flex flex-col justify-between gap-4 shadow-sm"
+                          >
+                            <div className="space-y-3.5">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h4 className="font-extrabold text-slate-900 text-sm">
+                                    {req.displayName || req.username}
+                                  </h4>
+                                  <p className="text-[10px] text-slate-400 font-bold">
+                                    ឈ្មោះអ្នកប្រើប្រាស់៖ @{req.username}
+                                  </p>
+                                </div>
+                                <span className="inline-block px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 font-black rounded-lg text-[10px] shrink-0">
+                                  {req.plan === '1_month' ? 'គម្រោង ១ ខែ ($5)' : req.plan === '3_months' ? 'គម្រោង ៣ ខែ ($12)' : 'គម្រោង ១ ឆ្នាំ ($35)'}
+                                </span>
+                              </div>
+
+                              <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl font-bold text-[11px] space-y-1.5 text-slate-600">
+                                <div className="flex justify-between">
+                                  <span>កាលបរិច្ឆេទផ្ញើ៖</span>
+                                  <span className="text-slate-800 font-extrabold">{new Date(req.createdAt).toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>គម្រោងបច្ចុប្បន្ន៖</span>
+                                  <span className="text-slate-800 font-extrabold">
+                                    {getSubscriptionStatusInfo(members.find(m => m.username === req.username) || null).text}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 border-t border-slate-100 pt-3 shrink-0">
+                              <button
+                                onClick={() => handleApproveRequest(req)}
+                                className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                <Check className="w-4 h-4" />
+                                <span>អនុម័តគម្រោង</span>
+                              </button>
+                              <button
+                                onClick={() => handleRejectRequest(req)}
+                                className="px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-100 font-extrabold text-xs rounded-xl flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                <X className="w-4 h-4" />
+                                <span>បដិសេធ</span>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2403,6 +2558,35 @@ export default function AdminMembersDashboard({
               >
                 បិទផ្ទាំង (Close)
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice Lightbox Modal */}
+      {selectedInvoiceUrl && (
+        <div 
+          className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+          onClick={() => setSelectedInvoiceUrl(null)}
+        >
+          <div className="relative max-w-2xl w-full flex flex-col items-center justify-center space-y-4 animate-in zoom-in-95 duration-200">
+            {/* Close Button */}
+            <button 
+              onClick={() => setSelectedInvoiceUrl(null)}
+              className="absolute -top-12 right-0 p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full transition cursor-pointer z-50 border border-white/20"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div 
+              className="bg-slate-900 border border-slate-800 p-2 rounded-2xl shadow-2xl relative max-h-[80vh] overflow-hidden flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img 
+                src={selectedInvoiceUrl} 
+                alt="Invoice Lightbox" 
+                className="max-h-[75vh] max-w-full object-contain rounded-xl"
+                referrerPolicy="no-referrer"
+              />
             </div>
           </div>
         </div>

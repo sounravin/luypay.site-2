@@ -92,6 +92,9 @@ export interface Member {
   subscriptionExpires?: string; // ISO date string
   photoURL?: string; // Optional custom base64 or URL profile photo
   paymentQr?: string; // Optional custom global/default payment QR code image URL
+  isApproved?: boolean; // Multi-step registration approval status
+  selectedPlan?: '1_month' | '3_months' | '1_year'; // Selected plan during registration
+  invoiceImageUrl?: string; // Uploaded KHQR payment slip/invoice
 }
 
 export interface SubscriptionRequest {
