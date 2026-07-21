@@ -7,6 +7,9 @@ self.addEventListener('install', (event) => {
       return cache.addAll([
         OFFLINE_URL,
         '/manifest.json',
+        '/pwa_icon_192.png',
+        '/pwa_icon_512.png',
+        '/apple-touch-icon.png',
         '/pwa_icon.svg'
       ]);
     })
