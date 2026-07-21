@@ -3046,19 +3046,19 @@ export default function App() {
     const themeAccentClass = `bg-gradient-to-r ${currentThemeConfig.accent}`;
     
     return (
-      <div className="min-h-screen w-full bg-[#f1f5f9] dark:bg-[#070b13] flex items-center justify-center p-0 md:p-6 text-slate-800 dark:text-slate-100 antialiased font-sans select-none">
+      <div className="min-h-screen w-full bg-[#f1f5f9] dark:bg-[#020408] flex items-center justify-center p-0 md:p-6 text-slate-800 dark:text-slate-100 antialiased font-sans select-none">
         {/* On desktop: premium curved phone mock frame. On mobile: full screen. */}
-        <div className="w-full md:max-w-[420px] md:h-[860px] md:max-h-[95vh] md:rounded-[40px] md:border-[10px] md:border-slate-800 dark:md:border-slate-900 md:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] relative bg-[#fafafc] dark:bg-[#090d16] flex flex-col overflow-hidden transition-all duration-300">
+        <div className={`w-full md:max-w-[420px] md:h-[860px] md:max-h-[95vh] md:rounded-[40px] md:border-[10px] md:border-slate-800 dark:md:border-slate-900 md:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] relative ${isDarkTheme ? currentThemeConfig.bgDark : currentThemeConfig.bgLight} flex flex-col overflow-hidden transition-all duration-300`}>
           
           {/* Custom Ambient Header Bar */}
-          <div className="px-5 pt-3 pb-2 flex items-center justify-between text-[11px] font-bold tracking-tight select-none shrink-0 z-50 bg-[#fafafc] dark:bg-[#090d16] border-b border-slate-100 dark:border-slate-900">
+          <div className={`px-5 pt-3 pb-2 flex items-center justify-between text-[11px] font-bold tracking-tight select-none shrink-0 z-50 ${isDarkTheme ? 'bg-[#000000]/25 border-b border-white/5' : 'bg-white/40 border-b border-black/5'} backdrop-blur-md`}>
             <div className="flex items-center gap-1.5">
               <span className="font-black text-slate-900 dark:text-white tracking-wider flex items-center gap-1">
                 💎 LuyPay <span className="text-[8px] bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 px-1.5 py-0.2 rounded-full font-bold">App</span>
               </span>
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
             </div>
-            <div className="flex items-center gap-2 font-mono text-slate-500 dark:text-slate-400">
+            <div className={`flex items-center gap-2 font-mono ${currentThemeConfig.textMuted}`}>
               <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
               <div className="flex items-center gap-1 opacity-80">
                 <span>📶</span>
@@ -3068,7 +3068,7 @@ export default function App() {
           </div>
 
           {/* Core Scroll Viewport */}
-          <div className="flex-1 overflow-y-auto pb-24 scrollbar-none relative flex flex-col bg-[#f8fafc] dark:bg-[#090d16]">
+          <div className="flex-1 overflow-y-auto pb-24 scrollbar-none relative flex flex-col bg-transparent">
             
             {/* Elegant Header with profile and welcome */}
             <div className="p-5 pb-4 space-y-4 shrink-0">
@@ -3629,61 +3629,74 @@ export default function App() {
           </div>
 
           {/* Curved Bottom Navigation Tab Bar (Metfone Self-Care Redesign Style) */}
-          <div className="absolute bottom-0 inset-x-0 bg-white/95 dark:bg-[#0c121f]/95 backdrop-blur-md border-t border-slate-150 dark:border-slate-800/80 px-2.5 py-1.5 flex items-center justify-around shadow-[0_-5px_20px_rgba(0,0,0,0.05)] select-none z-40 shrink-0">
-            
-            {/* Tab 1: Home */}
-            <button
-              onClick={() => { setActiveSection('ledger'); playClickSound(); }}
-              className={`flex flex-col items-center gap-0.5 transition cursor-pointer py-1 px-2.5 rounded-xl border-transparent bg-transparent ${activeSection === 'ledger' ? 'text-[#e31b23] font-black scale-105' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              <BookOpen className="w-5 h-5" />
-              <span className="text-[9px] font-bold">{language === 'kh' ? 'ទំព័រដើម' : 'Home'}</span>
-            </button>
+          {(() => {
+            const bottomNavBgClass = isDarkTheme
+              ? (appTheme === 'angkor' ? 'bg-[#1a130a]/95 border-[#e2b037]/20' : appTheme === 'apsara' ? 'bg-[#110c26]/95 border-purple-500/15' : appTheme === 'emerald' ? 'bg-[#052216]/95 border-emerald-500/15' : 'bg-[#090d16]/95 border-slate-800/85')
+              : (appTheme === 'angkor' ? 'bg-[#fffdf9]/95 border-[#e2b037]/25' : appTheme === 'apsara' ? 'bg-[#faf8fe]/95 border-purple-500/20' : appTheme === 'emerald' ? 'bg-[#f7fdfa]/95 border-emerald-500/20' : 'bg-white/95 border-slate-150');
 
-            {/* Tab 2: Pricing */}
-            <button
-              onClick={() => { setActiveSection('pricing'); playClickSound(); }}
-              className={`flex flex-col items-center gap-0.5 transition cursor-pointer py-1 px-2.5 rounded-xl border-transparent bg-transparent ${activeSection === 'pricing' ? 'text-[#e31b23] font-black scale-105' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              <Award className="w-5 h-5" />
-              <span className="text-[9px] font-bold">{language === 'kh' ? 'គម្រោង' : 'Plans'}</span>
-            </button>
+            const activeTabColorClass = appTheme === 'angkor' ? 'text-[#b37e1b] dark:text-[#dfb035]'
+                                      : appTheme === 'apsara' ? 'text-purple-600 dark:text-purple-400'
+                                      : appTheme === 'emerald' ? 'text-emerald-600 dark:text-emerald-400'
+                                      : 'text-blue-650 dark:text-blue-400';
 
-            {/* Tab 3: Quick Add Loan (Float Center Accent) */}
-            <button
-              onClick={() => { setIsAddModalOpen(true); playClickSound(); }}
-              className="flex flex-col items-center transition cursor-pointer -translate-y-4 border-transparent bg-transparent"
-              title="Add New Loan"
-            >
-              <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-[#e31b23] to-red-500 text-white flex items-center justify-center shadow-lg shadow-red-500/30 border-2 border-white dark:border-slate-900 hover:scale-105 active:scale-95 transition-transform duration-150">
-                <Plus className="w-5 h-5 text-white stroke-[3px]" />
+            return (
+              <div className={`absolute bottom-0 inset-x-0 backdrop-blur-md border-t px-2.5 py-1.5 flex items-center justify-around shadow-[0_-5px_20px_rgba(0,0,0,0.05)] select-none z-40 shrink-0 ${bottomNavBgClass}`}>
+                
+                {/* Tab 1: Home */}
+                <button
+                  onClick={() => { setActiveSection('ledger'); playClickSound(); }}
+                  className={`flex flex-col items-center gap-0.5 transition cursor-pointer py-1 px-2.5 rounded-xl border-transparent bg-transparent ${activeSection === 'ledger' ? `${activeTabColorClass} font-black scale-105` : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                >
+                  <BookOpen className="w-5 h-5" />
+                  <span className="text-[9px] font-bold">{language === 'kh' ? 'ទំព័រដើម' : 'Home'}</span>
+                </button>
+
+                {/* Tab 2: Pricing */}
+                <button
+                  onClick={() => { setActiveSection('pricing'); playClickSound(); }}
+                  className={`flex flex-col items-center gap-0.5 transition cursor-pointer py-1 px-2.5 rounded-xl border-transparent bg-transparent ${activeSection === 'pricing' ? `${activeTabColorClass} font-black scale-105` : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                >
+                  <Award className="w-5 h-5" />
+                  <span className="text-[9px] font-bold">{language === 'kh' ? 'គម្រោង' : 'Plans'}</span>
+                </button>
+
+                {/* Tab 3: Quick Add Loan (Float Center Accent) */}
+                <button
+                  onClick={() => { setIsAddModalOpen(true); playClickSound(); }}
+                  className="flex flex-col items-center transition cursor-pointer -translate-y-4 border-transparent bg-transparent"
+                  title="Add New Loan"
+                >
+                  <div className={`w-11 h-11 rounded-full ${themeAccentClass} text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-900 hover:scale-105 active:scale-95 transition-transform duration-150`}>
+                    <Plus className="w-5 h-5 text-white stroke-[3px]" />
+                  </div>
+                </button>
+
+                {/* Tab 4: Applications */}
+                <button
+                  onClick={() => { setActiveSection('loan_applications'); playClickSound(); }}
+                  className={`flex flex-col items-center gap-0.5 transition cursor-pointer py-1 px-2.5 rounded-xl relative border-transparent bg-transparent ${activeSection === 'loan_applications' ? `${activeTabColorClass} font-black scale-105` : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                >
+                  <FileText className="w-5 h-5" />
+                  <span className="text-[9px] font-bold">{language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}</span>
+                  {subRequests.filter(r => r.status === 'pending').length > 0 && (
+                    <span className="absolute top-0.5 right-1.5 px-1 rounded-full font-black bg-rose-500 text-white text-[7px]">
+                      {subRequests.filter(r => r.status === 'pending').length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Tab 5: Settings / Toggle Mode */}
+                <button
+                  onClick={() => { setIsSettingsOpen(true); playClickSound(); }}
+                  className="flex flex-col items-center gap-0.5 transition cursor-pointer py-1 px-2.5 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 border-transparent bg-transparent"
+                >
+                  <Settings className="w-5 h-5" />
+                  <span className="text-[9px] font-bold">{language === 'kh' ? 'ការកំណត់' : 'Settings'}</span>
+                </button>
+
               </div>
-            </button>
-
-            {/* Tab 4: Applications */}
-            <button
-              onClick={() => { setActiveSection('loan_applications'); playClickSound(); }}
-              className={`flex flex-col items-center gap-0.5 transition cursor-pointer py-1 px-2.5 rounded-xl relative border-transparent bg-transparent ${activeSection === 'loan_applications' ? 'text-[#e31b23] font-black scale-105' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              <FileText className="w-5 h-5" />
-              <span className="text-[9px] font-bold">{language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}</span>
-              {subRequests.filter(r => r.status === 'pending').length > 0 && (
-                <span className="absolute top-0.5 right-1.5 px-1 rounded-full font-black bg-rose-500 text-white text-[7px]">
-                  {subRequests.filter(r => r.status === 'pending').length}
-                </span>
-              )}
-            </button>
-
-            {/* Tab 5: Settings / Toggle Mode */}
-            <button
-              onClick={() => { setIsSettingsOpen(true); playClickSound(); }}
-              className="flex flex-col items-center gap-0.5 transition cursor-pointer py-1 px-2.5 rounded-xl text-slate-400 hover:text-slate-600 border-transparent bg-transparent"
-            >
-              <Settings className="w-5 h-5" />
-              <span className="text-[9px] font-bold">{language === 'kh' ? 'ការកំណត់' : 'Settings'}</span>
-            </button>
-
-          </div>
+            );
+          })()}
 
         </div>
       </div>
@@ -3695,7 +3708,7 @@ export default function App() {
   const bodyBgClass = isDark ? currentThemeConfig.bgDark : currentThemeConfig.bgLight;
 
   return (
-    <div className={`min-h-screen ${bodyBgClass} antialiased font-sans flex flex-col ${isDark ? 'dark' : ''} transition-all duration-350 overflow-x-hidden relative`}>
+    <div className={`min-h-screen ${bodyBgClass} antialiased font-sans flex flex-col ${isDark ? 'dark' : ''} theme-${appTheme} transition-all duration-350 overflow-x-hidden relative`}>
       {/* PWA Add to Home Screen Banner */}
       <PWAInstallBanner />
 

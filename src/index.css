@@ -33,20 +33,25 @@ input:focus, select:focus, textarea:focus {
   color-scheme: dark;
 }
 
-/* Base body background for Dark Mode: Immersive Khmer Starry Night */
-.dark,
-.dark .bg-slate-50, 
-.dark .min-h-screen.bg-slate-50,
-.dark .bg-[#030712],
-.dark .bg-[#071324] {
+/* Generic Dark Mode Fallback */
+.dark {
+  color: #f8fafc;
+}
+
+/* Base body background for Dark Mode: Immersive Khmer Starry Night - scoped only to Angkor theme */
+.dark.theme-angkor,
+.dark.theme-angkor .bg-slate-50, 
+.dark.theme-angkor .min-h-screen.bg-slate-50,
+.dark.theme-angkor .bg-[#030712],
+.dark.theme-angkor .bg-[#071324] {
   background: radial-gradient(circle at 50% 20%, #0c1836 0%, #050a16 100%) !important;
   color: #f8fafc !important;
   position: relative;
   overflow-x: hidden;
 }
 
-/* Watermark pattern covering the entire app background for a premium feel */
-.dark::before {
+/* Watermark pattern covering the entire app background for a premium feel - scoped only to Angkor */
+.dark.theme-angkor::before {
   content: "";
   position: fixed;
   inset: 0;
@@ -57,7 +62,7 @@ input:focus, select:focus, textarea:focus {
   z-index: 1;
 }
 
-/* Beautiful custom floating amber bubble sparkles in background */
+/* Beautiful custom floating amber bubble sparkles in background - scoped only to Angkor */
 @keyframes khmer-sparkle {
   0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 0; }
   15% { opacity: 0.6; }
@@ -65,10 +70,10 @@ input:focus, select:focus, textarea:focus {
   100% { transform: translateY(-120px) scale(0.6) rotate(360deg); opacity: 0; }
 }
 
-/* Khmer Traditional Premium Cards & Panels */
-.dark .bg-white,
-.dark aside,
-.dark .bg-slate-900 {
+/* Khmer Traditional Premium Cards & Panels - scoped only to Angkor */
+.dark.theme-angkor .bg-white,
+.dark.theme-angkor aside,
+.dark.theme-angkor .bg-slate-900 {
   background: linear-gradient(135deg, rgba(12, 23, 49, 0.9) 0%, rgba(6, 11, 24, 0.95) 100%) !important;
   color: #f8fafc !important;
   border: 1px solid rgba(223, 176, 53, 0.35) !important;
@@ -77,15 +82,15 @@ input:focus, select:focus, textarea:focus {
   border-radius: 1rem;
 }
 
-/* Smooth golden shine effect on card hovering */
-.dark .bg-white:hover {
+/* Smooth golden shine effect on card hovering - scoped only to Angkor */
+.dark.theme-angkor .bg-white:hover {
   border-color: rgba(223, 176, 53, 0.75) !important;
   box-shadow: 0 10px 30px -1px rgba(0, 0, 0, 0.6), 0 0 20px 2px rgba(223, 176, 53, 0.18) !important;
   transform: translateY(-2px);
 }
 
-/* Double border style for primary cards in dark mode */
-.dark .bg-white::after {
+/* Double border style for primary cards in dark mode - scoped only to Angkor */
+.dark.theme-angkor .bg-white::after {
   content: "";
   position: absolute;
   inset: 3px;
@@ -94,95 +99,139 @@ input:focus, select:focus, textarea:focus {
   pointer-events: none;
 }
 
-/* Border overrides */
-.dark .border-slate-200,
-.dark .border-slate-100,
-.dark .border-slate-200\/80,
-.dark .border-slate-800,
-.dark .border-slate-700,
-.dark .border-slate-700\/40,
-.dark .border-slate-800\/60,
-.dark .border-slate-850 {
+/* Border overrides - scoped only to Angkor */
+.dark.theme-angkor .border-slate-200,
+.dark.theme-angkor .border-slate-100,
+.dark.theme-angkor .border-slate-200\/80,
+.dark.theme-angkor .border-slate-800,
+.dark.theme-angkor .border-slate-700,
+.dark.theme-angkor .border-slate-700\/40,
+.dark.theme-angkor .border-slate-800\/60,
+.dark.theme-angkor .border-slate-850 {
   border-color: rgba(223, 176, 53, 0.25) !important;
 }
 
-/* Inner elements and details */
-.dark .bg-slate-50,
-.dark .bg-slate-100,
-.dark .bg-slate-200\/80,
-.dark .bg-blue-50,
-.dark .bg-amber-50,
-.dark .bg-emerald-50,
-.dark .bg-rose-50,
-.dark .bg-slate-850,
-.dark .bg-slate-750 {
+/* Inner elements and details - scoped only to Angkor */
+.dark.theme-angkor .bg-slate-50,
+.dark.theme-angkor .bg-slate-100,
+.dark.theme-angkor .bg-slate-200\/80,
+.dark.theme-angkor .bg-blue-50,
+.dark.theme-angkor .bg-amber-50,
+.dark.theme-angkor .bg-emerald-50,
+.dark.theme-angkor .bg-rose-50,
+.dark.theme-angkor .bg-slate-850,
+.dark.theme-angkor .bg-slate-750 {
   background-color: rgba(20, 35, 73, 0.6) !important;
   border: 1px solid rgba(223, 176, 53, 0.15) !important;
 }
 
-/* Colors with gold and amber enhancements */
-.dark .text-slate-800,
-.dark .text-slate-900,
-.dark .text-slate-750,
-.dark .text-slate-700 {
+/* Colors with gold and amber enhancements - scoped only to Angkor */
+.dark.theme-angkor .text-slate-800,
+.dark.theme-angkor .text-slate-900,
+.dark.theme-angkor .text-slate-750,
+.dark.theme-angkor .text-slate-700 {
   color: #f8fafc !important;
 }
 
-.dark .text-slate-500,
-.dark .text-slate-600 {
+.dark.theme-angkor .text-slate-500,
+.dark.theme-angkor .text-slate-600 {
   color: #cbd5e1 !important;
 }
 
-.dark .text-slate-400 {
+.dark.theme-angkor .text-slate-400 {
   color: #94a3b8 !important;
 }
 
-.dark .text-blue-600 {
+.dark.theme-angkor .text-blue-600 {
   color: #38bdf8 !important;
 }
-.dark .text-amber-600 {
+.dark.theme-angkor .text-amber-600 {
   color: #fcd34d !important;
 }
-.dark .text-emerald-600 {
+.dark.theme-angkor .text-emerald-600 {
   color: #4ade80 !important;
 }
-.dark .text-rose-600 {
+.dark.theme-angkor .text-rose-600 {
   color: #f87171 !important;
 }
 
-/* Dynamic inputs styled with golden borders on focusing */
-.dark input, 
-.dark select, 
-.dark textarea {
+/* Dynamic inputs styled with golden borders on focusing - scoped only to Angkor */
+.dark.theme-angkor input, 
+.dark.theme-angkor select, 
+.dark.theme-angkor textarea {
   background-color: rgba(10, 19, 41, 0.95) !important;
   color: #f8fafc !important;
   border: 1px solid rgba(223, 176, 53, 0.4) !important;
 }
 
-.dark input:focus, 
-.dark select:focus, 
-.dark textarea:focus {
+.dark.theme-angkor input:focus, 
+.dark.theme-angkor select:focus, 
+.dark.theme-angkor textarea:focus {
   border-color: #f59e0b !important;
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.4) !important;
 }
 
-.dark input::placeholder {
+.dark.theme-angkor input::placeholder {
   color: #64748b !important;
 }
 
-/* Buttons in dark mode */
-.dark .bg-white.hover\:bg-slate-50:hover,
-.dark .bg-white.hover\:bg-slate-100:hover {
+/* Generic, clean style mappings for ALL other dark mode themes (Slate, Apsara, Emerald) */
+.dark:not(.theme-angkor) input,
+.dark:not(.theme-angkor) select,
+.dark:not(.theme-angkor) textarea {
+  background-color: rgba(15, 23, 42, 0.6) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark:not(.theme-angkor) input:focus,
+.dark:not(.theme-angkor) select:focus,
+.dark:not(.theme-angkor) textarea:focus {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark:not(.theme-angkor) .bg-white {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark:not(.theme-angkor) .bg-slate-50,
+.dark:not(.theme-angkor) .bg-slate-100 {
+  background-color: rgba(2, 6, 23, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark:not(.theme-angkor) .text-slate-900,
+.dark:not(.theme-angkor) .text-slate-800,
+.dark:not(.theme-angkor) .text-slate-700 {
+  color: #f1f5f9 !important;
+}
+
+.dark:not(.theme-angkor) .text-slate-500,
+.dark:not(.theme-angkor) .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+.dark:not(.theme-angkor) .border-slate-100,
+.dark:not(.theme-angkor) .border-slate-200 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Buttons in dark mode - scoped only to Angkor */
+.dark.theme-angkor .bg-white.hover\:bg-slate-50:hover,
+.dark.theme-angkor .bg-white.hover\:bg-slate-100:hover {
   background-color: rgba(223, 176, 53, 0.15) !important;
 }
 
-.dark .bg-white.text-slate-700 {
+.dark.theme-angkor .bg-white.text-slate-700 {
   background-color: rgba(18, 32, 66, 0.9) !important;
   color: #f8fafc !important;
   border: 1px solid rgba(223, 176, 53, 0.3) !important;
 }
 
-.dark .bg-white.text-slate-700:hover {
+.dark.theme-angkor .bg-white.text-slate-700:hover {
   background-color: rgba(223, 176, 53, 0.25) !important;
   border-color: #dfb035 !important;
 }
@@ -193,8 +242,8 @@ input:focus, select:focus, textarea:focus {
   color: #f8fafc !important;
 }
 
-/* Navigation items active and hover */
-.dark .hover\:bg-slate-800\/50:hover {
+/* Navigation items active and hover - scoped only to Angkor */
+.dark.theme-angkor .hover\:bg-slate-800\/50:hover {
   background-color: rgba(223, 176, 53, 0.12) !important;
   color: #fff2a3 !important;
 }
@@ -204,8 +253,8 @@ input:focus, select:focus, textarea:focus {
   background-color: rgba(4, 8, 19, 0.85) !important;
 }
 
-/* Quick Pay Button in Dark Mode: Energetic Amber-Gold */
-.dark .bg-gradient-to-r.from-blue-600.to-indigo-600 {
+/* Quick Pay Button in Dark Mode: Energetic Amber-Gold - scoped only to Angkor */
+.dark.theme-angkor .bg-gradient-to-r.from-blue-600.to-indigo-600 {
   background: linear-gradient(135deg, #dfb035 0%, #b37e1b 100%) !important;
   color: #050a16 !important;
   font-weight: 800 !important;
@@ -213,13 +262,13 @@ input:focus, select:focus, textarea:focus {
   text-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 
-.dark .bg-gradient-to-r.from-blue-600.to-indigo-600:hover {
+.dark.theme-angkor .bg-gradient-to-r.from-blue-600.to-indigo-600:hover {
   background: linear-gradient(135deg, #fcd34d 0%, #d97706 100%) !important;
   box-shadow: 0 0 15px rgba(223, 176, 53, 0.4) !important;
 }
 
-/* Traditional Header Banner in Dark Mode */
-.dark #global-marquee-banner {
+/* Traditional Header Banner in Dark Mode - scoped only to Angkor */
+.dark.theme-angkor #global-marquee-banner {
   background: linear-gradient(to right, #b37e1b, #dfb035, #b37e1b) !important;
   color: #050a16 !important;
   border-bottom: 2px solid #fff2a3 !important;
