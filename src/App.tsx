@@ -713,6 +713,11 @@ export default function App() {
     return safeStorage.getItem('luypay_sponsor_dismissed') === 'true';
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingOldPassword, setSettingOldPassword] = useState('');
+  const [settingNewPassword, setSettingNewPassword] = useState('');
+  const [settingConfirmNewPassword, setSettingConfirmNewPassword] = useState('');
+  const [passwordChangeStatus, setPasswordChangeStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
   const useMobileAppUi = false;
 
   const [qrBorrower, setQrBorrower] = useState<Borrower | null>(null);
@@ -848,20 +853,32 @@ export default function App() {
   const handleCredentialsLogin = async (usernameInput: string, passwordInput: string) => {
     const cleanUsername = usernameInput.trim().toLowerCase();
     
-    // 1. Check default admin
-    if (cleanUsername === 'sounravin' && passwordInput === 'Ravin012348981') {
-      safeStorage.setItem('luypay_logged_in', 'true');
-      safeStorage.setItem('luypay_current_user', 'sounravin');
-      safeStorage.setItem('luypay_user_display_name', 'Soun Ravin');
-      safeStorage.setItem('luypay_auth_type', 'credentials');
-      safeStorage.removeItem('luypay_is_member');
-      setIsLoggedIn(true);
-      setCurrentUser('sounravin');
-      setUserDisplayName('Soun Ravin');
-      setUserAuthType('credentials');
-      setIsMember(false);
-      showToast('បានចូលប្រើប្រាស់គណនីអ្នកគ្រប់គ្រងដោយជោគជ័យ!');
-      return;
+    // 1. Check default admin (and dynamic admin if updated)
+    if (cleanUsername === 'sounravin') {
+      let allowedPassword = 'Ravin012348981';
+      try {
+        const adminSettings = await getDoc(doc(db, 'settings', 'admin_config'));
+        if (adminSettings.exists() && adminSettings.data().adminPassword) {
+          allowedPassword = adminSettings.data().adminPassword;
+        }
+      } catch (err) {
+        console.error('Error fetching admin config:', err);
+      }
+      
+      if (passwordInput === allowedPassword) {
+        safeStorage.setItem('luypay_logged_in', 'true');
+        safeStorage.setItem('luypay_current_user', 'sounravin');
+        safeStorage.setItem('luypay_user_display_name', 'Soun Ravin');
+        safeStorage.setItem('luypay_auth_type', 'credentials');
+        safeStorage.removeItem('luypay_is_member');
+        setIsLoggedIn(true);
+        setCurrentUser('sounravin');
+        setUserDisplayName('Soun Ravin');
+        setUserAuthType('credentials');
+        setIsMember(false);
+        showToast('បានចូលប្រើប្រាស់គណនីអ្នកគ្រប់គ្រងដោយជោគជ័យ!');
+        return;
+      }
     }
 
     // 2. Check Firestore members collection
@@ -1418,6 +1435,8 @@ export default function App() {
       const unsubscribeProfile = onSnapshot(doc(db, 'members', currentUser), (docSnap) => {
         if (docSnap.exists()) {
           setMemberProfile({ username: docSnap.id, ...docSnap.data() } as Member);
+        } else {
+          setMemberProfile(null);
         }
         setProfileLoading(false);
       }, (err) => {
@@ -1552,6 +1571,65 @@ export default function App() {
     return info.isExpired;
   };
 
+  // Real-time block, delete, and expiration automatic logout detection
+  useEffect(() => {
+    if (isLoggedIn && isMember) {
+      if (memberProfile) {
+        if (memberProfile.isBlocked) {
+          safeStorage.removeItem('luypay_logged_in');
+          safeStorage.removeItem('luypay_current_user');
+          safeStorage.removeItem('luypay_user_display_name');
+          safeStorage.removeItem('luypay_auth_type');
+          safeStorage.removeItem('luypay_is_member');
+          setIsLoggedIn(false);
+          setCurrentUser('sounravin');
+          setUserDisplayName('Soun Ravin');
+          setUserAuthType('credentials');
+          setIsMember(false);
+          setLoginUsername('');
+          setLoginPassword('');
+          setMemberProfile(null);
+          alert(language === 'kh' ? 'គណនីរបស់អ្នកត្រូវបានផ្អាកដំណើរការ (Blocked) ដោយអ្នកគ្រប់គ្រងប្រព័ន្ធ!' : 'Your account has been temporarily suspended (Blocked) by the administrator!');
+          return;
+        }
+
+        if (memberProfile.isApproved !== false && isSubscriptionExpired(memberProfile)) {
+          safeStorage.removeItem('luypay_logged_in');
+          safeStorage.removeItem('luypay_current_user');
+          safeStorage.removeItem('luypay_user_display_name');
+          safeStorage.removeItem('luypay_auth_type');
+          safeStorage.removeItem('luypay_is_member');
+          setIsLoggedIn(false);
+          setCurrentUser('sounravin');
+          setUserDisplayName('Soun Ravin');
+          setUserAuthType('credentials');
+          setIsMember(false);
+          setLoginUsername('');
+          setLoginPassword('');
+          setMemberProfile(null);
+          alert(language === 'kh' ? 'គម្រោងសមាជិកភាពរបស់អ្នកបានអស់សុពលភាពហើយ! សូមភ្ជាប់គម្រោងឡើងវិញដើម្បីបន្តប្រើប្រាស់។' : 'Your subscription has expired! Please renew your plan to continue.');
+          return;
+        }
+      } else if (!profileLoading) {
+        // memberProfile is null and profileLoading is false (real-time listener evaluated and document doesn't exist)
+        safeStorage.removeItem('luypay_logged_in');
+        safeStorage.removeItem('luypay_current_user');
+        safeStorage.removeItem('luypay_user_display_name');
+        safeStorage.removeItem('luypay_auth_type');
+        safeStorage.removeItem('luypay_is_member');
+        setIsLoggedIn(false);
+        setCurrentUser('sounravin');
+        setUserDisplayName('Soun Ravin');
+        setUserAuthType('credentials');
+        setIsMember(false);
+        setLoginUsername('');
+        setLoginPassword('');
+        setMemberProfile(null);
+        alert(language === 'kh' ? 'គណនីរបស់អ្នកត្រូវបានលុបចេញពីប្រព័ន្ធដោយអ្នកគ្រប់គ្រង!' : 'Your account has been deleted by the administrator!');
+      }
+    }
+  }, [isLoggedIn, isMember, memberProfile, profileLoading, language]);
+
   const handleSavePhotoURL = async (url: string) => {
     if (!isLoggedIn) return;
     try {
@@ -1620,6 +1698,103 @@ export default function App() {
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordChangeStatus(null);
+    playClickSound();
+    
+    if (!settingOldPassword) {
+      setPasswordChangeStatus({
+        type: 'error',
+        message: language === 'kh' ? 'សូមបញ្ចូលលេខកូដសម្ងាត់បច្ចុប្បន្ន!' : 'Please enter your current password!'
+      });
+      return;
+    }
+    
+    if (settingNewPassword.length < 6) {
+      setPasswordChangeStatus({
+        type: 'error',
+        message: language === 'kh' ? 'លេខកូដសម្ងាត់ថ្មីត្រូវមានយ៉ាងហោចណាស់ ៦ ខ្ទង់!' : 'New password must be at least 6 characters!'
+      });
+      return;
+    }
+    
+    if (settingNewPassword !== settingConfirmNewPassword) {
+      setPasswordChangeStatus({
+        type: 'error',
+        message: language === 'kh' ? 'លេខកូដសម្ងាត់ថ្មីទាំងពីរមិនដូចគ្នាទេ!' : 'New passwords do not match!'
+      });
+      return;
+    }
+    
+    setIsPasswordUpdating(true);
+    
+    try {
+      if (currentUser === 'sounravin') {
+        // Superadmin password change
+        let currentAdminPassword = 'Ravin012348981';
+        const adminSettingsRef = doc(db, 'settings', 'admin_config');
+        const adminSettings = await getDoc(adminSettingsRef);
+        if (adminSettings.exists() && adminSettings.data().adminPassword) {
+          currentAdminPassword = adminSettings.data().adminPassword;
+        }
+        
+        if (settingOldPassword !== currentAdminPassword) {
+          setPasswordChangeStatus({
+            type: 'error',
+            message: language === 'kh' ? 'លេខកូដសម្ងាត់បច្ចុប្បន្នមិនត្រឹមត្រូវឡើយ!' : 'Current password is incorrect!'
+          });
+          setIsPasswordUpdating(false);
+          return;
+        }
+        
+        await setDoc(adminSettingsRef, { adminPassword: settingNewPassword }, { merge: true });
+        setPasswordChangeStatus({
+          type: 'success',
+          message: language === 'kh' ? 'បានផ្លាស់ប្តូរលេខកូដសម្ងាត់អ្នកគ្រប់គ្រងជោគជ័យ!' : 'Admin password changed successfully!'
+        });
+        setSettingOldPassword('');
+        setSettingNewPassword('');
+        setSettingConfirmNewPassword('');
+        showToast(language === 'kh' ? 'បានផ្លាស់ប្តូរលេខកូដសម្ងាត់ជោគជ័យ!' : 'Password changed successfully!', 'success');
+      } else if (isMember) {
+        // Standard member password change
+        if (settingOldPassword !== memberProfile?.password) {
+          setPasswordChangeStatus({
+            type: 'error',
+            message: language === 'kh' ? 'លេខកូដសម្ងាត់បច្ចុប្បន្នមិនត្រឹមត្រូវឡើយ!' : 'Current password is incorrect!'
+          });
+          setIsPasswordUpdating(false);
+          return;
+        }
+        
+        const memberRef = doc(db, 'members', currentUser);
+        await setDoc(memberRef, { password: settingNewPassword }, { merge: true });
+        setPasswordChangeStatus({
+          type: 'success',
+          message: language === 'kh' ? 'បានផ្លាស់ប្តូរលេខកូដសម្ងាត់ជោគជ័យ!' : 'Password changed successfully!'
+        });
+        setSettingOldPassword('');
+        setSettingNewPassword('');
+        setSettingConfirmNewPassword('');
+        showToast(language === 'kh' ? 'បានផ្លាស់ប្តូរលេខកូដសម្ងាត់ជោគជ័យ!' : 'Password changed successfully!', 'success');
+      } else {
+        setPasswordChangeStatus({
+          type: 'error',
+          message: language === 'kh' ? 'មិនអាចប្តូរលេខកូដសម្ងាត់សម្រាប់គណនីភ្ញៀវបានឡើយ!' : 'Cannot change password for guest account!'
+        });
+      }
+    } catch (err) {
+      console.error('Error changing password:', err);
+      setPasswordChangeStatus({
+        type: 'error',
+        message: language === 'kh' ? 'មានបញ្ហាបច្ចេកទេសក្នុងកំឡុងពេលប្តូរលេខកូដសម្ងាត់!' : 'Technical error during password change!'
+      });
+    } finally {
+      setIsPasswordUpdating(false);
+    }
   };
 
   const handleForceUpdateSystem = async () => {
@@ -5841,6 +6016,76 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Change Password Section */}
+              <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                  <Key className="w-4 h-4 text-amber-500" />
+                  <span>{language === 'kh' ? 'ប្តូរលេខកូដសម្ងាត់គណនី' : 'Change Account Password'}</span>
+                </h4>
+                
+                <form onSubmit={handleChangePassword} className="bg-slate-50 dark:bg-slate-850 p-4.5 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-3.5">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                      {language === 'kh' ? 'លេខកូដសម្ងាត់បច្ចុប្បន្ន' : 'Current Password'}
+                    </label>
+                    <input
+                      type="password"
+                      value={settingOldPassword}
+                      onChange={(e) => setSettingOldPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                      {language === 'kh' ? 'លេខកូដសម្ងាត់ថ្មី' : 'New Password'}
+                    </label>
+                    <input
+                      type="password"
+                      value={settingNewPassword}
+                      onChange={(e) => setSettingNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                      {language === 'kh' ? 'បញ្ជាក់លេខកូដសម្ងាត់ថ្មី' : 'Confirm New Password'}
+                    </label>
+                    <input
+                      type="password"
+                      value={settingConfirmNewPassword}
+                      onChange={(e) => setSettingConfirmNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
+                    />
+                  </div>
+
+                  {passwordChangeStatus && (
+                    <div className={`p-2.5 rounded-xl text-[10px] font-bold border ${passwordChangeStatus.type === 'success' ? 'bg-emerald-500/5 border-emerald-200 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/5 border-rose-200 text-rose-600 dark:text-rose-400'}`}>
+                      {passwordChangeStatus.message}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isPasswordUpdating}
+                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 active:bg-blue-800 text-white text-xs font-black rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer border-transparent"
+                  >
+                    {isPasswordUpdating ? (
+                      <span>{language === 'kh' ? 'កំពុងរក្សាទុក...' : 'Updating...'}</span>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>{language === 'kh' ? 'រក្សាទុកការផ្លាស់ប្តូរ (Save Password)' : 'Update Password'}</span>
+                      </>
+                    )}
+                  </button>
+                </form>
               </div>
 
               {/* Cache Clear & Force Update Section */}
