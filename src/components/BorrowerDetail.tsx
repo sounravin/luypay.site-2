@@ -81,6 +81,14 @@ export default function BorrowerDetail({
   const [editCoverPhoto, setEditCoverPhoto] = useState(borrower.coverPhoto || '');
   const [editPaymentQr, setEditPaymentQr] = useState(borrower.paymentQr || '');
 
+  // Interest-related Edit Mode states
+  const [editInterestType, setEditInterestType] = useState<'percent' | 'fixed'>(borrower.interestType || 'percent');
+  const [editInterestValue, setEditInterestValue] = useState<string>(borrower.interestValue?.toString() || '4');
+  const [editPaymentMode, setEditPaymentMode] = useState<'all' | 'interest-only'>(borrower.paymentMode || 'all');
+  const [editInterestCalculation, setEditInterestCalculation] = useState<'flat' | 'per-period'>(borrower.interestCalculation || 'per-period');
+  const [isTotalToPayManuallyEdited, setIsTotalToPayManuallyEdited] = useState(false);
+  const [isInstallmentManuallyEdited, setIsInstallmentManuallyEdited] = useState(false);
+
   const [editInterestOnlyExtension, setEditInterestOnlyExtension] = useState<boolean>(!!borrower.interestOnlyExtension);
   const [editInterestOnlyExtensionNote, setEditInterestOnlyExtensionNote] = useState<string>(borrower.interestOnlyExtensionNote || '');
   const [editInterestOnlyExtensionReason, setEditInterestOnlyExtensionReason] = useState<string>(borrower.interestOnlyExtensionReason || '');
@@ -100,40 +108,110 @@ export default function BorrowerDetail({
   const [quickTopUpNotes, setQuickTopUpNotes] = useState<string>(borrower.topUpNotes || '');
   const [quickTopUpDate, setQuickTopUpDate] = useState<string>(borrower.topUpDate || '');
 
-  // Reset editing states when borrower or editing mode changes
+  // Reset editing states only when entering edit mode or changing borrower selection
   useEffect(() => {
-    setEditName(borrower.name);
-    setEditPhone(borrower.phone || '');
-    setEditLoanDate(borrower.loanDate);
-    setEditDueTime(borrower.dueTime || '17:00');
-    setEditPrincipal(borrower.principal.toString());
-    setEditTotalToPay(borrower.totalToPay.toString());
-    setEditInstallmentAmount(borrower.installmentAmount.toString());
-    setEditFrequency(borrower.frequency);
-    setEditDuration(borrower.duration.toString());
-    setEditCurrency(borrower.currency);
-    setEditNotes(borrower.notes || '');
-    setEditNoticeMessage(borrower.noticeMessage || '');
-    setEditProfilePhoto(borrower.profilePhoto || '');
-    setEditCoverPhoto(borrower.coverPhoto || '');
-    setEditPaymentQr(borrower.paymentQr || '');
-    setEditInterestOnlyExtension(!!borrower.interestOnlyExtension);
-    setEditInterestOnlyExtensionNote(borrower.interestOnlyExtensionNote || '');
-    setEditInterestOnlyExtensionReason(borrower.interestOnlyExtensionReason || '');
-    setExtensionActive(!!borrower.interestOnlyExtension);
-    setExtensionNote(borrower.interestOnlyExtensionNote || '');
-    setExtensionReason(borrower.interestOnlyExtensionReason || '');
+    if (isEditing) {
+      setEditName(borrower.name);
+      setEditPhone(borrower.phone || '');
+      setEditLoanDate(borrower.loanDate);
+      setEditDueTime(borrower.dueTime || '17:00');
+      setEditPrincipal(borrower.principal.toString());
+      setEditTotalToPay(borrower.totalToPay.toString());
+      setEditInstallmentAmount(borrower.installmentAmount.toString());
+      setEditFrequency(borrower.frequency);
+      setEditDuration(borrower.duration.toString());
+      setEditCurrency(borrower.currency);
+      setEditNotes(borrower.notes || '');
+      setEditNoticeMessage(borrower.noticeMessage || '');
+      setEditProfilePhoto(borrower.profilePhoto || '');
+      setEditCoverPhoto(borrower.coverPhoto || '');
+      setEditPaymentQr(borrower.paymentQr || '');
+      setEditInterestType(borrower.interestType || 'percent');
+      setEditInterestValue(borrower.interestValue?.toString() || '4');
+      setEditPaymentMode(borrower.paymentMode || 'all');
+      setEditInterestCalculation(borrower.interestCalculation || 'per-period');
+      setIsTotalToPayManuallyEdited(false);
+      setIsInstallmentManuallyEdited(false);
+      setEditInterestOnlyExtension(!!borrower.interestOnlyExtension);
+      setEditInterestOnlyExtensionNote(borrower.interestOnlyExtensionNote || '');
+      setEditInterestOnlyExtensionReason(borrower.interestOnlyExtensionReason || '');
+      setExtensionActive(!!borrower.interestOnlyExtension);
+      setExtensionNote(borrower.interestOnlyExtensionNote || '');
+      setExtensionReason(borrower.interestOnlyExtensionReason || '');
 
-    setEditTopUpLoanAmount(borrower.topUpLoanAmount ? borrower.topUpLoanAmount.toString() : '');
-    setEditTopUpSeparate(borrower.topUpSeparate !== false);
-    setEditTopUpNotes(borrower.topUpNotes || '');
-    setEditTopUpDate(borrower.topUpDate || '');
+      setEditTopUpLoanAmount(borrower.topUpLoanAmount ? borrower.topUpLoanAmount.toString() : '');
+      setEditTopUpSeparate(borrower.topUpSeparate !== false);
+      setEditTopUpNotes(borrower.topUpNotes || '');
+      setEditTopUpDate(borrower.topUpDate || '');
 
-    setQuickTopUpLoanAmount(borrower.topUpLoanAmount ? borrower.topUpLoanAmount.toString() : '');
-    setQuickTopUpSeparate(borrower.topUpSeparate !== false);
-    setQuickTopUpNotes(borrower.topUpNotes || '');
-    setQuickTopUpDate(borrower.topUpDate || '');
-  }, [borrower, isEditing]);
+      setQuickTopUpLoanAmount(borrower.topUpLoanAmount ? borrower.topUpLoanAmount.toString() : '');
+      setQuickTopUpSeparate(borrower.topUpSeparate !== false);
+      setQuickTopUpNotes(borrower.topUpNotes || '');
+      setQuickTopUpDate(borrower.topUpDate || '');
+    }
+  }, [borrower.id, isEditing]);
+
+  // Auto calculate total expected amount inside Edit Mode
+  useEffect(() => {
+    if (!isEditing) return;
+    const pVal = parseFloat(editPrincipal);
+    const iVal = parseFloat(editInterestValue);
+    const dVal = parseInt(editDuration) || 1;
+
+    if (!isNaN(pVal) && pVal > 0) {
+      if (!isTotalToPayManuallyEdited) {
+        let computedTotal = 0;
+        const interestAmt = editInterestType === 'percent' ? pVal * (iVal / 100) : iVal;
+        const safeInterestAmt = isNaN(interestAmt) ? 0 : interestAmt;
+        
+        if (editInterestCalculation === 'per-period') {
+          if (editPaymentMode === 'all') {
+            computedTotal = pVal + (safeInterestAmt * dVal);
+          } else {
+            computedTotal = safeInterestAmt * dVal;
+          }
+        } else { // 'flat'
+          if (editPaymentMode === 'all') {
+            computedTotal = pVal + safeInterestAmt;
+          } else {
+            computedTotal = safeInterestAmt;
+          }
+        }
+        
+        // Round nicely based on currency
+        if (editCurrency === 'KHR') {
+          computedTotal = Math.round(computedTotal);
+        } else {
+          computedTotal = parseFloat(computedTotal.toFixed(2));
+        }
+        setEditTotalToPay(computedTotal.toString());
+      }
+    } else {
+      if (!isTotalToPayManuallyEdited) setEditTotalToPay('');
+    }
+  }, [isEditing, editPrincipal, editInterestType, editInterestValue, editPaymentMode, editDuration, editInterestCalculation, editCurrency, isTotalToPayManuallyEdited]);
+
+  // Auto calculate installment amount inside Edit Mode
+  useEffect(() => {
+    if (!isEditing) return;
+    const tVal = parseFloat(editTotalToPay);
+    const dVal = parseInt(editDuration);
+    if (!isNaN(tVal) && !isNaN(dVal) && dVal > 0) {
+      if (!isInstallmentManuallyEdited) {
+        let calculatedInstallment = tVal / dVal;
+        
+        // Round nicely based on currency
+        if (editCurrency === 'KHR') {
+          calculatedInstallment = Math.round(calculatedInstallment / 100) * 100;
+        } else {
+          calculatedInstallment = Math.floor(calculatedInstallment * 100) / 100;
+        }
+        setEditInstallmentAmount(calculatedInstallment.toString());
+      }
+    } else {
+      if (!isInstallmentManuallyEdited) setEditInstallmentAmount('');
+    }
+  }, [isEditing, editTotalToPay, editDuration, editCurrency, editPaymentMode, isInstallmentManuallyEdited]);
 
   const handleEditPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -279,6 +357,10 @@ export default function BorrowerDetail({
         profilePhoto: editProfilePhoto,
         coverPhoto: editCoverPhoto,
         paymentQr: editPaymentQr,
+        interestType: editInterestType,
+        interestValue: isNaN(parseFloat(editInterestValue)) ? 0 : parseFloat(editInterestValue),
+        paymentMode: editPaymentMode,
+        interestCalculation: editInterestCalculation,
         interestOnlyExtension: editInterestOnlyExtension,
         interestOnlyExtensionNote: editInterestOnlyExtensionNote.trim(),
         interestOnlyExtensionReason: editInterestOnlyExtensionReason,
@@ -874,6 +956,141 @@ export default function BorrowerDetail({
                   </div>
                 </div>
 
+                {/* Interest and Payment Configurations */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Payment Mode */}
+                  <div className="bg-slate-50 dark:bg-slate-850/40 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 space-y-1">
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'kh' ? 'ប្រភេទនៃការបង់ប្រាក់' : 'Payment Mode'}
+                    </label>
+                    <div className="inline-flex w-full bg-slate-200/60 dark:bg-slate-800/80 p-0.5 rounded-xl h-[38px] items-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditPaymentMode('all');
+                          setIsTotalToPayManuallyEdited(false);
+                          setIsInstallmentManuallyEdited(false);
+                        }}
+                        className={`flex-1 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1 h-full ${
+                          editPaymentMode === 'all' 
+                            ? 'bg-blue-600 text-white shadow-sm' 
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        💵 {language === 'kh' ? 'ដើម+ការ' : 'Principal+Interest'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditPaymentMode('interest-only');
+                          setIsTotalToPayManuallyEdited(false);
+                          setIsInstallmentManuallyEdited(false);
+                        }}
+                        className={`flex-1 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1 h-full ${
+                          editPaymentMode === 'interest-only' 
+                            ? 'bg-blue-600 text-white shadow-sm' 
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        📈 {language === 'kh' ? 'តែការសុទ្ធ' : 'Interest-Only'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Interest Calculation Method */}
+                  <div className="bg-slate-50 dark:bg-slate-850/40 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 space-y-1">
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'kh' ? 'របៀបគណនាការប្រាក់' : 'Interest Calculation'}
+                    </label>
+                    <div className="inline-flex w-full bg-slate-200/60 dark:bg-slate-800/80 p-0.5 rounded-xl h-[38px] items-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditInterestCalculation('per-period');
+                          setIsTotalToPayManuallyEdited(false);
+                          setIsInstallmentManuallyEdited(false);
+                        }}
+                        className={`flex-1 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1 h-full ${
+                          editInterestCalculation === 'per-period' 
+                            ? 'bg-blue-600 text-white shadow-sm' 
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        🔄 {language === 'kh' ? 'រាល់ដង' : 'Per Period'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditInterestCalculation('flat');
+                          setIsTotalToPayManuallyEdited(false);
+                          setIsInstallmentManuallyEdited(false);
+                        }}
+                        className={`flex-1 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1 h-full ${
+                          editInterestCalculation === 'flat' 
+                            ? 'bg-blue-600 text-white shadow-sm' 
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        🎯 {language === 'kh' ? 'ការសរុប' : 'Flat Total'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Interest Type */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'kh' ? 'ប្រភេទតម្លៃការប្រាក់' : 'Interest Type'}
+                    </label>
+                    <div className="inline-flex w-full bg-slate-100 dark:bg-slate-850 p-0.5 rounded-xl border border-slate-200 dark:border-slate-850 h-[42px] items-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditInterestType('percent');
+                          setIsTotalToPayManuallyEdited(false);
+                        }}
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${editInterestType === 'percent' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                      >
+                        % {language === 'kh' ? 'ភាគរយ' : 'Percent'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditInterestType('fixed');
+                          setIsTotalToPayManuallyEdited(false);
+                        }}
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${editInterestType === 'fixed' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                      >
+                        {editCurrency === 'USD' ? '$' : '៛'} {language === 'kh' ? 'ចំនួនថេរ' : 'Fixed'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Interest Value */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'kh' ? 'តម្លៃការប្រាក់ (Interest Rate)' : 'Interest Rate/Value'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={editInterestValue}
+                        onChange={(e) => {
+                          setEditInterestValue(e.target.value);
+                          setIsTotalToPayManuallyEdited(false);
+                        }}
+                        className="w-full pl-3.5 pr-8 py-2.5 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-slate-800 dark:text-slate-100"
+                        min="0"
+                        step="any"
+                      />
+                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-bold">
+                        {editInterestType === 'percent' ? '%' : (editCurrency === 'USD' ? '$' : '៛')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -882,29 +1099,65 @@ export default function BorrowerDetail({
                     <input
                       type="number"
                       value={editPrincipal}
-                      onChange={(e) => setEditPrincipal(e.target.value)}
+                      onChange={(e) => {
+                        setEditPrincipal(e.target.value);
+                        setIsTotalToPayManuallyEdited(false);
+                        setIsInstallmentManuallyEdited(false);
+                      }}
                       className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      {language === 'kh' ? 'ប្រាក់សរុបត្រូវសង' : 'Total to Repay'}
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
+                      <span>{language === 'kh' ? 'ប្រាក់ត្រូវសងសរុប' : 'Total to Repay'}</span>
+                      {isTotalToPayManuallyEdited ? (
+                        <button
+                          type="button"
+                          onClick={() => setIsTotalToPayManuallyEdited(false)}
+                          className="text-[10px] text-rose-500 hover:underline font-bold bg-transparent border-none cursor-pointer"
+                        >
+                          {language === 'kh' ? 'កំណត់ឡើងវិញ' : 'Reset'}
+                        </button>
+                      ) : (
+                        <span className="text-[9px] text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 rounded-md font-bold">
+                          {language === 'kh' ? 'ស្វ័យប្រវត្ត' : 'Auto'}
+                        </span>
+                      )}
                     </label>
                     <input
                       type="number"
                       value={editTotalToPay}
-                      onChange={(e) => setEditTotalToPay(e.target.value)}
+                      onChange={(e) => {
+                        setEditTotalToPay(e.target.value);
+                        setIsTotalToPayManuallyEdited(true);
+                      }}
                       className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      {language === 'kh' ? 'ប្រាក់ត្រូវបង់ក្នុងមួយវគ្គ' : 'Term Installment Amount'}
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
+                      <span>{language === 'kh' ? 'ប្រាក់ត្រូវបង់ក្នុងមួយវគ្គ' : 'Term Installment Amount'}</span>
+                      {!isInstallmentManuallyEdited ? (
+                        <span className="text-[9px] text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-1.5 py-0.5 rounded-md font-bold">
+                          {language === 'kh' ? 'ស្វ័យប្រវត្ត' : 'Auto'}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setIsInstallmentManuallyEdited(false)}
+                          className="text-[10px] text-rose-500 hover:underline font-bold bg-transparent border-none cursor-pointer"
+                        >
+                          {language === 'kh' ? 'កំណត់ឡើងវិញ' : 'Reset'}
+                        </button>
+                      )}
                     </label>
                     <input
                       type="number"
                       value={editInstallmentAmount}
-                      onChange={(e) => setEditInstallmentAmount(e.target.value)}
+                      onChange={(e) => {
+                        setEditInstallmentAmount(e.target.value);
+                        setIsInstallmentManuallyEdited(true);
+                      }}
                       className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
                     />
                   </div>
@@ -932,7 +1185,11 @@ export default function BorrowerDetail({
                     <input
                       type="number"
                       value={editDuration}
-                      onChange={(e) => setEditDuration(e.target.value)}
+                      onChange={(e) => {
+                        setEditDuration(e.target.value);
+                        setIsTotalToPayManuallyEdited(false);
+                        setIsInstallmentManuallyEdited(false);
+                      }}
                       className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
                     />
                   </div>
