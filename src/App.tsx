@@ -8,13 +8,13 @@ import AddBorrowerModal from './components/AddBorrowerModal';
 import BorrowerPortal from './components/BorrowerPortal';
 import AdminMembersDashboard from './components/AdminMembersDashboard';
 import PricingPanel from './components/PricingPanel';
-import NotificationBell from './components/NotificationBell';
+import NotificationBell, { playNotificationSound } from './components/NotificationBell';
 import BorrowerApplyForm from './components/BorrowerApplyForm';
 import LoanApplicationTracker from './components/LoanApplicationTracker';
 import LoanApplicationsControlPanel from './components/LoanApplicationsControlPanel';
 import { LoanApplication } from './types';
 import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText } from 'lucide-react';
-import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDoc, getDocs } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import { safeStorage, largeMediaStorage } from './lib/safeStorage';
 import { useLanguage } from './i18n';
@@ -183,17 +183,51 @@ export default function App() {
   const [sponsorVideoData, setSponsorVideoData] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+
     if (sponsorConfig && sponsorConfig.sponsorEnabled && sponsorConfig.sponsorMediaType === 'video') {
-      largeMediaStorage.get('sponsor_video_data')
-        .then((data) => {
-          setSponsorVideoData(data);
-        })
-        .catch((err) => {
-          console.error('Error loading sponsor video from IndexedDB:', err);
-        });
+      const loadVideo = async () => {
+        try {
+          const cachedVersion = safeStorage.getItem('sponsor_video_version');
+          const currentVersion = String(sponsorConfig.videoVersion || '');
+          let data = '';
+
+          if (cachedVersion === currentVersion) {
+            data = await largeMediaStorage.get('sponsor_video_data') || '';
+          }
+
+          if (!data && active) {
+            // Fetch chunks from Firestore and reconstruct
+            const chunkSnapshot = await getDocs(collection(db, 'sponsor_video_chunks'));
+            const chunkDocs: any[] = [];
+            chunkSnapshot.forEach((cDoc) => {
+              chunkDocs.push(cDoc.data());
+            });
+            chunkDocs.sort((a, b) => a.index - b.index);
+            data = chunkDocs.map((c) => c.data).join('');
+
+            if (data && active) {
+              await largeMediaStorage.save('sponsor_video_data', data);
+              safeStorage.setItem('sponsor_video_version', currentVersion);
+            }
+          }
+
+          if (active) {
+            setSponsorVideoData(data || null);
+          }
+        } catch (err) {
+          console.error('Error loading/reconstructing sponsor video in App:', err);
+        }
+      };
+
+      loadVideo();
     } else {
       setSponsorVideoData(null);
     }
+
+    return () => {
+      active = false;
+    };
   }, [sponsorConfig]);
 
   // Telegram Bot integration for auto payment verification
@@ -1579,6 +1613,49 @@ export default function App() {
       setNotification(null);
     }, 4000);
   };
+
+  // Monitor when borrowers go online and show push notification and play sound
+  const prevOnlineRef = React.useRef<Record<string, boolean>>({});
+  const isFirstOnlineLoadRef = React.useRef(true);
+
+  useEffect(() => {
+    if (borrowers.length === 0) return;
+
+    if (isFirstOnlineLoadRef.current) {
+      // On first load, just record the status of all borrowers to avoid notification storm
+      const initialMap: Record<string, boolean> = {};
+      borrowers.forEach((b) => {
+        initialMap[b.id] = !!b.isOnline;
+      });
+      prevOnlineRef.current = initialMap;
+      isFirstOnlineLoadRef.current = false;
+      return;
+    }
+
+    // Check if any borrower's online status transitioned from false to true
+    borrowers.forEach((b) => {
+      const wasOnline = !!prevOnlineRef.current[b.id];
+      const isOnline = !!b.isOnline;
+
+      if (isOnline && !wasOnline) {
+        // Play the chime sound
+        try {
+          playNotificationSound();
+        } catch (e) {
+          console.warn('Audio feedback failed:', e);
+        }
+
+        // Show push notification toast
+        const msg = language === 'kh'
+          ? `🟢 កូនបំណុល "${b.name}" កំពុងអនឡាញ (Online) មើលគណនីរបស់គាត់!`
+          : `🟢 Borrower "${b.name}" is online looking at their account!`;
+        showToast(msg, 'success');
+      }
+
+      // Update ref
+      prevOnlineRef.current[b.id] = isOnline;
+    });
+  }, [borrowers, language]);
 
   // Compute ledger statistics
   const [stats, setStats] = useState<LedgerStats>({

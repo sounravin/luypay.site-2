@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Users, UserX, UserCheck, ShieldAlert, Check, X, Search, Calendar, Award, Trash2, Edit2, Lock, Plus, RefreshCw, QrCode, Upload, Image, Settings, AlertCircle, Camera } from 'lucide-react';
-import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, getDoc, writeBatch, collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Member, SubscriptionRequest } from '../types';
-import { largeMediaStorage } from '../lib/safeStorage';
+import { safeStorage, largeMediaStorage } from '../lib/safeStorage';
 
 interface AdminMembersDashboardProps {
   members: Member[];
@@ -102,12 +102,35 @@ export default function AdminMembersDashboard({
           setSponsorMediaType(mediaType);
           if (mediaType === 'video') {
             try {
-              const videoData = await largeMediaStorage.get('sponsor_video_data');
+              const cachedVersion = safeStorage.getItem('sponsor_video_version');
+              const currentVersion = String(data.videoVersion || '');
+              let videoData = '';
+              
+              if (cachedVersion === currentVersion) {
+                videoData = await largeMediaStorage.get('sponsor_video_data') || '';
+              }
+              
+              if (!videoData) {
+                // Fetch chunks from Firestore and reconstruct
+                const chunkSnapshot = await getDocs(collection(db, 'sponsor_video_chunks'));
+                const chunkDocs: any[] = [];
+                chunkSnapshot.forEach((cDoc) => {
+                  chunkDocs.push(cDoc.data());
+                });
+                chunkDocs.sort((a, b) => a.index - b.index);
+                videoData = chunkDocs.map((c) => c.data).join('');
+                
+                if (videoData) {
+                  await largeMediaStorage.save('sponsor_video_data', videoData);
+                  safeStorage.setItem('sponsor_video_version', currentVersion);
+                }
+              }
+              
               if (videoData) {
                 setSponsorVideoUrl(videoData);
               }
             } catch (vErr) {
-              console.error('Error loading sponsor video from DB:', vErr);
+              console.error('Error loading/reconstructing sponsor video in admin panel:', vErr);
             }
           }
         }
@@ -184,18 +207,66 @@ export default function AdminMembersDashboard({
   const handleSaveSponsorConfig = async () => {
     setIsSponsorSaving(true);
     try {
+      let videoVersion = Date.now();
+      let totalChunks = 0;
+
+      if (sponsorMediaType === 'video' && sponsorVideoUrl) {
+        if (sponsorVideoUrl.startsWith('data:video/')) {
+          // 1. Chunk the video (each chunk is 700,000 characters)
+          const chunkSize = 700000;
+          const chunks: string[] = [];
+          for (let i = 0; i < sponsorVideoUrl.length; i += chunkSize) {
+            chunks.push(sponsorVideoUrl.substring(i, i + chunkSize));
+          }
+          totalChunks = chunks.length;
+
+          // 2. Query and delete all existing sponsor chunks in Firestore
+          try {
+            const querySnapshot = await getDocs(collection(db, 'sponsor_video_chunks'));
+            const deleteBatch = writeBatch(db);
+            querySnapshot.forEach((dDoc) => {
+              deleteBatch.delete(dDoc.ref);
+            });
+            await deleteBatch.commit();
+          } catch (delErr) {
+            console.warn('Error clearing old sponsor chunks:', delErr);
+          }
+
+          // 3. Write new chunks to Firestore
+          for (let index = 0; index < chunks.length; index++) {
+            const chunkDocRef = doc(db, 'sponsor_video_chunks', `chunk_${index}`);
+            await setDoc(chunkDocRef, {
+              index,
+              data: chunks[index],
+              version: videoVersion
+            });
+          }
+        } else {
+          // Preserve existing video info from Firestore
+          const sponsorDocRef = doc(db, 'settings', 'sponsor_config');
+          const sponsorSnap = await getDoc(sponsorDocRef);
+          if (sponsorSnap.exists()) {
+            const currentData = sponsorSnap.data();
+            videoVersion = currentData.videoVersion || Date.now();
+            totalChunks = currentData.totalChunks || 0;
+          }
+        }
+
+        // Save complete video to our own local IndexedDB
+        await largeMediaStorage.save('sponsor_video_data', sponsorVideoUrl);
+        safeStorage.setItem('sponsor_video_version', String(videoVersion));
+      }
+
       const docRef = doc(db, 'settings', 'sponsor_config');
       await setDoc(docRef, {
         sponsorImageUrl,
         sponsorLinkUrl,
         sponsorTitle,
         sponsorEnabled,
-        sponsorMediaType
+        sponsorMediaType,
+        videoVersion,
+        totalChunks
       }, { merge: true });
-
-      if (sponsorMediaType === 'video' && sponsorVideoUrl) {
-        await largeMediaStorage.save('sponsor_video_data', sponsorVideoUrl);
-      }
 
       showToast(language === 'kh' ? 'បានរក្សាទុកការកំណត់ផ្ទាំង Sponsor ជោគជ័យ!' : 'Sponsor banner configuration saved successfully!', 'success');
     } catch (err) {
