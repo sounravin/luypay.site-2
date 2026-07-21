@@ -330,15 +330,75 @@ export default function BorrowerDetail({
 
   const handleSaveEdit = () => {
     if (!editName.trim()) return alert(language === 'kh' ? 'សូមបញ្ចូលឈ្មោះកូនបំណុល!' : 'Please enter borrower name!');
-    const pVal = parseFloat(editPrincipal);
-    const tVal = parseFloat(editTotalToPay);
+    let pVal = parseFloat(editPrincipal);
+    let tVal = parseFloat(editTotalToPay);
     const dVal = parseInt(editDuration);
-    const iVal = parseFloat(editInstallmentAmount);
+    let iVal = parseFloat(editInstallmentAmount);
 
     if (isNaN(pVal) || pVal <= 0) return alert(language === 'kh' ? 'សូមបញ្ជាក់ប្រាក់ខ្ចីដើមឲ្យបានត្រឹមត្រូវ!' : 'Please enter a valid principal amount!');
     if (isNaN(tVal) || tVal <= 0) return alert(language === 'kh' ? 'សូមបញ្ជាក់ប្រាក់ត្រូវសងសរុបឲ្យបានត្រឹមត្រូវ!' : 'Please enter a valid total to pay!');
     if (isNaN(dVal) || dVal <= 0) return alert(language === 'kh' ? 'សូមបញ្ជាក់ចំនួនដងបង់ប្រាក់ឲ្យបានត្រឹមត្រូវ!' : 'Please enter a valid duration!');
     if (isNaN(iVal) || iVal <= 0) return alert(language === 'kh' ? 'សូមបញ្ជាក់ប្រាក់ត្រូវបង់ក្នុងមួយវគ្គឲ្យបានត្រឹមត្រូវ!' : 'Please enter a valid installment amount!');
+
+    const topUpAmt = editTopUpLoanAmount ? parseFloat(editTopUpLoanAmount) : 0;
+    let finalTopUpAmount: number | undefined = editTopUpLoanAmount ? parseFloat(editTopUpLoanAmount) : undefined;
+    let finalTopUpSeparate = editTopUpSeparate;
+    let finalTopUpNotes: string | undefined = editTopUpNotes.trim() || undefined;
+    let finalTopUpDate: string | undefined = editTopUpDate || undefined;
+
+    if (!isNaN(topUpAmt) && topUpAmt > 0 && editTopUpSeparate === false) {
+      // It is a Merged Top-up Loan! Recalculate based on old loan info.
+      const rateVal = isNaN(parseFloat(editInterestValue)) ? 0 : parseFloat(editInterestValue);
+      const interestAmt = editInterestType === 'percent' ? topUpAmt * (rateVal / 100) : rateVal;
+      const safeInterestAmt = isNaN(interestAmt) ? 0 : interestAmt;
+
+      let topUpTotalToPay = 0;
+      if (editInterestCalculation === 'per-period') {
+        if (editPaymentMode === 'all') {
+          topUpTotalToPay = topUpAmt + (safeInterestAmt * dVal);
+        } else {
+          topUpTotalToPay = safeInterestAmt * dVal;
+        }
+      } else { // flat
+        if (editPaymentMode === 'all') {
+          topUpTotalToPay = topUpAmt + safeInterestAmt;
+        } else {
+          topUpTotalToPay = safeInterestAmt;
+        }
+      }
+
+      // Round nicely based on currency
+      if (editCurrency === 'KHR') {
+        topUpTotalToPay = Math.round(topUpTotalToPay);
+      } else {
+        topUpTotalToPay = parseFloat(topUpTotalToPay.toFixed(2));
+      }
+
+      // Merge into main loan values
+      pVal = pVal + topUpAmt;
+      tVal = tVal + topUpTotalToPay;
+
+      // Recalculate installment amount
+      iVal = tVal / dVal;
+      if (editCurrency === 'KHR') {
+        iVal = Math.round(iVal);
+      } else {
+        iVal = parseFloat(iVal.toFixed(2));
+      }
+
+      // Clear the top-up fields since they are now fully merged/absorbed
+      finalTopUpAmount = undefined;
+      finalTopUpNotes = undefined;
+      finalTopUpDate = undefined;
+
+      // Update local state inputs too so they match
+      setEditPrincipal(pVal.toString());
+      setEditTotalToPay(tVal.toString());
+      setEditInstallmentAmount(iVal.toString());
+      setEditTopUpLoanAmount('');
+      setEditTopUpNotes('');
+      setEditTopUpDate('');
+    }
 
     if (onEditBorrower) {
       onEditBorrower(borrower.id, {
@@ -364,10 +424,10 @@ export default function BorrowerDetail({
         interestOnlyExtension: editInterestOnlyExtension,
         interestOnlyExtensionNote: editInterestOnlyExtensionNote.trim(),
         interestOnlyExtensionReason: editInterestOnlyExtensionReason,
-        topUpLoanAmount: editTopUpLoanAmount ? parseFloat(editTopUpLoanAmount) : undefined,
-        topUpSeparate: editTopUpSeparate,
-        topUpNotes: editTopUpNotes.trim() || undefined,
-        topUpDate: editTopUpDate || undefined,
+        topUpLoanAmount: finalTopUpAmount,
+        topUpSeparate: finalTopUpSeparate,
+        topUpNotes: finalTopUpNotes,
+        topUpDate: finalTopUpDate,
       });
     }
     setIsEditing(false);
@@ -415,8 +475,44 @@ export default function BorrowerDetail({
 
   // Calculate stats
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-  const remaining = Math.max(0, borrower.totalToPay - totalPaid);
-  const progressPercent = Math.min(100, Math.round((totalPaid / borrower.totalToPay) * 100));
+
+  // Calculate top-up total if it is separate and active
+  let topUpTotalToPay = 0;
+  if (borrower.topUpLoanAmount !== undefined && borrower.topUpLoanAmount > 0 && borrower.topUpSeparate !== false) {
+    const topUpAmt = borrower.topUpLoanAmount;
+    const iVal = borrower.interestValue || 0;
+    const dVal = borrower.duration || 1;
+    const interestType = borrower.interestType || 'percent';
+    const interestCalculation = borrower.interestCalculation || 'per-period';
+    const paymentMode = borrower.paymentMode || 'all';
+
+    const interestAmt = interestType === 'percent' ? topUpAmt * (iVal / 100) : iVal;
+    const safeInterestAmt = isNaN(interestAmt) ? 0 : interestAmt;
+
+    if (interestCalculation === 'per-period') {
+      if (paymentMode === 'all') {
+        topUpTotalToPay = topUpAmt + (safeInterestAmt * dVal);
+      } else {
+        topUpTotalToPay = safeInterestAmt * dVal;
+      }
+    } else { // flat
+      if (paymentMode === 'all') {
+        topUpTotalToPay = topUpAmt + safeInterestAmt;
+      } else {
+        topUpTotalToPay = safeInterestAmt;
+      }
+    }
+
+    if (borrower.currency === 'KHR') {
+      topUpTotalToPay = Math.round(topUpTotalToPay);
+    } else {
+      topUpTotalToPay = parseFloat(topUpTotalToPay.toFixed(2));
+    }
+  }
+
+  const overallTotalToPay = borrower.totalToPay + topUpTotalToPay;
+  const remaining = Math.max(0, overallTotalToPay - totalPaid);
+  const progressPercent = overallTotalToPay > 0 ? Math.min(100, Math.round((totalPaid / overallTotalToPay) * 100)) : 0;
   const isCompleted = remaining <= 0;
 
   const [reminderMessage, setReminderMessage] = useState<string>('');
@@ -2755,12 +2851,76 @@ export default function BorrowerDetail({
                             type="button"
                             onClick={() => {
                               if (onEditBorrower) {
-                                onEditBorrower(borrower.id, {
+                                const topUpAmt = quickTopUpLoanAmount ? parseFloat(quickTopUpLoanAmount) : 0;
+                                let updatedFields: Partial<Borrower> = {
                                   topUpLoanAmount: quickTopUpLoanAmount ? parseFloat(quickTopUpLoanAmount) : undefined,
                                   topUpSeparate: quickTopUpSeparate,
                                   topUpNotes: quickTopUpNotes.trim() || undefined,
                                   topUpDate: quickTopUpDate || undefined,
-                                });
+                                };
+
+                                if (!isNaN(topUpAmt) && topUpAmt > 0 && quickTopUpSeparate === false) {
+                                  // Merged top-up calculation!
+                                  const pVal = borrower.principal;
+                                  const tVal = borrower.totalToPay;
+                                  const dVal = borrower.duration || 1;
+                                  const iVal = borrower.interestValue || 0;
+                                  const interestType = borrower.interestType || 'percent';
+                                  const interestCalculation = borrower.interestCalculation || 'per-period';
+                                  const paymentMode = borrower.paymentMode || 'all';
+                                  const currency = borrower.currency;
+
+                                  const interestAmt = interestType === 'percent' ? topUpAmt * (iVal / 100) : iVal;
+                                  const safeInterestAmt = isNaN(interestAmt) ? 0 : interestAmt;
+
+                                  let topUpTotalToPay = 0;
+                                  if (interestCalculation === 'per-period') {
+                                    if (paymentMode === 'all') {
+                                      topUpTotalToPay = topUpAmt + (safeInterestAmt * dVal);
+                                    } else {
+                                      topUpTotalToPay = safeInterestAmt * dVal;
+                                    }
+                                  } else { // flat
+                                    if (paymentMode === 'all') {
+                                      topUpTotalToPay = topUpAmt + safeInterestAmt;
+                                    } else {
+                                      topUpTotalToPay = safeInterestAmt;
+                                    }
+                                  }
+
+                                  // Round nicely
+                                  if (currency === 'KHR') {
+                                    topUpTotalToPay = Math.round(topUpTotalToPay);
+                                  } else {
+                                    topUpTotalToPay = parseFloat(topUpTotalToPay.toFixed(2));
+                                  }
+
+                                  const newPrincipal = pVal + topUpAmt;
+                                  const newTotalToPay = tVal + topUpTotalToPay;
+
+                                  let newInstallmentAmount = newTotalToPay / dVal;
+                                  if (currency === 'KHR') {
+                                    newInstallmentAmount = Math.round(newInstallmentAmount);
+                                  } else {
+                                    newInstallmentAmount = parseFloat(newInstallmentAmount.toFixed(2));
+                                  }
+
+                                  updatedFields.principal = newPrincipal;
+                                  updatedFields.totalToPay = newTotalToPay;
+                                  updatedFields.installmentAmount = newInstallmentAmount;
+
+                                  // Clear top-up fields on merging
+                                  updatedFields.topUpLoanAmount = undefined;
+                                  updatedFields.topUpNotes = undefined;
+                                  updatedFields.topUpDate = undefined;
+
+                                  // Reset local panel states
+                                  setQuickTopUpLoanAmount('');
+                                  setQuickTopUpNotes('');
+                                  setQuickTopUpDate('');
+                                }
+
+                                onEditBorrower(borrower.id, updatedFields);
                                 alert(language === 'kh'
                                   ? 'បានរក្សាទុកកម្ចីបន្ថែមដោយជោគជ័យ!'
                                   : 'Successfully saved top-up loan details!'

@@ -253,8 +253,44 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
 
   // Calculate stats
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-  const remaining = Math.max(0, borrower.totalToPay - totalPaid);
-  const progressPercent = Math.min(100, Math.round((totalPaid / borrower.totalToPay) * 100));
+
+  // Calculate top-up total if it is separate and active
+  let topUpTotalToPay = 0;
+  if (borrower.topUpLoanAmount !== undefined && borrower.topUpLoanAmount > 0 && borrower.topUpSeparate !== false) {
+    const topUpAmt = borrower.topUpLoanAmount;
+    const iVal = borrower.interestValue || 0;
+    const dVal = borrower.duration || 1;
+    const interestType = borrower.interestType || 'percent';
+    const interestCalculation = borrower.interestCalculation || 'per-period';
+    const paymentMode = borrower.paymentMode || 'all';
+
+    const interestAmt = interestType === 'percent' ? topUpAmt * (iVal / 100) : iVal;
+    const safeInterestAmt = isNaN(interestAmt) ? 0 : interestAmt;
+
+    if (interestCalculation === 'per-period') {
+      if (paymentMode === 'all') {
+        topUpTotalToPay = topUpAmt + (safeInterestAmt * dVal);
+      } else {
+        topUpTotalToPay = safeInterestAmt * dVal;
+      }
+    } else { // flat
+      if (paymentMode === 'all') {
+        topUpTotalToPay = topUpAmt + safeInterestAmt;
+      } else {
+        topUpTotalToPay = safeInterestAmt;
+      }
+    }
+
+    if (borrower.currency === 'KHR') {
+      topUpTotalToPay = Math.round(topUpTotalToPay);
+    } else {
+      topUpTotalToPay = parseFloat(topUpTotalToPay.toFixed(2));
+    }
+  }
+
+  const overallTotalToPay = borrower.totalToPay + topUpTotalToPay;
+  const remaining = Math.max(0, overallTotalToPay - totalPaid);
+  const progressPercent = overallTotalToPay > 0 ? Math.min(100, Math.round((totalPaid / overallTotalToPay) * 100)) : 0;
   const isCompleted = remaining <= 0;
 
   // Map payments by installment index for easy grid lookup
