@@ -1012,6 +1012,9 @@ export default function App() {
           safeStorage.setItem('luypay_user_display_name', memberData.displayName || cleanUsername);
           safeStorage.setItem('luypay_auth_type', 'credentials');
           safeStorage.setItem('luypay_is_member', 'true');
+          setMemberProfile({ username: cleanUsername, ...memberData } as Member);
+          setProfileLoading(true);
+          setHasLoadedProfile(false);
           setIsLoggedIn(true);
           setCurrentUser(cleanUsername);
           setUserDisplayName(memberData.displayName || cleanUsername);
@@ -1295,6 +1298,8 @@ export default function App() {
       safeStorage.setItem('luypay_user_display_name', name);
       safeStorage.setItem('luypay_auth_type', type);
       safeStorage.setItem('luypay_is_member', 'true');
+      setProfileLoading(true);
+      setHasLoadedProfile(false);
       setIsLoggedIn(true);
       setCurrentUser(cleanId);
       setUserDisplayName(name);
@@ -1773,24 +1778,8 @@ export default function App() {
           return;
         }
 
-        if (memberProfile.isApproved !== false && isSubscriptionExpired(memberProfile)) {
-          safeStorage.removeItem('luypay_logged_in');
-          safeStorage.removeItem('luypay_current_user');
-          safeStorage.removeItem('luypay_user_display_name');
-          safeStorage.removeItem('luypay_auth_type');
-          safeStorage.removeItem('luypay_is_member');
-          setIsLoggedIn(false);
-          setCurrentUser('sounravin');
-          setUserDisplayName('Soun Ravin');
-          setUserAuthType('credentials');
-          setIsMember(false);
-          setLoginUsername('');
-          setLoginPassword('');
-          setMemberProfile(null);
-          setHasLoadedProfile(false);
-          alert(language === 'kh' ? 'គម្រោងសមាជិកភាពរបស់អ្នកបានអស់សុពលភាពហើយ! សូមភ្ជាប់គម្រោងឡើងវិញដើម្បីបន្តប្រើប្រាស់។' : 'Your subscription has expired! Please renew your plan to continue.');
-          return;
-        }
+        // Note: Expired subscriptions are handled gracefully by rendering the Renewal Checkout Screen (isExpired check in render)
+        // instead of forcefully kicking out the logged-in member.
       } else if (!profileLoading) {
         // memberProfile is null, profileLoading is false AND hasLoadedProfile is true
         // (real-time listener evaluated and confirmed document doesn't exist anywhere)
@@ -3229,7 +3218,13 @@ export default function App() {
   const isPendingApproval = memberProfile && memberProfile.isApproved === false && !isSuperAdmin;
 
   if (isPendingApproval) {
-    const planLabel = memberProfile.selectedPlan === '1_month' ? 'គម្រោង ១ ខែ ($5)' : memberProfile.selectedPlan === '3_months' ? 'គម្រោង ៣ ខែ ($12)' : 'គម្រោង ១ ឆ្នាំ ($35)';
+    const planLabel = memberProfile.selectedPlan === '1_month'
+      ? 'គម្រោង ១ ខែ ($5)'
+      : memberProfile.selectedPlan === '3_months'
+      ? 'គម្រោង ៣ ខែ ($12)'
+      : memberProfile.selectedPlan === 'shareholder_addon'
+      ? 'មុខងារគ្រប់គ្រងភាគហ៊ុន ($10 Add-on)'
+      : 'គម្រោង ១ ឆ្នាំ ($35)';
     return (
       <div className="min-h-screen bg-[#071324] text-white p-4 md:p-8 flex items-center justify-center">
         <div className="max-w-md w-full space-y-6 animate-in fade-in duration-300">
