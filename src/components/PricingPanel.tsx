@@ -39,7 +39,7 @@ export default function PricingPanel({
   const currentQrConfig = qrConfig || fallbackQrConfig;
 
   // Modal payment state for selected plan
-  const [selectedPlanModal, setSelectedPlanModal] = useState<'1_month' | '3_months' | '1_year' | null>(null);
+  const [selectedPlanModal, setSelectedPlanModal] = useState<'1_month' | '3_months' | '1_year' | 'shareholder_addon' | null>(null);
   const [invoiceImage, setInvoiceImage] = useState<string>('');
   const [uploadError, setUploadError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -92,7 +92,7 @@ export default function PricingPanel({
     reader.readAsDataURL(file);
   };
 
-  const handleOpenPlanModal = (planId: '1_month' | '3_months' | '1_year') => {
+  const handleOpenPlanModal = (planId: '1_month' | '3_months' | '1_year' | 'shareholder_addon') => {
     setSelectedPlanModal(planId);
     setInvoiceImage('');
     setUploadError('');
@@ -186,6 +186,17 @@ export default function PricingPanel({
       durationEn: '365 Days Access',
       popular: false,
       color: 'border-slate-200 bg-white'
+    },
+    {
+      id: 'shareholder_addon' as const,
+      nameKh: 'មុខងារគ្រប់គ្រងភាគហ៊ុន (Add-on)',
+      nameEn: 'Shareholders Partner Module',
+      priceDisplay: '$10',
+      numericPrice: '$10.00',
+      durationKh: 'ប្រើប្រាស់បានរហូត (Lifetime Add-on)',
+      durationEn: 'Lifetime Unlimited Access',
+      popular: false,
+      color: 'border-amber-400 bg-amber-500/10 ring-2 ring-amber-400/30'
     }
   ];
 

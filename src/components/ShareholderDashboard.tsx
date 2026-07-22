@@ -92,6 +92,29 @@ export default function ShareholderDashboard({
   // Selected borrower for read-only profile detail
   const [selectedBorrower, setSelectedBorrower] = useState<Borrower | null>(null);
 
+  // iOS PWA Add to Home Screen Modal state
+  const [showIosInstallModal, setShowIosInstallModal] = useState<boolean>(false);
+  const [copiedLinkToast, setCopiedLinkToast] = useState<boolean>(false);
+
+  const handleCopyPortalLink = () => {
+    try {
+      navigator.clipboard.writeText(window.location.href);
+      setCopiedLinkToast(true);
+      setTimeout(() => setCopiedLinkToast(false), 3000);
+    } catch (e) {
+      alert(language === 'kh' ? 'បានចម្លង Link ជោគជ័យ!' : 'Portal Link copied successfully!');
+    }
+  };
+
+  const handleNotificationClick = (borrowerId?: string) => {
+    if (!borrowerId) return;
+    const target = borrowers.find((b) => b.id === borrowerId);
+    if (target) {
+      setSelectedBorrower(target);
+      playNotificationChime();
+    }
+  };
+
   const shareholder = activeShareholder;
   const stats = calculateShareholderStats(shareholder, borrowers);
   const linkedBorrowers = borrowers.filter(
@@ -135,6 +158,7 @@ export default function ShareholderDashboard({
   // Generate notifications list
   const notificationList: Array<{
     id: string;
+    borrowerId?: string;
     type: 'payment' | 'new_borrower';
     title: string;
     body: string;
@@ -145,6 +169,7 @@ export default function ShareholderDashboard({
   linkedBorrowers.forEach((b) => {
     notificationList.push({
       id: `borrower_${b.id}`,
+      borrowerId: b.id,
       type: 'new_borrower',
       title: language === 'kh' ? 'កូនបំណុលថ្មីត្រូវបានភ្ជាប់' : 'New Linked Borrower',
       body: language === 'kh'
@@ -158,6 +183,7 @@ export default function ShareholderDashboard({
   paymentHistory.forEach((p) => {
     notificationList.push({
       id: `pay_${p.id}`,
+      borrowerId: p.borrowerId,
       type: 'payment',
       title: language === 'kh' ? 'កូនបំណុលបានបង់ប្រាក់' : 'Payment Received',
       body: language === 'kh'
@@ -443,6 +469,16 @@ export default function ShareholderDashboard({
             )}
           </button>
 
+          {/* Add to Home Screen Button (iOS PWA) */}
+          <button
+            onClick={() => setShowIosInstallModal(true)}
+            className="px-3 py-2 bg-gradient-to-r from-sky-500/20 to-blue-500/20 hover:from-sky-500/30 hover:to-blue-500/30 text-sky-300 border border-sky-400/30 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow-md shadow-sky-500/10"
+            title={language === 'kh' ? 'បន្ថែមទៅអេក្រង់ដើម iPhone' : 'Add to Home Screen (iOS)'}
+          >
+            <span>📲</span>
+            <span className="hidden md:inline">{language === 'kh' ? 'បន្ថែមលើ iPhone' : 'Add to iPhone'}</span>
+          </button>
+
           {/* Settings / Change Password Button */}
           <button
             onClick={() => setActiveTab('settings')}
@@ -670,6 +706,71 @@ export default function ShareholderDashboard({
             </div>
           </div>
 
+          {/* Official Sponsor & Partner Spotlight Panel */}
+          <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/50 border border-indigo-500/30 p-5 rounded-3xl space-y-4 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">🌟</span>
+                <div>
+                  <h4 className="text-sm font-black text-white flex items-center gap-2">
+                    <span>{language === 'kh' ? 'ម្ចាស់ឧបត្ថម្ភ និងដៃគូសហការផ្លូវការ' : 'Official Sponsors & Financial Partners'}</span>
+                    <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[9px] rounded-full font-black">PRO</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400 font-bold">
+                    {language === 'kh' ? 'ប្រព័ន្ធបច្ចេកវិទ្យាហិរញ្ញវត្ថុ និងដៃគូវិនិយោគគាំទ្រ' : 'Financial Tech Infrastructure & Partner Network'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowIosInstallModal(true)}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-400/30 rounded-xl text-xs font-black transition cursor-pointer"
+              >
+                📱 Install App
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-2xl flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 font-black text-sm shrink-0">
+                  ABA
+                </div>
+                <div>
+                  <h5 className="text-xs font-black text-white flex items-center gap-1">
+                    <span>ABA PAY KHQR</span>
+                    <span className="text-sky-400 text-[10px]">✓ Verified</span>
+                  </h5>
+                  <p className="text-[10px] text-slate-400 font-bold">Instant Automated Settlement</p>
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-2xl flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-sm shrink-0">
+                  💎
+                </div>
+                <div>
+                  <h5 className="text-xs font-black text-white flex items-center gap-1">
+                    <span>LUYPAY LEDGER</span>
+                    <span className="text-amber-400 text-[10px]">⭐ Sponsor</span>
+                  </h5>
+                  <p className="text-[10px] text-slate-400 font-bold">Smart Microfinance Engine</p>
+                </div>
+              </div>
+
+              <div className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-2xl flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-sm shrink-0">
+                  🤝
+                </div>
+                <div>
+                  <h5 className="text-xs font-black text-white flex items-center gap-1">
+                    <span>CAMBODIA PARTNER</span>
+                    <span className="text-emerald-400 text-[10px]">● Active</span>
+                  </h5>
+                  <p className="text-[10px] text-slate-400 font-bold">Investor Capital Network</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       )}
 
@@ -855,16 +956,26 @@ export default function ShareholderDashboard({
               {notificationList.map((item) => (
                 <div
                   key={item.id}
-                  className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-start gap-3.5 shadow-md hover:border-emerald-500/40 transition"
+                  onClick={() => handleNotificationClick(item.borrowerId)}
+                  className={`p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-start gap-3.5 shadow-md transition ${
+                    item.borrowerId ? 'hover:border-emerald-500/60 hover:bg-slate-800/80 cursor-pointer group' : ''
+                  }`}
                 >
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${
                     item.type === 'payment' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                   }`}>
                     {item.type === 'payment' ? '💰' : '🎉'}
                   </div>
-                  <div className="flex-1 space-y-0.5">
+                  <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-black text-white">{item.title}</h4>
+                      <h4 className="text-xs font-black text-white group-hover:text-emerald-400 transition flex items-center gap-1.5">
+                        <span>{item.title}</span>
+                        {item.borrowerId && (
+                          <span className="text-[10px] px-1.5 py-0.2 bg-emerald-500/10 text-emerald-300 rounded font-bold">
+                            👁️ {language === 'kh' ? 'មើលព័ត៌មាន' : 'View'}
+                          </span>
+                        )}
+                      </h4>
                       <span className="text-[10px] font-bold text-slate-500 font-mono">{item.time}</span>
                     </div>
                     <p className="text-xs font-bold text-slate-300 leading-relaxed">{item.body}</p>
@@ -956,6 +1067,85 @@ export default function ShareholderDashboard({
                 💾 {language === 'kh' ? 'រក្សាទុកពាក្យសម្ងាត់ថ្មី (Save New Password)' : 'Save New Password'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* iOS iPhone PWA Install Instructions Modal */}
+      {showIosInstallModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative">
+            <button
+              onClick={() => setShowIosInstallModal(false)}
+              className="absolute top-4 right-4 w-9 h-9 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-full flex items-center justify-center font-bold text-sm transition"
+            >
+              ✕
+            </button>
+
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 bg-gradient-to-tr from-sky-500 to-blue-600 rounded-2xl mx-auto flex items-center justify-center text-3xl shadow-lg shadow-sky-500/20 text-white">
+                📲
+              </div>
+              <h3 className="text-lg font-black text-white">
+                {language === 'kh' ? 'របៀប Add to Home Screen លើ iPhone / iOS' : 'Add Shareholder Portal to iPhone Home Screen'}
+              </h3>
+              <p className="text-xs text-slate-400">
+                {language === 'kh'
+                  ? 'បង្កើត App Icon លើអេក្រង់ iPhone របស់អ្នកដើម្បិចូលមើលផលចំណេញ និងកូនបំណុលបានលឿនដូច App ដើម!'
+                  : 'Install this portal directly onto your iPhone home screen for instant one-tap access like a native app.'}
+              </p>
+            </div>
+
+            <div className="space-y-3 bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 text-xs">
+              <div className="flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-sky-500/20 text-sky-400 font-black flex items-center justify-center shrink-0">1</span>
+                <p className="text-slate-300 font-bold leading-relaxed">
+                  {language === 'kh' ? (
+                    <>បើក Safari រួចចុចប៊ូតុងចែករំលែក <b>Share</b> <span className="px-1.5 py-0.5 bg-slate-800 border border-slate-700 text-sky-400 rounded font-mono">⎋ / ⬆️</span> នៅខាងក្រោមគេនៃ Safari App</>
+                  ) : (
+                    <>Open in Safari, then tap the <b>Share button</b> <span className="px-1 py-0.5 bg-slate-800 rounded text-sky-400">⎋</span> at the bottom bar.</>
+                  )}
+                </p>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-sky-500/20 text-sky-400 font-black flex items-center justify-center shrink-0">2</span>
+                <p className="text-slate-300 font-bold leading-relaxed">
+                  {language === 'kh' ? (
+                    <>អូសចុះក្រោម រួចជ្រើសរើសយក <b>«បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen ➕)</b></>
+                  ) : (
+                    <>Scroll down the menu and select <b>"Add to Home Screen ➕"</b>.</>
+                  )}
+                </p>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <span className="w-6 h-6 rounded-full bg-sky-500/20 text-sky-400 font-black flex items-center justify-center shrink-0">3</span>
+                <p className="text-slate-300 font-bold leading-relaxed">
+                  {language === 'kh' ? (
+                    <>ចុចប៊ូតុង <b>«បន្ថែម» (Add)</b> នៅផ្នែកខាងលើខាងស្តាំ ជាការស្រេច!</>
+                  ) : (
+                    <>Tap <b>"Add"</b> in the top right corner. The Shareholder App icon will appear on your iPhone!</>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                onClick={handleCopyPortalLink}
+                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-2xl text-xs transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>📋</span>
+                <span>{copiedLinkToast ? (language === 'kh' ? 'បានចម្លងរួចរាល់!' : 'Copied!') : (language === 'kh' ? 'ចម្លង Link Portal' : 'Copy Portal Link')}</span>
+              </button>
+              <button
+                onClick={() => setShowIosInstallModal(false)}
+                className="flex-1 py-3 bg-sky-500 hover:bg-sky-400 text-slate-950 font-black rounded-2xl text-xs transition cursor-pointer shadow-lg shadow-sky-500/20"
+              >
+                {language === 'kh' ? 'យល់ព្រម (Done)' : 'Got it!'}
+              </button>
+            </div>
           </div>
         </div>
       )}

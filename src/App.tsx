@@ -149,6 +149,19 @@ export default function App() {
     return params.get('partner');
   });
   const [isShareholdersModalOpen, setIsShareholdersModalOpen] = useState(false);
+  const [isShareholderLockModalOpen, setIsShareholderLockModalOpen] = useState(false);
+
+  // Check if member has access to Shareholder Management Add-on ($10)
+  const canAccessShareholders = currentUser === 'sounravin' || memberProfile?.hasShareholderModule === true;
+
+  const handleOpenShareholders = () => {
+    if (canAccessShareholders) {
+      setIsShareholdersModalOpen(true);
+    } else {
+      setIsShareholderLockModalOpen(true);
+    }
+    playClickSound();
+  };
   const [shareholders, setShareholders] = useState<Shareholder[]>(() => {
     const savedLocal = safeStorage.getItem(`luypay_shareholders_${currentUser}`);
     const savedGlobal = safeStorage.getItem('luypay_shareholders_global');
@@ -4028,10 +4041,7 @@ export default function App() {
 
                 {/* Shareholders / Partners Button */}
                 <button 
-                  onClick={() => { 
-                    setIsShareholdersModalOpen(true); 
-                    playClickSound(); 
-                  }}
+                  onClick={handleOpenShareholders}
                   className="flex flex-col items-center gap-1.5 text-center cursor-pointer group border-none bg-transparent"
                 >
                   <div className="w-10 h-10 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center transition-all shadow-3xs border border-amber-500/20">
@@ -4943,18 +4953,18 @@ export default function App() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              setIsShareholdersModalOpen(true);
-              playClickSound();
-            }}
+            onClick={handleOpenShareholders}
             className="w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-extrabold rounded-xl transition-all border duration-200 cursor-pointer bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30 hover:border-amber-400 shadow-md shadow-amber-500/10"
           >
             <span className="flex items-center gap-2.5">
               <Users className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>🤝 {language === 'kh' ? 'គ្រប់គ្រង ដៃគូភាគហ៊ុន' : 'Shareholders Management'}</span>
+              <span>
+                🤝 {language === 'kh' ? 'គ្រប់គ្រង ដៃគូភាគហ៊ុន' : 'Shareholders Management'}
+                {!canAccessShareholders && <span className="ml-1 text-amber-400">🔒</span>}
+              </span>
             </span>
             <span className="px-2 py-0.5 text-[9px] rounded-md font-black bg-amber-500/20 text-amber-200 border border-amber-400/30">
-              {shareholders.length}
+              {canAccessShareholders ? shareholders.length : '$10'}
             </span>
           </motion.button>
 
@@ -5298,17 +5308,14 @@ export default function App() {
               <span>📝 {language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger Records'}</span>
             </button>
             <button
-              onClick={() => {
-                setIsShareholdersModalOpen(true);
-                playClickSound();
-              }}
+              onClick={handleOpenShareholders}
               className={`py-2 px-2.5 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1 shrink-0 ${
                 mobileHeaderStyle === 'angkor'
                   ? 'bg-amber-950/60 text-amber-300 hover:text-amber-100 border border-amber-400/40 shadow-xs'
                   : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-400/30'
               }`}
             >
-              <span>🤝 {language === 'kh' ? 'ដៃគូភាគហ៊ុន' : 'Shareholders'}</span>
+              <span>🤝 {language === 'kh' ? 'ដៃគូភាគហ៊ុន' : 'Shareholders'} {!canAccessShareholders && '🔒'}</span>
             </button>
             {currentUser === 'sounravin' ? (
               <button
@@ -5578,7 +5585,7 @@ export default function App() {
                 onSelectBorrower={setSelectedBorrowerId}
                 appTheme={appTheme}
                 buttonStyle={buttonStyle}
-                onOpenShareholders={() => setIsShareholdersModalOpen(true)}
+                onOpenShareholders={handleOpenShareholders}
               />
 
               {/* Special Member Referral & Sync Panel */}
@@ -5895,6 +5902,78 @@ export default function App() {
         onSaveShareholders={handleSaveShareholders}
         onClearShareholderData={handleClearShareholderData}
       />
+
+      {/* Shareholder Module Upgrade Lock Modal ($10 Add-on) */}
+      {isShareholderLockModalOpen && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative">
+            <button
+              onClick={() => setIsShareholderLockModalOpen(false)}
+              className="absolute top-4 right-4 w-9 h-9 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full flex items-center justify-center font-bold text-sm transition"
+            >
+              ✕
+            </button>
+
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 bg-gradient-to-tr from-amber-500 to-yellow-400 rounded-2xl mx-auto flex items-center justify-center text-3xl shadow-lg shadow-amber-500/20 text-slate-950 font-black">
+                🔒
+              </div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                {language === 'kh' ? 'មុខងារគ្រប់គ្រងដៃគូភាគហ៊ុន (Shareholders)' : 'Shareholders Partner Module'}
+              </h3>
+              <div className="inline-block px-3 py-1 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-400/30 rounded-full text-xs font-black">
+                {language === 'kh' ? 'មុខងារបន្ថែម (Add-on Module) — $10.00' : 'Special Add-on Module — $10.00'}
+              </div>
+            </div>
+
+            <div className="space-y-3 bg-amber-500/5 dark:bg-amber-500/10 p-4 rounded-2xl border border-amber-500/20 text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-bold">
+              <p>
+                {language === 'kh'
+                  ? 'មុខងារគ្រប់គ្រងដៃគូភាគហ៊ុន (Shareholders Partner Management) ជាមុខងារបន្ថែមពិសេសដែលអនុញ្ញាតឱ្យសមាជិក៖'
+                  : 'The Shareholder Partner Module is a premium add-on feature enabling you to:'}
+              </p>
+              <ul className="space-y-1.5 pl-2">
+                <li className="flex items-center gap-2">
+                  <span className="text-amber-500">✔</span>
+                  <span>{language === 'kh' ? 'បង្កើត និងគ្រប់គ្រងដៃគូភាគហ៊ុនបានមិនកំណត់' : 'Create & manage unlimited shareholder partners'}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-amber-500">✔</span>
+                  <span>{language === 'kh' ? 'បែងចែកផលចំណេញប្រចាំថ្ងៃ ឬ 50/50 ស្វ័យប្រវត្តិ' : 'Automate 50/50 or daily rate interest splits'}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-amber-500">✔</span>
+                  <span>{language === 'kh' ? 'ផ្តល់ Portal ផ្ទាល់ខ្លួន និង Add to Home Screen លើ iPhone ឱ្យភាគហ៊ុន' : 'Provide custom Web Portals & iPhone PWA for partners'}</span>
+                </li>
+              </ul>
+              <p className="pt-1 text-emerald-600 dark:text-emerald-400 text-[11px]">
+                {language === 'kh'
+                  ? '💡 នៅពេលទិញ និងត្រូវបានអនុម័ត មុខងារនេះនឹងបង្ហាញនៅជិត "គ្រប់គ្រងប្រព័ន្ធ" ក្នុងគណនីរបស់អ្នកភ្លាមៗ!'
+                  : '💡 Once purchased and approved, this option will unlock permanently next to System Management!'}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 pt-1">
+              <button
+                onClick={() => setIsShareholderLockModalOpen(false)}
+                className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-extrabold rounded-2xl text-xs transition cursor-pointer"
+              >
+                {language === 'kh' ? 'បិទ (Close)' : 'Close'}
+              </button>
+              <button
+                onClick={() => {
+                  setIsShareholderLockModalOpen(false);
+                  setActiveSection('pricing');
+                }}
+                className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black rounded-2xl text-xs transition cursor-pointer shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5"
+              >
+                <span>🛒</span>
+                <span>{language === 'kh' ? 'ទិញមុខងារនេះ $10' : 'Upgrade Add-on $10'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Detail & Card-Checkboard Overlay */}
       <AnimatePresence>

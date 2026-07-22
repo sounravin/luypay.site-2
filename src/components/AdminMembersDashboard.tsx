@@ -627,22 +627,33 @@ export default function AdminMembersDashboard({
         currentExpiry = new Date(); // If already expired or doesn't have expiry, start from today
       }
 
-      // Add days based on the requested plan
-      let daysToAdd = 30;
-      if (req.plan === '3_months') daysToAdd = 90;
-      if (req.plan === '1_year') daysToAdd = 365;
-
-      const newExpiry = new Date(currentExpiry.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
-
-      // 1. Update the member's subscription expiration
+      // 1. Update the member's subscription expiration or shareholder module
       const memberRef = doc(db, 'members', req.username);
-      await setDoc(memberRef, {
-        subscriptionExpires: newExpiry.toISOString(),
-        isBlocked: false, // Auto-unblock on subscription approval
-        lastApprovedPlan: req.plan || '1_month',
-        lastApprovedAt: new Date().toISOString(),
-        lastApprovedNoticeSeen: false
-      }, { merge: true });
+
+      if (req.plan === 'shareholder_addon') {
+        await setDoc(memberRef, {
+          hasShareholderModule: true,
+          isBlocked: false,
+          lastApprovedPlan: req.plan,
+          lastApprovedAt: new Date().toISOString(),
+          lastApprovedNoticeSeen: false
+        }, { merge: true });
+      } else {
+        // Add days based on the requested plan
+        let daysToAdd = 30;
+        if (req.plan === '3_months') daysToAdd = 90;
+        if (req.plan === '1_year') daysToAdd = 365;
+
+        const newExpiry = new Date(currentExpiry.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+
+        await setDoc(memberRef, {
+          subscriptionExpires: newExpiry.toISOString(),
+          isBlocked: false, // Auto-unblock on subscription approval
+          lastApprovedPlan: req.plan || '1_month',
+          lastApprovedAt: new Date().toISOString(),
+          lastApprovedNoticeSeen: false
+        }, { merge: true });
+      }
 
       // 2. Update the request status
       const requestRef = doc(db, 'subscription_requests', req.id);
@@ -650,7 +661,12 @@ export default function AdminMembersDashboard({
         status: 'approved'
       }, { merge: true });
 
-      showToast(`បានអនុម័ត និងពន្យារពេលជូនសមាជិក៖ ${req.displayName || req.username} ជោគជ័យ!`, 'success');
+      showToast(
+        req.plan === 'shareholder_addon'
+          ? `បានអនុម័តមុខងារគ្រប់គ្រងភាគហ៊ុន ($10 Add-on) ជូនសមាជិក៖ ${req.displayName || req.username} ជោគជ័យ!`
+          : `បានអនុម័ត និងពន្យារពេលជូនសមាជិក៖ ${req.displayName || req.username} ជោគជ័យ!`,
+        'success'
+      );
     } catch (err) {
       console.error('Error approving request:', err);
       alert('មានបញ្ហាក្នុងការអនុម័តសំណើ! សូមព្យាយាមឡើងវិញ។');

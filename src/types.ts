@@ -114,18 +114,19 @@ export interface Member {
   photoURL?: string; // Optional custom base64 or URL profile photo
   paymentQr?: string; // Optional custom global/default payment QR code image URL
   isApproved?: boolean; // Multi-step registration approval status
-  selectedPlan?: '1_month' | '3_months' | '1_year'; // Selected plan during registration
+  selectedPlan?: '1_month' | '3_months' | '1_year' | 'shareholder_addon'; // Selected plan during registration
   invoiceImageUrl?: string; // Uploaded KHQR payment slip/invoice
-  lastApprovedPlan?: '1_month' | '3_months' | '1_year';
+  lastApprovedPlan?: '1_month' | '3_months' | '1_year' | 'shareholder_addon';
   lastApprovedAt?: string;
   lastApprovedNoticeSeen?: boolean;
+  hasShareholderModule?: boolean; // Granted access to Shareholders Partner Management Add-on ($10)
 }
 
 export interface SubscriptionRequest {
   id: string;
   username: string;
   displayName: string;
-  plan: '1_month' | '3_months' | '1_year';
+  plan: '1_month' | '3_months' | '1_year' | 'shareholder_addon';
   createdAt: string;
   status: 'pending' | 'approved' | 'rejected';
   invoiceImageUrl?: string; // Uploaded KHQR payment receipt / invoice image
