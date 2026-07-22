@@ -5,6 +5,7 @@ import BorrowerDetail from './BorrowerDetail';
 
 interface ShareholderDashboardProps {
   shareholder: Shareholder;
+  allShareholders?: Shareholder[];
   borrowers: Borrower[];
   language: 'kh' | 'en';
   onBackToMain?: () => void;
@@ -12,25 +13,40 @@ interface ShareholderDashboardProps {
 }
 
 export default function ShareholderDashboard({
-  shareholder,
+  shareholder: initialShareholder,
+  allShareholders = [],
   borrowers,
   language,
   onBackToMain,
   onEditBorrower,
 }: ShareholderDashboardProps) {
+  const [activeShareholder, setActiveShareholder] = useState<Shareholder>(initialShareholder);
+
+  // Sync activeShareholder if initialShareholder changes
+  React.useEffect(() => {
+    if (initialShareholder && initialShareholder.id !== activeShareholder.id) {
+      setActiveShareholder(initialShareholder);
+    }
+  }, [initialShareholder]);
+
+  const listToSearch = allShareholders.length > 0 ? allShareholders : [activeShareholder];
+
   // Login auth state for shareholder portal
-  const authKey = `luypay_partner_auth_${shareholder.id}`;
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem(authKey) === 'true';
+    const authKey = `luypay_partner_auth_${initialShareholder.id}`;
+    if (localStorage.getItem(authKey) === 'true') return true;
+    const globalAuth = localStorage.getItem('luypay_authenticated_partner_id');
+    return !!globalAuth && listToSearch.some((s) => s.id === globalAuth);
   });
 
-  const [inputUsername, setInputUsername] = useState('admin');
-  const [inputPassword, setInputPassword] = useState('admin');
+  const [inputUsername, setInputUsername] = useState(initialShareholder.username || 'admin');
+  const [inputPassword, setInputPassword] = useState(initialShareholder.password || 'admin');
   const [loginError, setLoginError] = useState('');
 
   // Selected borrower for read-only detail view
   const [selectedBorrower, setSelectedBorrower] = useState<Borrower | null>(null);
 
+  const shareholder = activeShareholder;
   const stats = calculateShareholderStats(shareholder, borrowers);
   const linkedBorrowers = borrowers.filter(
     (b) =>
@@ -41,24 +57,33 @@ export default function ShareholderDashboard({
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const targetUsername = shareholder.username || 'admin';
-    const targetPassword = shareholder.password || 'admin';
+    const uInput = inputUsername.trim().toLowerCase();
+    const pInput = inputPassword.trim();
 
-    if (inputUsername === targetUsername && inputPassword === targetPassword) {
-      localStorage.setItem(authKey, 'true');
+    const matched = listToSearch.find((s) => {
+      const u = (s.username || 'admin').trim().toLowerCase();
+      const p = (s.password || 'admin').trim();
+      return u === uInput && p === pInput;
+    });
+
+    if (matched) {
+      setActiveShareholder(matched);
+      localStorage.setItem(`luypay_partner_auth_${matched.id}`, 'true');
+      localStorage.setItem('luypay_authenticated_partner_id', matched.id);
       setIsAuthenticated(true);
       setLoginError('');
     } else {
       setLoginError(
         language === 'kh'
-          ? 'ឈ្មោះគណនី ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវទេ! (គំរូ Username: admin | Password: admin)'
-          : 'Invalid username or password! (Default: admin / admin)'
+          ? 'ឈ្មោះគណនី ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវទេ! (សូមពិនិត្យមើល Username និង Password ដែលម្ចាស់បំណុលបង្កើតឱ្យ)'
+          : 'Invalid username or password! Please check the credentials created for your partner account.'
       );
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem(authKey);
+    localStorage.removeItem(`luypay_partner_auth_${shareholder.id}`);
+    localStorage.removeItem('luypay_authenticated_partner_id');
     setIsAuthenticated(false);
   };
 
@@ -144,8 +169,10 @@ export default function ShareholderDashboard({
               />
             </div>
 
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[11px] text-emerald-400 font-bold text-center">
-              💡 {language === 'kh' ? 'ព័ត៌មាន Login ដើម៖ Username: admin | Password: admin' : 'Preset Login: Username: admin | Password: admin'}
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[11px] text-emerald-400 font-bold text-center leading-relaxed">
+              💡 {language === 'kh'
+                ? `សូមបញ្ចូល Username (${shareholder.username || 'admin'}) និង Password ដែលម្ចាស់បំណុលផ្តល់ឱ្យ`
+                : `Enter Username (${shareholder.username || 'admin'}) and Password assigned by main lender`}
             </div>
 
             <button

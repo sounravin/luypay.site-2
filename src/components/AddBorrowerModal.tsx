@@ -189,6 +189,26 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
       ? ['4', '5', '10', '20', '50']
       : ['10000', '20000', '50000', '100000', '200000'];
 
+  // Auto calculate half of daily interest for shareholder partner (50/50 split of daily interest)
+  const calcAutoPartnerDailyProfit = (shId?: string) => {
+    const targetShId = shId || selectedShareholderId;
+    const sh = shareholders?.find((s) => s.id === targetShId);
+    if (!sh) return '1.00';
+
+    const pVal = parseFloat(principal) || 0;
+    const tVal = parseFloat(totalToPay) || 0;
+    const dVal = parseInt(duration) || 1;
+    const totInterest = paymentMode === 'interest-only' ? tVal : Math.max(0, tVal - pVal);
+    const totalDailyInterest = dVal > 0 ? totInterest / dVal : 0;
+
+    if (totalDailyInterest > 0) {
+      // 50% split of daily interest (e.g. $4 daily interest -> $2 for partner, $2 for main lender)
+      const partnerHalf = totalDailyInterest / 2;
+      return partnerHalf % 1 === 0 ? partnerHalf.toFixed(0) : partnerHalf.toFixed(2);
+    }
+    return (sh.dailyProfitUSD ?? 1.0).toString();
+  };
+
   // Helper values for calculations & visual breakdown
   const pValNum = parseFloat(principal) || 0;
   const iValNum = parseFloat(interestValue) || 0;
@@ -966,9 +986,8 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
               onChange={(e) => {
                 const shId = e.target.value;
                 setSelectedShareholderId(shId);
-                const sh = shareholders?.find((s) => s.id === shId);
-                if (sh) {
-                  setShareholderDailyUSD((sh.dailyProfitUSD ?? 1.0).toString());
+                if (shId) {
+                  setShareholderDailyUSD(calcAutoPartnerDailyProfit(shId));
                 }
               }}
               className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-bold text-slate-800 dark:text-slate-100"
@@ -982,10 +1001,20 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
             </select>
 
             {selectedShareholderId && (
-              <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/40 space-y-1.5 animate-in fade-in duration-200">
-                <label className="block text-[11px] font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300">
-                  {language === 'kh' ? 'ផលចំណេញប្រចាំថ្ងៃសម្រាប់ដៃគូ ($ USD / ថ្ងៃ)' : 'Partner Daily Profit ($ USD / Day)'}
-                </label>
+              <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/40 space-y-2 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300">
+                    {language === 'kh' ? 'ផលចំណេញប្រចាំថ្ងៃសម្រាប់ដៃគូ ($ USD / ថ្ងៃ)' : 'Partner Daily Profit ($ USD / Day)'}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShareholderDailyUSD(calcAutoPartnerDailyProfit())}
+                    className="text-[10px] font-black px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition cursor-pointer flex items-center gap-1 shadow-xs"
+                    title="គណនា 50% នៃការប្រាក់ប្រចាំថ្ងៃស្វ័យប្រវត្តិ"
+                  >
+                    <span>⚡</span> {language === 'kh' ? 'ចែកស្មើ 50/50' : 'Auto 50/50 Split'}
+                  </button>
+                </div>
                 <div className="relative">
                   <span className="absolute left-3.5 top-2 text-xs font-mono font-bold text-slate-400">$</span>
                   <input
@@ -1000,8 +1029,8 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                 </div>
                 <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold leading-relaxed">
                   {language === 'kh'
-                    ? `💡 រាល់ពេលកូនបំណុលបង់ប្រាក់ ដៃគូភាគហ៊ុននឹងទទួលបានផលចំណេញ $${(parseFloat(shareholderDailyUSD) || 0).toFixed(2)}/ថ្ងៃ សម្រាប់កម្ចីនេះ។`
-                    : `💡 Partner receives $${(parseFloat(shareholderDailyUSD) || 0).toFixed(2)} profit per daily payment installment for this loan.`}
+                    ? `💡 រាល់ពេលកូនបំណុលបង់ប្រាក់ ដៃគូភាគហ៊ុននឹងទទួលបានផលចំណេញ $${(parseFloat(shareholderDailyUSD) || 0).toFixed(2)}/ថ្ងៃ សម្រាប់កម្ចីនេះ (គណនាចេញពីការប្រាក់សរុបចែកជាពីរ)។`
+                    : `💡 Partner receives $${(parseFloat(shareholderDailyUSD) || 0).toFixed(2)} profit per daily payment installment (50/50 split of daily interest).`}
                 </p>
               </div>
             )}

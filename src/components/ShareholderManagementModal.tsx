@@ -40,8 +40,9 @@ export default function ShareholderManagementModal({
     setEditingId(null);
     setName('');
     setPhone('');
-    setUsername('admin');
-    setPassword('admin');
+    const nextNum = shareholders.length + 1;
+    setUsername(`partner${nextNum}`);
+    setPassword(`${Math.floor(100000 + Math.random() * 900000)}`);
     setCapitalUSD('500');
     setCalculationType('daily_usd');
     setDailyProfitUSD('1.00');
@@ -132,12 +133,13 @@ export default function ShareholderManagementModal({
     }
   };
 
-  const copyPortalLink = (sId: string) => {
+  const copyPortalLink = (s: Shareholder) => {
     const origin = window.location.origin;
     const pathname = window.location.pathname;
-    const link = `${origin}${pathname}?partner=${sId}`;
-    navigator.clipboard.writeText(link);
-    setCopiedId(sId);
+    const link = `${origin}${pathname}?partner=${s.id}`;
+    const textToCopy = `🤝 ព័ត៌មាន Login ចូលមើលគណនីភាគហ៊ុន (${s.name})\n🌐 Link: ${link}\n👤 Username: ${s.username || 'admin'}\n🔑 Password: ${s.password || 'admin'}`;
+    navigator.clipboard.writeText(textToCopy);
+    setCopiedId(s.id);
     setTimeout(() => setCopiedId(null), 2500);
   };
 
@@ -212,7 +214,7 @@ export default function ShareholderManagementModal({
                 </a>
                 <button
                   type="button"
-                  onClick={() => copyPortalLink(shareholders[0].id)}
+                  onClick={() => copyPortalLink(shareholders[0])}
                   className="px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 text-xs font-black rounded-xl transition flex items-center justify-center gap-1 cursor-pointer shadow-xs"
                 >
                   <span>{copiedId === shareholders[0].id ? '✅' : '📋'}</span>
@@ -521,7 +523,7 @@ export default function ShareholderManagementModal({
                             </p>
 
                             <button
-                              onClick={() => copyPortalLink(s.id)}
+                              onClick={() => copyPortalLink(s)}
                               className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm"
                             >
                               <span>{copiedId === s.id ? '✅' : '🔗'}</span>

@@ -150,7 +150,9 @@ export default function App() {
   });
   const [isShareholdersModalOpen, setIsShareholdersModalOpen] = useState(false);
   const [shareholders, setShareholders] = useState<Shareholder[]>(() => {
-    const saved = safeStorage.getItem(`luypay_shareholders_${currentUser}`);
+    const savedLocal = safeStorage.getItem(`luypay_shareholders_${currentUser}`);
+    const savedGlobal = safeStorage.getItem('luypay_shareholders_global');
+    const saved = savedLocal || savedGlobal;
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -1378,9 +1380,9 @@ export default function App() {
   // Cloud Sync Status
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('offline');
 
-  // Load and sync with Firestore if logged in, otherwise load from localStorage
+  // Load and sync with Firestore if logged in or viewing partner portal, otherwise load from localStorage
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn && !partnerParam) {
       setCloudSyncStatus('offline');
       const stored = safeStorage.getItem(getUserLocalStorageKey(null));
       let currentBorrowers: Borrower[] = [];
@@ -1409,7 +1411,9 @@ export default function App() {
 
     // Cloud Firestore Mode
     setCloudSyncStatus('syncing');
-    const q = query(collection(db, 'borrowers'), where('userId', '==', currentUser));
+    const q = (isLoggedIn && currentUser)
+      ? query(collection(db, 'borrowers'), where('userId', '==', currentUser))
+      : query(collection(db, 'borrowers'));
     
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const fbBorrowers: Borrower[] = [];
@@ -2680,6 +2684,7 @@ export default function App() {
       return (
         <ShareholderDashboard
           shareholder={activePartner}
+          allShareholders={shareholders}
           borrowers={borrowers}
           language={language}
           onBackToMain={() => {

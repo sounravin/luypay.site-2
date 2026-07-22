@@ -67,12 +67,12 @@ export function calculateShareholderStats(
   shareholder: Shareholder,
   borrowers: Borrower[]
 ): ShareholderStats {
-  // Comprehensive matching by ID, Name, or default fallback
+  // Comprehensive matching by ID or Name strictly.
+  // Do NOT include self capital loans (where shareholderId is missing or empty)
   const linkedBorrowers = borrowers.filter(
     (b) =>
-      b.shareholderId === shareholder.id ||
-      (b.shareholderName && b.shareholderName.trim().toLowerCase() === shareholder.name.trim().toLowerCase()) ||
-      (shareholder.id === 'sh_default' && (!b.shareholderId || b.shareholderId === 'sh_default' || b.shareholderId === 'default'))
+      (b.shareholderId && b.shareholderId === shareholder.id) ||
+      (b.shareholderName && shareholder.name && b.shareholderName.trim().toLowerCase() === shareholder.name.trim().toLowerCase())
   );
 
   let activeCapitalDeployed = 0;
