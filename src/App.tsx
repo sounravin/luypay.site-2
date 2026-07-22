@@ -5550,7 +5550,7 @@ export default function App() {
 
               {/* Bulk Selection Action Bar */}
               {filteredBorrowers.length > 0 && (
-                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-150 text-xs mb-4">
+                <div className={`flex items-center justify-between px-4 py-2.5 rounded-2xl border text-xs mb-4 shadow-sm transition-all duration-200 ${currentThemeConfig.cardClass}`}>
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -5568,20 +5568,20 @@ export default function App() {
                           setSelectedBorrowerIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
                         }
                       }}
-                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
-                    <label htmlFor="select-all-visible" className="font-bold text-slate-600 cursor-pointer select-none">
+                    <label htmlFor="select-all-visible" className={`font-extrabold cursor-pointer select-none ${currentThemeConfig.textTitle}`}>
                       {language === 'kh' ? 'ជ្រើសរើសកូនបំណុលទាំងអស់ (Select All)' : 'Select All Filtered'}
                     </label>
                   </div>
                   {selectedBorrowerIds.length > 0 && (
                     <div className="flex items-center gap-3">
-                      <span className="font-bold text-slate-500 text-[11px]">
+                      <span className={`font-bold text-xs ${currentThemeConfig.textMuted}`}>
                         {language === 'kh' ? `បានជ្រើសរើស ${selectedBorrowerIds.length} នាក់` : `Selected ${selectedBorrowerIds.length}`}
                       </span>
                       <button
                         onClick={() => setSelectedBorrowerIds([])}
-                        className="text-xs font-bold text-rose-650 hover:underline cursor-pointer"
+                        className="text-xs font-extrabold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
                       >
                         {language === 'kh' ? 'លុបការជ្រើសរើស' : 'Clear Selection'}
                       </button>
@@ -5592,20 +5592,20 @@ export default function App() {
 
               {/* Borrowers Grid View */}
               {filteredBorrowers.length === 0 ? (
-                <div id="no-data-display" className="bg-white border border-dashed border-slate-200 rounded-2xl py-16 text-center space-y-3 shadow-sm">
-                  <div className="mx-auto w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100">
-                    <Info className="w-6 h-6 text-slate-400" />
+                <div id="no-data-display" className={`border border-dashed rounded-2xl py-16 text-center space-y-3 shadow-sm ${currentThemeConfig.cardClass}`}>
+                  <div className="mx-auto w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700">
+                    <Info className="w-6 h-6 text-slate-400 dark:text-slate-500" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-slate-700">{t('noBorrowerFoundTitle')}</h3>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <h3 className={`font-extrabold ${currentThemeConfig.textTitle}`}>{t('noBorrowerFoundTitle')}</h3>
+                    <p className={`text-xs mt-1 ${currentThemeConfig.textMuted}`}>
                       {searchQuery ? t('noSearchResultsDesc') : t('noBorrowersDesc')}
                     </p>
                   </div>
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
-                      className="text-xs font-bold text-blue-600 hover:underline cursor-pointer"
+                      className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                     >
                       {t('clearSearchBtn')}
                     </button>

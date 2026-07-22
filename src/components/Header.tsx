@@ -203,8 +203,8 @@ export default function Header({
       {/* Sleek top header title area */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2">
         <div>
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">{t('mainTitle')}</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{t('mainSubtitle')}</p>
+          <h2 className="text-3xl font-black text-black dark:text-white tracking-tight">{t('mainTitle')}</h2>
+          <p className="text-black dark:text-white text-sm font-bold mt-1 opacity-90 dark:opacity-100">{t('mainSubtitle')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Elegant Language switcher option */}
