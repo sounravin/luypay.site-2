@@ -1984,21 +1984,39 @@ export default function App() {
     }, 800);
   };
 
+  // Helper to sanitize objects for Firestore (removes undefined values)
+  const sanitizeForFirestore = (obj: any): any => {
+    if (obj === null || obj === undefined) return null;
+    if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+    if (typeof obj === 'object' && !(obj instanceof Date)) {
+      const clean: Record<string, any> = {};
+      for (const [key, val] of Object.entries(obj)) {
+        if (val !== undefined) {
+          clean[key] = sanitizeForFirestore(val);
+        }
+      }
+      return clean;
+    }
+    return obj;
+  };
+
   // Save to local storage and sync to Firestore if logged in
   const saveBorrowers = async (newList: Borrower[]) => {
-    setBorrowers(newList);
-    safeStorage.setItem(getUserLocalStorageKey(currentUser), JSON.stringify(newList));
+    const sanitizedList = newList.map((b) => sanitizeForFirestore(b));
+    setBorrowers(sanitizedList);
+    safeStorage.setItem(getUserLocalStorageKey(currentUser), JSON.stringify(sanitizedList));
     
     if (isLoggedIn) {
       setCloudSyncStatus('syncing');
       try {
         const CHUNK_SIZE = 400;
-        for (let i = 0; i < newList.length; i += CHUNK_SIZE) {
-          const chunk = newList.slice(i, i + CHUNK_SIZE);
+        for (let i = 0; i < sanitizedList.length; i += CHUNK_SIZE) {
+          const chunk = sanitizedList.slice(i, i + CHUNK_SIZE);
           const batch = writeBatch(db);
           chunk.forEach((b) => {
             const docRef = doc(db, 'borrowers', b.id);
-            batch.set(docRef, { ...b, userId: currentUser });
+            const docData = sanitizeForFirestore({ ...b, userId: currentUser });
+            batch.set(docRef, docData);
           });
           await batch.commit();
         }
@@ -2406,12 +2424,23 @@ export default function App() {
   };
 
   const handleEditBorrower = (borrowerId: string, updatedFields: Partial<Borrower>) => {
+    const cleanedFields: Record<string, any> = {};
+    Object.entries(updatedFields).forEach(([k, v]) => {
+      if (v !== undefined) {
+        cleanedFields[k] = v;
+      }
+    });
+
     const newList = borrowers.map((b) => {
       if (b.id === borrowerId) {
-        return {
+        const updated = {
           ...b,
-          ...updatedFields,
+          ...cleanedFields,
         };
+        if (updatedFields.topUpLoanAmount === undefined) delete (updated as any).topUpLoanAmount;
+        if (updatedFields.topUpNotes === undefined) delete (updated as any).topUpNotes;
+        if (updatedFields.topUpDate === undefined) delete (updated as any).topUpDate;
+        return updated;
       }
       return b;
     });
