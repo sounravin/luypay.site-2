@@ -6,6 +6,10 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+html {
+  font-size: 17px;
+}
+
 /* Custom styling to make inputs look polished on focusing */
 input:focus, select:focus, textarea:focus {
   outline: none;
@@ -121,13 +125,7 @@ input:focus, select:focus, textarea:focus {
 .dark.theme-angkor .bg-rose-50,
 .dark.theme-angkor .bg-slate-850,
 .dark.theme-angkor .bg-slate-750,
-.dark.theme-angkor [class*="bg-indigo-50"],
-.dark.theme-angkor [class*="bg-blue-50"],
-.dark.theme-angkor [class*="bg-amber-50"],
-.dark.theme-angkor [class*="bg-slate-50"],
-.dark.theme-angkor [class*="bg-slate-100"],
-.dark.theme-angkor [class*="bg-emerald-50"],
-.dark.theme-angkor [class*="bg-rose-50"] {
+.dark.theme-angkor .bg-indigo-50 {
   background-color: rgba(20, 35, 73, 0.6) !important;
   border: 1px solid rgba(223, 176, 53, 0.15) !important;
 }
@@ -221,13 +219,11 @@ input:focus, select:focus, textarea:focus {
 
 .dark:not(.theme-angkor) .bg-slate-50,
 .dark:not(.theme-angkor) .bg-slate-100,
-.dark:not(.theme-angkor) [class*="bg-indigo-50"],
-.dark:not(.theme-angkor) [class*="bg-blue-50"],
-.dark:not(.theme-angkor) [class*="bg-amber-50"],
-.dark:not(.theme-angkor) [class*="bg-slate-50"],
-.dark:not(.theme-angkor) [class*="bg-slate-100"],
-.dark:not(.theme-angkor) [class*="bg-emerald-50"],
-.dark:not(.theme-angkor) [class*="bg-rose-50"] {
+.dark:not(.theme-angkor) .bg-indigo-50,
+.dark:not(.theme-angkor) .bg-blue-50,
+.dark:not(.theme-angkor) .bg-amber-50,
+.dark:not(.theme-angkor) .bg-emerald-50,
+.dark:not(.theme-angkor) .bg-rose-50 {
   background-color: rgba(2, 6, 23, 0.5) !important;
   border-color: rgba(255, 255, 255, 0.05) !important;
 }

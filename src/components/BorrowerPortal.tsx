@@ -844,19 +844,19 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
 
           {/* Repayment Checkboard (7 cols) */}
           <div className="lg:col-span-7 flex flex-col space-y-6">
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 flex-1 flex flex-col shadow-sm">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-4 flex-1 flex flex-col shadow-sm">
               <div>
-                <h3 className="text-sm font-black text-slate-800 flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-blue-600" />
+                <h3 className="text-base font-black text-slate-800 dark:text-white flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   <span>កាតគ្រីស្គូរបង់ប្រាក់ (Installment Calendar)</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   ប្រអប់ពណ៌បៃតងតំណាងឱ្យវគ្គដែលលោកអ្នកបានទូទាត់រួចរាល់។
                 </p>
               </div>
 
               {/* Installment Boxes Grid - static/disabled */}
-              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-6 gap-3 pt-1 overflow-y-auto max-h-[300px] md:max-h-[380px] p-1 border border-slate-100 rounded-2xl">
+              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-6 gap-3 pt-1 overflow-y-auto max-h-[300px] md:max-h-[380px] p-2 border border-slate-200/80 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-950/40">
                 {Array.from({ length: borrower.duration }).map((_, index) => {
                   const payment = paymentBySlot[index];
                   const isPaid = !!payment;
@@ -866,16 +866,18 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
                       key={index}
                       className={`aspect-square p-2.5 rounded-xl flex flex-col justify-between items-center border transition-all duration-150 ${
                         isPaid 
-                          ? 'bg-emerald-500 border-emerald-600 text-white shadow-md shadow-emerald-500/10' 
-                          : 'bg-slate-50 border-slate-200/80 text-slate-600'
+                          ? 'bg-emerald-500 border-emerald-600 text-white shadow-md shadow-emerald-500/10 dark:bg-emerald-600 dark:border-emerald-400' 
+                          : 'bg-white border-slate-200 text-slate-700 dark:bg-slate-800/90 dark:border-slate-700 dark:text-slate-200'
                       }`}
                     >
-                      <span className="text-[9px] font-black opacity-75 uppercase">វគ្គទី</span>
-                      <span className="text-base font-black leading-none">{index + 1}</span>
+                      <span className="text-[10px] font-black opacity-80 uppercase">វគ្គទី</span>
+                      <span className="text-lg font-black leading-none">{index + 1}</span>
                       {isPaid ? (
-                        <Check className="w-4 h-4 mt-0.5 text-white stroke-[3px]" />
+                        <div className="flex items-center justify-center bg-white/20 rounded-full p-0.5">
+                          <Check className="w-4 h-4 text-white stroke-[3px]" />
+                        </div>
                       ) : (
-                        <span className="text-[9px] font-black opacity-50">
+                        <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 opacity-90">
                           {formatMoney(borrower.installmentAmount, borrower.currency).replace('៛', '៛').split(' ')[0]}
                         </span>
                       )}
@@ -885,14 +887,14 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
               </div>
 
               {/* Legend details */}
-              <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2 text-xs text-slate-400 font-bold">
+              <div className="flex flex-wrap gap-x-5 gap-y-2 pt-2 text-xs font-bold text-slate-500 dark:text-slate-400">
                 <div className="flex items-center gap-1.5">
                   <span className="w-3 h-3 bg-emerald-500 rounded-lg border border-emerald-600 shadow-sm" />
-                  <span className="text-slate-600">បានទូទាត់រួច (Paid)</span>
+                  <span className="text-emerald-700 dark:text-emerald-400">បានទូទាត់រួច (Paid)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 bg-slate-50 rounded-lg border border-slate-200" />
-                  <span>មិនទាន់ទូទាត់ (Unpaid)</span>
+                  <span className="w-3 h-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-300 dark:border-slate-600" />
+                  <span className="text-slate-600 dark:text-slate-300">មិនទាន់ទូទាត់ (Unpaid)</span>
                 </div>
               </div>
             </div>

@@ -9,6 +9,7 @@ import BorrowerPortal from './components/BorrowerPortal';
 import AdminMembersDashboard from './components/AdminMembersDashboard';
 import PricingPanel from './components/PricingPanel';
 import NotificationBell, { playNotificationSound } from './components/NotificationBell';
+import PlanApprovalModal from './components/PlanApprovalModal';
 import BorrowerApplyForm from './components/BorrowerApplyForm';
 import LoanApplicationTracker from './components/LoanApplicationTracker';
 import LoanApplicationsControlPanel from './components/LoanApplicationsControlPanel';
@@ -144,6 +145,8 @@ export default function App() {
   const [profileLoading, setProfileLoading] = useState<boolean>(true);
   const [hasLoadedProfile, setHasLoadedProfile] = useState<boolean>(false);
   const [mySubRequests, setMySubRequests] = useState<SubscriptionRequest[]>([]);
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState<boolean>(false);
+  const [approvalModalPlan, setApprovalModalPlan] = useState<'1_month' | '3_months' | '1_year'>('1_month');
   const [blockScreenSelectedPlan, setBlockScreenSelectedPlan] = useState<'1_month' | '3_months' | '1_year'>('3_months');
   const [blockScreenSubmitting, setBlockScreenSubmitting] = useState<boolean>(false);
   const [blockScreenPaymentStep, setBlockScreenPaymentStep] = useState<'scan' | 'counting' | 'select_plan' | 'success'>('scan');
@@ -1551,6 +1554,41 @@ export default function App() {
 
     return () => unsubscribe();
   }, [isLoggedIn, currentUser]);
+
+  // Auto-check and trigger Plan Approval Notification Modal when member profile is approved
+  useEffect(() => {
+    if (!isLoggedIn || !isMember || !memberProfile) return;
+    if (memberProfile.isApproved === false) return; // Still waiting for approval
+    if (memberProfile.subscriptionExpires) {
+      const expDate = new Date(memberProfile.subscriptionExpires);
+      if (expDate < new Date()) return; // Expired
+    }
+
+    const currentPlan = memberProfile.lastApprovedPlan || memberProfile.selectedPlan || '1_month';
+    const ackKey = `luypay_seen_approval_${currentUser}_${memberProfile.lastApprovedAt || memberProfile.subscriptionExpires || 'active'}`;
+
+    if (memberProfile.lastApprovedNoticeSeen === false || safeStorage.getItem(ackKey) !== 'true') {
+      setApprovalModalPlan(currentPlan);
+      setIsApprovalModalOpen(true);
+    }
+  }, [isLoggedIn, isMember, memberProfile, currentUser]);
+
+  const handleCloseApprovalModal = async () => {
+    setIsApprovalModalOpen(false);
+    if (memberProfile) {
+      const ackKey = `luypay_seen_approval_${currentUser}_${memberProfile.lastApprovedAt || memberProfile.subscriptionExpires || 'active'}`;
+      safeStorage.setItem(ackKey, 'true');
+
+      if (memberProfile.lastApprovedNoticeSeen === false) {
+        try {
+          const memberRef = doc(db, 'members', currentUser);
+          await setDoc(memberRef, { lastApprovedNoticeSeen: true }, { merge: true });
+        } catch (err) {
+          console.error('Error marking notice seen:', err);
+        }
+      }
+    }
+  };
 
   // Helper functions for checking subscription status
   const getSubscriptionStatusInfo = (profile: Member | null) => {
@@ -3592,6 +3630,21 @@ export default function App() {
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
+                  {isMember && memberProfile && memberProfile.isApproved !== false && (
+                    <button
+                      onClick={() => {
+                        const currentPlan = memberProfile.lastApprovedPlan || memberProfile.selectedPlan || '1_month';
+                        setApprovalModalPlan(currentPlan);
+                        setIsApprovalModalOpen(true);
+                        playClickSound();
+                      }}
+                      className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 active:scale-95 rounded-full transition cursor-pointer flex items-center justify-center relative animate-pulse"
+                      title={language === 'kh' ? 'មើលការអនុម័តគម្រោង 🔔' : 'View Plan Approval 🔔'}
+                    >
+                      <Award className="w-4 h-4 text-emerald-400" />
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0B1521]"></span>
+                    </button>
+                  )}
                   <button 
                     onClick={() => { setIsSettingsOpen(true); playClickSound(); }}
                     className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 active:scale-95 rounded-full transition cursor-pointer flex items-center justify-center border-none"
@@ -6320,6 +6373,13 @@ export default function App() {
           </div>
         </div>
       )}
+      {/* Plan Approval Congratulatory Pop-up Notification Modal */}
+      <PlanApprovalModal
+        isOpen={isApprovalModalOpen}
+        onClose={handleCloseApprovalModal}
+        planId={approvalModalPlan}
+        language={language}
+      />
       </div>
     </div>
   );

@@ -577,7 +577,10 @@ export default function AdminMembersDashboard({
       await setDoc(memberRef, {
         isApproved: true,
         subscriptionExpires: newExpiry.toISOString(),
-        isBlocked: false
+        isBlocked: false,
+        lastApprovedPlan: member.selectedPlan || '1_month',
+        lastApprovedAt: new Date().toISOString(),
+        lastApprovedNoticeSeen: false
       }, { merge: true });
 
       showToast(`បានអនុម័តការចុះឈ្មោះ និងបើកគណនីជូន ${member.displayName || member.username} ជោគជ័យ!`, 'success');
@@ -635,7 +638,10 @@ export default function AdminMembersDashboard({
       const memberRef = doc(db, 'members', req.username);
       await setDoc(memberRef, {
         subscriptionExpires: newExpiry.toISOString(),
-        isBlocked: false // Auto-unblock on subscription approval
+        isBlocked: false, // Auto-unblock on subscription approval
+        lastApprovedPlan: req.plan || '1_month',
+        lastApprovedAt: new Date().toISOString(),
+        lastApprovedNoticeSeen: false
       }, { merge: true });
 
       // 2. Update the request status

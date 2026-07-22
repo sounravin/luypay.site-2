@@ -1922,11 +1922,11 @@ export default function BorrowerDetail({
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                       {/* Column 2: Visual Installment Card / Box Checklist (7 cols) */}
                       <div className="lg:col-span-7 flex flex-col space-y-6">
-                        <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3 flex-1 flex flex-col shadow-sm">
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3 flex-1 flex flex-col shadow-sm">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div>
-                              <h3 className="text-sm font-bold text-slate-800">🗓️ {language === 'kh' ? 'កាតគ្រីស្គូរបង់ប្រាក់ (Installment Checkboard)' : 'Installment Checkboard'}</h3>
-                              <p className="text-xs text-slate-400 mt-0.5">
+                              <h3 className="text-base font-bold text-slate-800 dark:text-white">🗓️ {language === 'kh' ? 'កាតគ្រីស្គូរបង់ប្រាក់ (Installment Checkboard)' : 'Installment Checkboard'}</h3>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                 {language === 'kh' ? 'ចុចលើប្រអប់លេខនីមួយៗ ដើម្បីកត់ត្រាសងប្រាក់រហ័ស ឬលុបការបង់ប្រាក់។' : 'Click any box to quickly record installment payment or uncheck to delete.'}
                               </p>
                             </div>
@@ -1952,7 +1952,7 @@ export default function BorrowerDetail({
                                     });
                                   }
                                 }}
-                                className="shrink-0 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-extrabold text-xs rounded-xl border border-emerald-200 flex items-center gap-1 cursor-pointer transition duration-150"
+                                className="shrink-0 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-extrabold text-xs rounded-xl border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 cursor-pointer transition duration-150"
                               >
                                 <span>✔️ {language === 'kh' ? 'ទូទាត់រហ័សគ្រប់វគ្គ' : 'Auto Check All'}</span>
                               </button>
@@ -1960,7 +1960,7 @@ export default function BorrowerDetail({
                           </div>
 
                           {/* Installment Boxes grid */}
-                          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-6 gap-3 pt-2 overflow-y-auto max-h-[300px] md:max-h-[380px] p-1 border border-slate-100 rounded-xl">
+                          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-6 gap-3 pt-2 overflow-y-auto max-h-[300px] md:max-h-[380px] p-2 border border-slate-200/80 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40">
                             {Array.from({ length: borrower.duration }).map((_, index) => {
                               const payment = paymentBySlot[index];
                               const isPaid = !!payment;
@@ -1970,14 +1970,20 @@ export default function BorrowerDetail({
                                   key={index}
                                   id={`day-box-${index}`}
                                   onClick={() => handleBoxClick(index)}
-                                  className={`aspect-square p-2 rounded-xl flex flex-col justify-between items-center border transition-all duration-150 cursor-pointer ${isPaid ? 'bg-emerald-500 border-emerald-600 text-white shadow-sm shadow-emerald-500/10 hover:bg-emerald-600' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:border-slate-300'}`}
+                                  className={`aspect-square p-2 rounded-xl flex flex-col justify-between items-center border transition-all duration-150 cursor-pointer shadow-sm ${
+                                    isPaid
+                                      ? 'bg-emerald-500 hover:bg-emerald-600 border-emerald-600 text-white shadow-emerald-500/20 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:border-emerald-400 dark:text-white'
+                                      : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700 dark:bg-slate-800/90 dark:hover:bg-slate-750 dark:border-slate-700 dark:text-slate-200'
+                                  }`}
                                 >
-                                  <span className="text-[10px] font-bold opacity-75 uppercase">{language === 'kh' ? 'វគ្គទី' : 'Term'}</span>
-                                  <span className="text-lg font-extrabold leading-none">{index + 1}</span>
+                                  <span className="text-[11px] font-bold opacity-80 uppercase">{language === 'kh' ? 'វគ្គទី' : 'Term'}</span>
+                                  <span className="text-xl font-extrabold leading-none">{index + 1}</span>
                                   {isPaid ? (
-                                    <Check className="w-3.5 h-3.5 mt-0.5" />
+                                    <div className="flex items-center justify-center bg-white/20 rounded-full p-0.5">
+                                      <Check className="w-4 h-4 text-white stroke-[3px]" />
+                                    </div>
                                   ) : (
-                                    <span className="text-[9px] font-semibold opacity-60">
+                                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 opacity-90">
                                       {formatMoney(borrower.installmentAmount, borrower.currency).replace('៛', '៛').split(' ')[0]}
                                     </span>
                                   )}
@@ -1987,14 +1993,14 @@ export default function BorrowerDetail({
                           </div>
 
                           {/* Instructions */}
-                          <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 text-[11px] text-slate-400">
+                          <div className="flex flex-wrap gap-x-5 gap-y-1.5 pt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
                             <div className="flex items-center gap-1.5">
-                              <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full border border-emerald-600" />
-                              <span>{language === 'kh' ? 'បង់រួច (Paid)' : 'Paid'}</span>
+                              <span className="w-3 h-3 bg-emerald-500 rounded-full border border-emerald-600 shadow-sm" />
+                              <span className="font-bold text-emerald-700 dark:text-emerald-400">{language === 'kh' ? 'បង់រួច (Paid)' : 'Paid'}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <span className="w-2.5 h-2.5 bg-slate-100 rounded-full border border-slate-200" />
-                              <span>{language === 'kh' ? 'នៅសល់ (Unpaid)' : 'Unpaid'}</span>
+                              <span className="w-3 h-3 bg-white dark:bg-slate-800 rounded-full border border-slate-300 dark:border-slate-600 shadow-sm" />
+                              <span className="font-bold text-slate-600 dark:text-slate-300">{language === 'kh' ? 'នៅសល់ (Unpaid)' : 'Unpaid'}</span>
                             </div>
                           </div>
                         </div>
@@ -2002,14 +2008,14 @@ export default function BorrowerDetail({
 
                       {/* Payment Reminder Textbox Card (5 cols) */}
                       <div className="lg:col-span-5 flex flex-col">
-                        <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3 flex-1 flex flex-col shadow-sm">
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3 flex-1 flex flex-col shadow-sm">
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                                <MessageSquare className="w-4 h-4 text-blue-600" />
+                              <h3 className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                                <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                 <span>📣 {language === 'kh' ? 'សារជូនដំណឹងសងប្រាក់' : 'Reminder Message'}</span>
                               </h3>
-                              <p className="text-[11px] text-slate-400 mt-0.5">
+                              <p className="text-xs text-slate-400 mt-0.5">
                                 {language === 'kh' ? 'អ្នកអាចសរសេរ ឬកែសម្រួលសារជូនដំណឹងនេះ រួចចម្លងដើម្បីផ្ញើទៅកាន់កូនបំណុលរបស់អ្នក។' : 'You can customize this text message and copy it to send as SMS, Telegram, etc.'}
                               </p>
                             </div>

@@ -95,6 +95,9 @@ export interface Member {
   isApproved?: boolean; // Multi-step registration approval status
   selectedPlan?: '1_month' | '3_months' | '1_year'; // Selected plan during registration
   invoiceImageUrl?: string; // Uploaded KHQR payment slip/invoice
+  lastApprovedPlan?: '1_month' | '3_months' | '1_year';
+  lastApprovedAt?: string;
+  lastApprovedNoticeSeen?: boolean;
 }
 
 export interface SubscriptionRequest {
