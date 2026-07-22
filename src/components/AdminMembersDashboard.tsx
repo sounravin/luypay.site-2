@@ -595,6 +595,7 @@ export default function AdminMembersDashboard({
     try {
       const memberRef = doc(db, 'members', member.username);
       await deleteDoc(memberRef);
+      safeStorage.removeItem(`luypay_member_acc_${member.username}`);
 
       // Also clean email index if exists
       if (member.email) {
@@ -697,6 +698,11 @@ export default function AdminMembersDashboard({
     try {
       const memberRef = doc(db, 'members', member.username);
       await deleteDoc(memberRef);
+      safeStorage.removeItem(`luypay_member_acc_${member.username}`);
+      if (member.email) {
+        const emailDocRef = doc(db, 'member_emails', member.email.trim().toLowerCase());
+        await deleteDoc(emailDocRef);
+      }
       showToast('បានលុបគណនីសមាជិកជោគជ័យ!', 'info');
     } catch (err) {
       console.error('Error deleting member:', err);

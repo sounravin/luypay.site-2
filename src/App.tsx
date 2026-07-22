@@ -142,6 +142,7 @@ export default function App() {
   const [subRequests, setSubRequests] = useState<SubscriptionRequest[]>([]);
   const [memberProfile, setMemberProfile] = useState<Member | null>(null);
   const [profileLoading, setProfileLoading] = useState<boolean>(true);
+  const [hasLoadedProfile, setHasLoadedProfile] = useState<boolean>(false);
   const [mySubRequests, setMySubRequests] = useState<SubscriptionRequest[]>([]);
   const [blockScreenSelectedPlan, setBlockScreenSelectedPlan] = useState<'1_month' | '3_months' | '1_year'>('3_months');
   const [blockScreenSubmitting, setBlockScreenSubmitting] = useState<boolean>(false);
@@ -1398,11 +1399,13 @@ export default function App() {
       setSubRequests([]);
       setMemberProfile(null);
       setProfileLoading(false);
+      setHasLoadedProfile(false);
       return;
     }
 
     if (currentUser === 'sounravin') {
       setProfileLoading(false);
+      setHasLoadedProfile(true);
       // 1. Super Admin listens to members and requests
       const unsubscribeMembers = onSnapshot(collection(db, 'members'), (snapshot) => {
         const list: Member[] = [];
@@ -1431,22 +1434,47 @@ export default function App() {
       };
     } else if (isMember) {
       setProfileLoading(true);
+      setHasLoadedProfile(false);
       // 2. Standard Member listens to their own profile doc
       const unsubscribeProfile = onSnapshot(doc(db, 'members', currentUser), (docSnap) => {
         if (docSnap.exists()) {
           setMemberProfile({ username: docSnap.id, ...docSnap.data() } as Member);
         } else {
-          setMemberProfile(null);
+          // Check local storage fallback before marking profile as null
+          const localMemberStr = safeStorage.getItem(`luypay_member_acc_${currentUser}`);
+          if (localMemberStr) {
+            try {
+              const localMember = JSON.parse(localMemberStr);
+              setMemberProfile(localMember as Member);
+            } catch (e) {
+              setMemberProfile(null);
+            }
+          } else {
+            setMemberProfile(null);
+          }
         }
+        setHasLoadedProfile(true);
         setProfileLoading(false);
       }, (err) => {
         console.error('Error listening to member profile doc:', err);
+        // Fallback to local storage on error
+        const localMemberStr = safeStorage.getItem(`luypay_member_acc_${currentUser}`);
+        if (localMemberStr) {
+          try {
+            const localMember = JSON.parse(localMemberStr);
+            setMemberProfile(localMember as Member);
+          } catch (e) {
+            setMemberProfile(null);
+          }
+        }
+        setHasLoadedProfile(true);
         setProfileLoading(false);
       });
 
       return () => unsubscribeProfile();
     } else {
       setProfileLoading(false);
+      setHasLoadedProfile(false);
     }
   }, [isLoggedIn, currentUser, isMember]);
 
@@ -1573,7 +1601,7 @@ export default function App() {
 
   // Real-time block, delete, and expiration automatic logout detection
   useEffect(() => {
-    if (isLoggedIn && isMember) {
+    if (isLoggedIn && isMember && hasLoadedProfile) {
       if (memberProfile) {
         if (memberProfile.isBlocked) {
           safeStorage.removeItem('luypay_logged_in');
@@ -1589,6 +1617,7 @@ export default function App() {
           setLoginUsername('');
           setLoginPassword('');
           setMemberProfile(null);
+          setHasLoadedProfile(false);
           alert(language === 'kh' ? 'គណនីរបស់អ្នកត្រូវបានផ្អាកដំណើរការ (Blocked) ដោយអ្នកគ្រប់គ្រងប្រព័ន្ធ!' : 'Your account has been temporarily suspended (Blocked) by the administrator!');
           return;
         }
@@ -1607,11 +1636,13 @@ export default function App() {
           setLoginUsername('');
           setLoginPassword('');
           setMemberProfile(null);
+          setHasLoadedProfile(false);
           alert(language === 'kh' ? 'គម្រោងសមាជិកភាពរបស់អ្នកបានអស់សុពលភាពហើយ! សូមភ្ជាប់គម្រោងឡើងវិញដើម្បីបន្តប្រើប្រាស់។' : 'Your subscription has expired! Please renew your plan to continue.');
           return;
         }
       } else if (!profileLoading) {
-        // memberProfile is null and profileLoading is false (real-time listener evaluated and document doesn't exist)
+        // memberProfile is null, profileLoading is false AND hasLoadedProfile is true
+        // (real-time listener evaluated and confirmed document doesn't exist anywhere)
         safeStorage.removeItem('luypay_logged_in');
         safeStorage.removeItem('luypay_current_user');
         safeStorage.removeItem('luypay_user_display_name');
@@ -1625,10 +1656,11 @@ export default function App() {
         setLoginUsername('');
         setLoginPassword('');
         setMemberProfile(null);
+        setHasLoadedProfile(false);
         alert(language === 'kh' ? 'គណនីរបស់អ្នកត្រូវបានលុបចេញពីប្រព័ន្ធដោយអ្នកគ្រប់គ្រង!' : 'Your account has been deleted by the administrator!');
       }
     }
-  }, [isLoggedIn, isMember, memberProfile, profileLoading, language]);
+  }, [isLoggedIn, isMember, memberProfile, profileLoading, hasLoadedProfile, language]);
 
   const handleSavePhotoURL = async (url: string) => {
     if (!isLoggedIn) return;
