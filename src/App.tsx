@@ -13,6 +13,8 @@ import AdminMembersDashboard from './components/AdminMembersDashboard';
 import PricingPanel from './components/PricingPanel';
 import NotificationBell, { playNotificationSound } from './components/NotificationBell';
 import PlanApprovalModal from './components/PlanApprovalModal';
+import KhmerAvatarFrame from './components/KhmerAvatarFrame';
+import KhmerAvatarFrameModal from './components/KhmerAvatarFrameModal';
 import BorrowerApplyForm from './components/BorrowerApplyForm';
 import LoanApplicationTracker from './components/LoanApplicationTracker';
 import LoanApplicationsControlPanel from './components/LoanApplicationsControlPanel';
@@ -152,29 +154,38 @@ export default function App() {
   const [isShareholderLockModalOpen, setIsShareholderLockModalOpen] = useState(false);
   const [shareholders, setShareholders] = useState<Shareholder[]>(() => {
     const savedLocal = safeStorage.getItem(`luypay_shareholders_${currentUser}`);
-    const savedGlobal = safeStorage.getItem('luypay_shareholders_global');
-    const saved = savedLocal || savedGlobal;
-    if (saved) {
+    if (savedLocal) {
       try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        const parsed = JSON.parse(savedLocal);
+        if (Array.isArray(parsed)) return parsed;
       } catch (e) {
         console.error('Error parsing shareholders:', e);
       }
     }
-    return [
-      {
-        id: 'sh_default',
-        name: 'ដៃគូវិនិយោគ A',
-        username: 'admin',
-        password: 'admin',
-        capitalUSD: 500,
-        sharePercent: 50,
-        phone: '012 345 678',
-        createdAt: new Date().toISOString(),
-        notes: 'ដើមទុន 500$ បែងចែកប្រាក់ការ 50% ស្វ័យប្រវត្ត',
-      },
-    ];
+    if (currentUser === 'sounravin') {
+      const savedGlobal = safeStorage.getItem('luypay_shareholders_global');
+      if (savedGlobal) {
+        try {
+          const parsed = JSON.parse(savedGlobal);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+      return [
+        {
+          id: 'sh_default',
+          name: 'ដៃគូវិនិយោគ A',
+          username: 'admin',
+          password: 'admin',
+          capitalUSD: 500,
+          sharePercent: 50,
+          phone: '012 345 678',
+          createdAt: new Date().toISOString(),
+          notes: 'ដើមទុន 500$ បែងចែកប្រាក់ការ 50% ស្វ័យប្រវត្ត',
+        },
+      ];
+    }
+    // Member user account starts empty [] so they must create their own shareholders
+    return [];
   });
   const [members, setMembers] = useState<Member[]>([]);
   const [subRequests, setSubRequests] = useState<SubscriptionRequest[]>([]);
@@ -191,6 +202,12 @@ export default function App() {
   const [blockScreenQrScanDetected, setBlockScreenQrScanDetected] = useState<boolean>(false);
   const [blockScreenInvoiceImage, setBlockScreenInvoiceImage] = useState<string>('');
   const [blockScreenUploadError, setBlockScreenUploadError] = useState<string>('');
+
+  // Khmer Avatar Frame Animation State
+  const [avatarFrameId, setAvatarFrameId] = useState<string>(() => {
+    return safeStorage.getItem(`luypay_avatar_frame_${currentUser}`) || 'kbach_gold';
+  });
+  const [isAvatarFrameModalOpen, setIsAvatarFrameModalOpen] = useState<boolean>(false);
 
   // Check if member has access to Shareholder Management Add-on ($10)
   const canAccessShareholders = currentUser === 'sounravin' || memberProfile?.hasShareholderModule === true;
@@ -576,25 +593,100 @@ export default function App() {
       console.warn('Unable to subscribe to settings/sponsor_config in real-time (using default offline values):', err.message || err);
     });
 
-    const unsubscribeShareholders = onSnapshot(doc(db, 'settings', 'shareholders_config'), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (Array.isArray(data.list) && data.list.length > 0) {
-          setShareholders(data.list);
-          safeStorage.setItem('luypay_shareholders_global', JSON.stringify(data.list));
-        }
-      }
-    }, (err) => {
-      console.warn('Unable to subscribe to settings/shareholders_config:', err.message || err);
-    });
-
     return () => {
       unsubscribeQR();
       unsubscribeLogo();
       unsubscribeSponsor();
-      unsubscribeShareholders();
     };
   }, []);
+
+  // Sync shareholders isolated per active user account (admin vs member isolation)
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Load local storage first for instant render
+    const savedLocal = safeStorage.getItem(`luypay_shareholders_${currentUser}`);
+    if (savedLocal) {
+      try {
+        const parsed = JSON.parse(savedLocal);
+        if (Array.isArray(parsed)) {
+          setShareholders(parsed);
+        }
+      } catch (e) {
+        console.error('Error parsing user shareholders:', e);
+      }
+    } else {
+      if (currentUser === 'sounravin') {
+        const savedGlobal = safeStorage.getItem('luypay_shareholders_global');
+        if (savedGlobal) {
+          try {
+            const parsed = JSON.parse(savedGlobal);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setShareholders(parsed);
+            }
+          } catch (e) {}
+        }
+      } else {
+        setShareholders([]);
+      }
+    }
+
+    // Subscribe to user-specific Firestore document
+    const docPath = currentUser === 'sounravin' ? 'shareholders_config' : `shareholders_${currentUser}`;
+    const unsubscribe = onSnapshot(doc(db, 'settings', docPath), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (Array.isArray(data.list)) {
+          setShareholders(data.list);
+          safeStorage.setItem(`luypay_shareholders_${currentUser}`, JSON.stringify(data.list));
+        }
+      } else {
+        if (currentUser !== 'sounravin') {
+          setShareholders([]);
+          safeStorage.setItem(`luypay_shareholders_${currentUser}`, JSON.stringify([]));
+        }
+      }
+    }, (err) => {
+      console.warn(`Unable to subscribe to settings/${docPath}:`, err.message || err);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  // Real-time listener & persistent storage sync for Khmer Avatar Frame per user
+  useEffect(() => {
+    if (!currentUser) return;
+    const localFrame = safeStorage.getItem(`luypay_avatar_frame_${currentUser}`);
+    if (localFrame) {
+      setAvatarFrameId(localFrame);
+    }
+    const docPath = `avatar_frame_${currentUser}`;
+    const unsubscribe = onSnapshot(doc(db, 'settings', docPath), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.frameId) {
+          setAvatarFrameId(data.frameId);
+          safeStorage.setItem(`luypay_avatar_frame_${currentUser}`, data.frameId);
+        }
+      }
+    }, (err) => {
+      console.warn(`Unable to subscribe to settings/${docPath}:`, err.message || err);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  const handleSaveAvatarFrame = (newFrameId: string) => {
+    setAvatarFrameId(newFrameId);
+    safeStorage.setItem(`luypay_avatar_frame_${currentUser}`, newFrameId);
+    try {
+      if (currentUser) {
+        setDoc(doc(db, 'settings', `avatar_frame_${currentUser}`), { frameId: newFrameId, updatedAt: new Date().toISOString() });
+      }
+    } catch (e) {
+      console.error('Error syncing avatar frame to firestore:', e);
+    }
+  };
 
   // Global tactile click sound effect when user interacts with any buttons, links or cards
   useEffect(() => {
@@ -1534,8 +1626,13 @@ export default function App() {
           list.push({ username: d.id, ...d.data() } as Member);
         });
         setMembers(list);
+        safeStorage.setItem('luypay_registered_members', JSON.stringify(list));
       }, (err) => {
-        console.error('Error listening to members collection:', err);
+        console.warn('Unable to subscribe to members collection (falling back to local storage):', err.message || err);
+        const saved = safeStorage.getItem('luypay_registered_members');
+        if (saved) {
+          try { setMembers(JSON.parse(saved)); } catch (e) {}
+        }
       });
 
       const unsubscribeRequests = onSnapshot(collection(db, 'subscription_requests'), (snapshot) => {
@@ -1545,8 +1642,13 @@ export default function App() {
         });
         list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
         setSubRequests(list);
+        safeStorage.setItem('luypay_sub_requests', JSON.stringify(list));
       }, (err) => {
-        console.error('Error listening to subscription requests:', err);
+        console.warn('Unable to subscribe to subscription requests (falling back to local storage):', err.message || err);
+        const saved = safeStorage.getItem('luypay_sub_requests');
+        if (saved) {
+          try { setSubRequests(JSON.parse(saved)); } catch (e) {}
+        }
       });
 
       return () => {
@@ -1559,7 +1661,9 @@ export default function App() {
       // 2. Standard Member listens to their own profile doc
       const unsubscribeProfile = onSnapshot(doc(db, 'members', currentUser), (docSnap) => {
         if (docSnap.exists()) {
-          setMemberProfile({ username: docSnap.id, ...docSnap.data() } as Member);
+          const profileData = { username: docSnap.id, ...docSnap.data() } as Member;
+          setMemberProfile(profileData);
+          safeStorage.setItem(`luypay_member_acc_${currentUser}`, JSON.stringify(profileData));
         } else {
           // Check local storage fallback before marking profile as null
           const localMemberStr = safeStorage.getItem(`luypay_member_acc_${currentUser}`);
@@ -1577,7 +1681,7 @@ export default function App() {
         setHasLoadedProfile(true);
         setProfileLoading(false);
       }, (err) => {
-        console.error('Error listening to member profile doc:', err);
+        console.warn('Unable to subscribe to member profile doc (falling back to local storage):', err.message || err);
         // Fallback to local storage on error
         const localMemberStr = safeStorage.getItem(`luypay_member_acc_${currentUser}`);
         if (localMemberStr) {
@@ -1618,7 +1722,14 @@ export default function App() {
       list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       setMySubRequests(list);
     }, (err) => {
-      console.error('Error listening to my subscription requests:', err);
+      console.warn('Unable to subscribe to my subscription requests (falling back to local storage):', err.message || err);
+      const saved = safeStorage.getItem('luypay_sub_requests');
+      if (saved) {
+        try {
+          const list: SubscriptionRequest[] = JSON.parse(saved);
+          setMySubRequests(list.filter((r) => r.username === currentUser));
+        } catch (e) {}
+      }
     });
 
     return () => unsubscribe();
@@ -2084,7 +2195,9 @@ export default function App() {
   const handleSaveShareholders = (updated: Shareholder[]) => {
     setShareholders(updated);
     safeStorage.setItem(`luypay_shareholders_${currentUser}`, JSON.stringify(updated));
-    safeStorage.setItem('luypay_shareholders_global', JSON.stringify(updated));
+    if (currentUser === 'sounravin') {
+      safeStorage.setItem('luypay_shareholders_global', JSON.stringify(updated));
+    }
 
     // Also update all borrowers linked to any renamed/updated shareholder
     const updatedBorrowers = borrowers.map((b) => {
@@ -2108,7 +2221,9 @@ export default function App() {
     }
 
     try {
-      setDoc(doc(db, 'settings', 'shareholders_config'), { list: updated });
+      if (currentUser === 'sounravin') {
+        setDoc(doc(db, 'settings', 'shareholders_config'), { list: updated });
+      }
       if (currentUser) {
         setDoc(doc(db, 'settings', `shareholders_${currentUser}`), { list: updated });
       }
@@ -2899,7 +3014,17 @@ export default function App() {
                 transition={{ duration: 0.5 }}
                 className="cursor-pointer"
               >
-                {renderSystemLogo("w-16 h-16 shadow-lg shadow-blue-500/10")}
+                <KhmerAvatarFrame
+                  frameId={avatarFrameId}
+                  sizeClass="w-16 h-16"
+                  onClick={() => {
+                    playClickSound();
+                    setIsAvatarFrameModalOpen(true);
+                  }}
+                  title="ចុចដើម្បីប្ដូរស៊ុម Khmer Avatar"
+                >
+                  {renderSystemLogo("w-16 h-16 shadow-lg shadow-blue-500/10")}
+                </KhmerAvatarFrame>
               </motion.div>
               <div>
                 <h1 className="text-white text-xl font-black tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
@@ -4208,6 +4333,7 @@ export default function App() {
                         getSubscriptionStatusInfo={getSubscriptionStatusInfo}
                         showToast={showToast}
                         language={language}
+                        onOpenAvatarFrameModal={() => setIsAvatarFrameModalOpen(true)}
                       />
                     </div>
                   );
@@ -4696,7 +4822,17 @@ export default function App() {
         {/* Logo / Header */}
         <div className="flex items-center justify-between mb-8 px-2">
           <div className="flex items-center gap-3">
-            {renderSystemLogo("w-10 h-10")}
+            <KhmerAvatarFrame
+              frameId={avatarFrameId}
+              sizeClass="w-10 h-10"
+              onClick={() => {
+                playClickSound();
+                setIsAvatarFrameModalOpen(true);
+              }}
+              title="ចុចដើម្បីប្ដូរស៊ុម Khmer Avatar"
+            >
+              {renderSystemLogo("w-10 h-10")}
+            </KhmerAvatarFrame>
             <div>
               <h1 className="text-white text-sm font-extrabold tracking-tight">{logoConfig?.systemName || t('appName')}</h1>
               <p className="text-[10px] text-slate-500 font-semibold tracking-wide">{t('appSubtitle')}</p>
@@ -5177,18 +5313,26 @@ export default function App() {
 
           <div className="flex items-center justify-between w-full relative z-30">
             <div className="flex items-center gap-2.5 border-transparent">
-              {memberProfile?.photoURL ? (
-                <img
-                  src={memberProfile.photoURL}
-                  alt={userDisplayName}
-                  className={`w-11 h-11 rounded-xl object-cover border shadow-md shrink-0 ${
-                    mobileHeaderStyle === 'angkor' ? 'border-amber-400/40' : 'border-white/20'
-                  }`}
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                renderSystemLogo("w-11 h-11 shrink-0")
-              )}
+              <KhmerAvatarFrame
+                frameId={avatarFrameId}
+                sizeClass="w-11 h-11"
+                onClick={() => {
+                  playClickSound();
+                  setIsAvatarFrameModalOpen(true);
+                }}
+                title="ចុចដើម្បីប្ដូរស៊ុម Khmer Avatar"
+              >
+                {memberProfile?.photoURL ? (
+                  <img
+                    src={memberProfile.photoURL}
+                    alt={userDisplayName}
+                    className="w-11 h-11 rounded-full object-cover shrink-0"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  renderSystemLogo("w-11 h-11 shrink-0")
+                )}
+              </KhmerAvatarFrame>
               <div>
                 <div className="flex flex-col gap-1">
                   <p className={`text-sm font-black leading-tight ${
@@ -5525,6 +5669,7 @@ export default function App() {
                 getSubscriptionStatusInfo={getSubscriptionStatusInfo}
                 showToast={showToast}
                 language={language}
+                onOpenAvatarFrameModal={() => setIsAvatarFrameModalOpen(true)}
               />
             );
           }
@@ -6689,6 +6834,14 @@ export default function App() {
         onClose={handleCloseApprovalModal}
         planId={approvalModalPlan}
         language={language}
+      />
+      {/* Khmer Avatar Frame Selection Modal */}
+      <KhmerAvatarFrameModal
+        isOpen={isAvatarFrameModalOpen}
+        onClose={() => setIsAvatarFrameModalOpen(false)}
+        currentFrameId={avatarFrameId}
+        onSelectFrame={handleSaveAvatarFrame}
+        renderLogoPreview={(sizeClass = "w-16 h-16") => renderSystemLogo(sizeClass)}
       />
       </div>
     </div>

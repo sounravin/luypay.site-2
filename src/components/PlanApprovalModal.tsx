@@ -17,7 +17,7 @@ export default function PlanApprovalModal({
 }: PlanApprovalModalProps) {
   const [countdown, setCountdown] = useState<number>(5);
 
-  const planInfo = {
+  const planInfoMap: Record<string, { nameKh: string; nameEn: string; price: string; durationKh: string; durationEn: string }> = {
     '1_month': {
       nameKh: 'គម្រោង ១ ខែ',
       nameEn: '1-Month Plan',
@@ -38,14 +38,17 @@ export default function PlanApprovalModal({
       price: '$35',
       durationKh: '៣៦៥ ថ្ងៃ',
       durationEn: '365 Days'
+    },
+    'shareholder_addon': {
+      nameKh: 'មុខងារ គ្រប់គ្រងម្ចាស់ភាគហ៊ុន (Shareholders)',
+      nameEn: 'Shareholders Management Module',
+      price: '$10',
+      durationKh: 'ប្រើប្រាស់រហូត (Lifetime)',
+      durationEn: 'Lifetime Access'
     }
-  }[planId as '1_month' | '3_months' | '1_year'] || {
-    nameKh: 'គម្រោង ១ ខែ',
-    nameEn: '1-Month Plan',
-    price: '$5',
-    durationKh: '៣០ ថ្ងៃ',
-    durationEn: '30 Days'
   };
+
+  const planInfo = planInfoMap[planId] || planInfoMap['1_month'];
 
   useEffect(() => {
     if (!isOpen) return;
@@ -111,8 +114,12 @@ export default function PlanApprovalModal({
             </h3>
             <p className="text-xs font-bold text-slate-300 leading-relaxed max-w-xs mx-auto">
               {language === 'kh'
-                ? 'គណនីរបស់អ្នកទទួលបានការអនុម័ត និងបើកដំណើរការគម្រោងដោយជោគជ័យ!'
-                : 'Your account has been approved and your subscription is now active!'}
+                ? (planId === 'shareholder_addon'
+                    ? 'សូមអបអរសាទរ ដែលបានទិញ ឬ Upgrade បន្ថែម មុខងារ គ្រប់គ្រងម្ចាស់ភាគហ៊ុន (Shareholders) ក្នុងតម្លៃ $10 ដោយជោគជ័យ!'
+                    : 'គណនីរបស់អ្នកទទួលបានការអនុម័ត និងបើកដំណើរការគម្រោងដោយជោគជ័យ!')
+                : (planId === 'shareholder_addon'
+                    ? 'Congratulations on purchasing and upgrading the Shareholders Management Add-on module for $10!'
+                    : 'Your account has been approved and your subscription is now active!')}
             </p>
           </div>
 

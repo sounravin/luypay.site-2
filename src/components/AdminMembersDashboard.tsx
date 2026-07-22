@@ -11,6 +11,7 @@ interface AdminMembersDashboardProps {
   getSubscriptionStatusInfo: (profile: Member | null) => { isExpired: boolean; text: string };
   showToast: (msg: string, type?: 'success' | 'info') => void;
   language: 'kh' | 'en';
+  onOpenAvatarFrameModal?: () => void;
 }
 
 export default function AdminMembersDashboard({
@@ -18,7 +19,8 @@ export default function AdminMembersDashboard({
   subRequests,
   getSubscriptionStatusInfo,
   showToast,
-  language
+  language,
+  onOpenAvatarFrameModal
 }: AdminMembersDashboardProps) {
   const [activeTab, setActiveTab] = useState<'requests' | 'directory' | 'qr_settings' | 'logo_settings' | 'sponsor_settings' | 'portal_settings'>('requests');
   const [searchQuery, setSearchQuery] = useState('');
@@ -1491,6 +1493,34 @@ export default function AdminMembersDashboard({
                         ? 'រៀបចំស្លាកសញ្ញា (Logo) សម្រាប់បង្ហាញនៅខាងលើរបារស្វែងរក និងផ្ទាំងគ្រប់គ្រងរបស់អ្នក។' 
                         : 'Configure your custom brand logo displayed at the top of the header and dashboard areas.'}
                     </p>
+                  </div>
+
+                  {/* Khmer Avatar Frame Animation Selector Banner */}
+                  <div className="bg-gradient-to-r from-amber-500/10 via-yellow-500/15 to-amber-500/10 border border-amber-400/40 p-4 rounded-2xl flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center text-slate-950 font-black shadow-md">
+                        👑
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-black text-slate-900 dark:text-white">
+                          {language === 'kh' ? 'ក្បាច់ស៊ុម Khmer Avatar Animation' : 'Khmer Avatar Animated Frames'}
+                        </h4>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                          {language === 'kh'
+                            ? 'ប្ដូរស៊ុមចលនាបែបក្បាច់ខ្មែរ (ក្បាច់ភ្ញីទេស, នាគរាជ, ឈូកមាស...)'
+                            : 'Choose animated traditional Khmer frames (Phni Des, Naga Dragon, Lotus...)'}
+                        </p>
+                      </div>
+                    </div>
+                    {onOpenAvatarFrameModal && (
+                      <button
+                        type="button"
+                        onClick={onOpenAvatarFrameModal}
+                        className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-xs shadow-md transition shrink-0"
+                      >
+                        {language === 'kh' ? 'ជ្រើសរើសស៊ុម' : 'Select Frame'}
+                      </button>
+                    )}
                   </div>
 
                   {/* Logo Type Selection */}

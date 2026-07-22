@@ -41,7 +41,7 @@ export default function LoanApplicationTracker({ trackId, onBack }: LoanApplicat
         setLoading(false);
       },
       (err) => {
-        console.error('Error tracking application:', err);
+        console.warn('Unable to track application via cloud subscription:', err.message || err);
         setError(err.message || 'Error loading data.');
         setLoading(false);
       }

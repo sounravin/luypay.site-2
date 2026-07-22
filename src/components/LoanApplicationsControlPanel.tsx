@@ -49,7 +49,7 @@ export default function LoanApplicationsControlPanel({
       setApplications(list);
       setLoading(false);
     }, (error) => {
-      console.error("Error listening to loan applications:", error);
+      console.warn("Unable to subscribe to loan applications:", error.message || error);
       setLoading(false);
     });
 

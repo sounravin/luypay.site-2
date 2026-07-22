@@ -31,7 +31,7 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
         setGlobalQrConfig(docSnap.data());
       }
     }, (err) => {
-      console.error('Error listening to qr config in BorrowerPortal:', err);
+      console.warn('Unable to subscribe to qr config in BorrowerPortal:', err.message || err);
     });
     return () => unsubscribeQr();
   }, []);
@@ -71,7 +71,7 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
         setPortalConfig(docSnap.data());
       }
     }, (err) => {
-      console.error('Error listening to portal config in BorrowerPortal:', err);
+      console.warn('Unable to subscribe to portal config in BorrowerPortal:', err.message || err);
     });
     return () => {
       unsubscribePortal();
@@ -86,7 +86,7 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
         setLenderProfile(docSnap.data());
       }
     }, (err) => {
-      console.error('Error listening to lender profile in BorrowerPortal:', err);
+      console.warn('Unable to subscribe to lender profile in BorrowerPortal:', err.message || err);
     });
     return () => unsubscribeLender();
   }, [borrower.userId]);

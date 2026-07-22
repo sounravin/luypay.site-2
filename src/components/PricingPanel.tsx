@@ -145,7 +145,7 @@ export default function PricingPanel({
       list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       setMyRequests(list);
     }, (err) => {
-      console.error('Error listening to my subscription requests:', err);
+      console.warn('Unable to subscribe to my subscription requests in PricingPanel:', err.message || err);
     });
 
     return () => unsubscribe();
