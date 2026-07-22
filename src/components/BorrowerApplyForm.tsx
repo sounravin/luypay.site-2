@@ -347,6 +347,27 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                 $
               </span>
             </div>
+            
+            {/* Quick Template Options for Amount */}
+            <div className="pt-1 flex flex-wrap gap-1.5">
+              {[50, 150, 200, 250, 300, 350, 400, 450, 500].map((amt) => {
+                const isSelected = amountRequested === amt.toString();
+                return (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setAmountRequested(amt.toString())}
+                    className={`px-2.5 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                      isSelected
+                        ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-xs shadow-emerald-500/20 scale-105'
+                        : 'bg-slate-950 text-emerald-400 border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-950/30'
+                    }`}
+                  >
+                    ${amt}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Loan Duration in Days */}
@@ -358,31 +379,53 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
             <input
               type="number"
               required
-              min="0"
+              min="1"
               value={loanDuration}
               onChange={(e) => setLoanDuration(e.target.value)}
-              placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ ០' : 'e.g., 0'}
+              placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ ៣០' : 'e.g., 30'}
               className="w-full px-4 py-3 text-base bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-bold text-slate-100 placeholder-slate-600"
             />
+
+            {/* Quick Template Options for Duration */}
+            <div className="pt-1 flex flex-wrap gap-1.5">
+              {[5, 7, 10, 15, 20, 25, 30].map((days) => {
+                const isSelected = loanDuration === days.toString();
+                return (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => setLoanDuration(days.toString())}
+                    className={`px-2.5 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                      isSelected
+                        ? 'bg-blue-600 text-white border-blue-400 shadow-xs shadow-blue-500/20 scale-105'
+                        : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-blue-500/50 hover:bg-slate-900'
+                    }`}
+                  >
+                    {days} {language === 'kh' ? 'ថ្ងៃ' : 'Days'}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* New Payment Type Select Option */}
+          {/* Payment Type Option - Fixed to Daily only */}
           <div className="space-y-1.5">
             <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
               <span className="text-blue-400 text-sm">🔄</span>
               {language === 'kh' ? 'ប្រភេទនៃការបង់ប្រាក់' : 'Payment Type'} <span className="text-rose-500">*</span>
             </label>
-            <select
-              value={paymentType}
-              onChange={(e) => setPaymentType(e.target.value)}
-              className="w-full px-4 py-3 text-base bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-bold text-slate-100"
-            >
-              <option value="daily">{language === 'kh' ? 'បង់រាល់ថ្ងៃ (Daily)' : 'Daily'}</option>
-              <option value="every_2_days">{language === 'kh' ? 'បង់រាល់២ថ្ងៃ (Every 2 Days)' : 'Every 2 Days'}</option>
-              <option value="weekly">{language === 'kh' ? 'បង់រាល់សប្តាហ៍ (Weekly)' : 'Weekly'}</option>
-              <option value="monthly">{language === 'kh' ? 'បង់រាល់ខែ (Monthly)' : 'Monthly'}</option>
-              <option value="custom">{language === 'kh' ? 'ផ្សេងៗ (Custom)' : 'Custom'}</option>
-            </select>
+            <div className="relative">
+              <select
+                disabled
+                value="daily"
+                className="w-full px-4 py-3 text-base bg-slate-950/80 border border-slate-800 rounded-2xl font-bold text-slate-300 appearance-none cursor-not-allowed opacity-90"
+              >
+                <option value="daily">{language === 'kh' ? 'បង់រាល់ថ្ងៃ (Daily)' : 'Daily'}</option>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20">
+                {language === 'kh' ? 'បង់រាល់ថ្ងៃ' : 'Daily Only'}
+              </div>
+            </div>
           </div>
 
           {/* New Interest Calculation Method Select Option */}

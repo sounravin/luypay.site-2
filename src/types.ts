@@ -60,6 +60,22 @@ export interface Borrower {
   isOnline?: boolean; // Whether the borrower is currently visiting their portal
   lastActive?: number; // Milliseconds timestamp of borrower's last interaction or heartbeat
   applicationId?: string; // Prefilled application identifier
+  shareholderId?: string; // ID of linked shareholder/investor partner
+  shareholderName?: string; // Name of linked shareholder
+  shareholderSharePercent?: number; // Partner's profit split share % (defaults to 50%)
+}
+
+export interface Shareholder {
+  id: string;
+  name: string;
+  phone?: string;
+  username: string; // default "admin" or custom
+  password: string; // default "admin" or custom
+  capitalUSD: number; // initial invested capital e.g. 500
+  sharePercent: number; // default 50%
+  notes?: string;
+  createdAt: string;
+  userId?: string; // owner lender ID
 }
 
 export interface ChatMessage {

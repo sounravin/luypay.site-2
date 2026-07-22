@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest } from './types';
+import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest, Shareholder } from './types';
 import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound, backfillShortIds, formatMoney } from './utils';
 import Header from './components/Header';
 import BorrowerCard from './components/BorrowerCard';
 import BorrowerDetail from './components/BorrowerDetail';
 import AddBorrowerModal from './components/AddBorrowerModal';
 import BorrowerPortal from './components/BorrowerPortal';
+import ShareholderManagementModal from './components/ShareholderManagementModal';
+import ShareholderDashboard from './components/ShareholderDashboard';
+import { calculateShareholderStats } from './utils/shareholderUtils';
 import AdminMembersDashboard from './components/AdminMembersDashboard';
 import PricingPanel from './components/PricingPanel';
 import NotificationBell, { playNotificationSound } from './components/NotificationBell';
@@ -138,6 +141,37 @@ export default function App() {
   const [applyLenderId, setApplyLenderId] = useState<string>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('lender') || 'sounravin';
+  });
+
+  // Shareholders state
+  const [partnerParam, setPartnerParam] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('partner');
+  });
+  const [isShareholdersModalOpen, setIsShareholdersModalOpen] = useState(false);
+  const [shareholders, setShareholders] = useState<Shareholder[]>(() => {
+    const saved = safeStorage.getItem(`luypay_shareholders_${currentUser}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Error parsing shareholders:', e);
+      }
+    }
+    return [
+      {
+        id: 'sh_default',
+        name: 'ដៃគូវិនិយោគ A',
+        username: 'admin',
+        password: 'admin',
+        capitalUSD: 500,
+        sharePercent: 50,
+        phone: '012 345 678',
+        createdAt: new Date().toISOString(),
+        notes: 'ដើមទុន 500$ បែងចែកប្រាក់ការ 50% ស្វ័យប្រវត្ត',
+      },
+    ];
   });
   const [members, setMembers] = useState<Member[]>([]);
   const [subRequests, setSubRequests] = useState<SubscriptionRequest[]>([]);
@@ -2028,6 +2062,18 @@ export default function App() {
     }
   };
 
+  const handleSaveShareholders = (updated: Shareholder[]) => {
+    setShareholders(updated);
+    safeStorage.setItem(`luypay_shareholders_${currentUser}`, JSON.stringify(updated));
+    if (isLoggedIn) {
+      try {
+        setDoc(doc(db, 'settings', `shareholders_${currentUser}`), { list: updated });
+      } catch (e) {
+        console.error('Error syncing shareholders to firestore:', e);
+      }
+    }
+  };
+
   // Automatically backfill any missing short IDs for loaded borrowers
   useEffect(() => {
     if (borrowers.length === 0) return;
@@ -2588,6 +2634,30 @@ export default function App() {
         }}
       />
     );
+  }
+
+  // Render Shareholder Partner Portal if partner URL parameter is present
+  if (partnerParam) {
+    const activePartner = shareholders.find((s) => s.id === partnerParam || s.username === partnerParam) || shareholders[0];
+    if (activePartner) {
+      return (
+        <ShareholderDashboard
+          shareholder={activePartner}
+          borrowers={borrowers}
+          language={language}
+          onBackToMain={() => {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('partner');
+            window.history.replaceState({}, '', url.toString());
+            setPartnerParam(null);
+          }}
+          onEditBorrower={async (bId, updated) => {
+            const updatedList = borrowers.map(b => b.id === bId ? { ...b, ...updated } : b);
+            await saveBorrowers(updatedList);
+          }}
+        />
+      );
+    }
   }
 
   // Render Loan Application Tracking page if viewing the track link
@@ -3877,6 +3947,22 @@ export default function App() {
                   </div>
                   <span className="text-[9px] font-extrabold text-slate-700 dark:text-slate-300 leading-none group-hover:text-amber-500">
                     {language === 'kh' ? 'គណនាការ' : 'Calculator'}
+                  </span>
+                </button>
+
+                {/* Shareholders / Partners Button */}
+                <button 
+                  onClick={() => { 
+                    setIsShareholdersModalOpen(true); 
+                    playClickSound(); 
+                  }}
+                  className="flex flex-col items-center gap-1.5 text-center cursor-pointer group border-none bg-transparent"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center transition-all shadow-3xs border border-amber-500/20">
+                    <Users className="w-4.5 h-4.5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <span className="text-[9px] font-extrabold text-slate-700 dark:text-slate-300 leading-none group-hover:text-amber-600">
+                    {language === 'kh' ? 'ដៃគូភាគហ៊ុន' : 'Shareholders'}
                   </span>
                 </button>
 
@@ -5687,6 +5773,17 @@ export default function App() {
         }}
         onSave={handleAddNewBorrower}
         prefilledData={prefilledData}
+        shareholders={shareholders}
+      />
+
+      {/* Shareholder Partner Management Modal */}
+      <ShareholderManagementModal
+        isOpen={isShareholdersModalOpen}
+        onClose={() => setIsShareholdersModalOpen(false)}
+        shareholders={shareholders}
+        borrowers={borrowers}
+        language={language}
+        onSaveShareholders={handleSaveShareholders}
       />
 
       {/* Detail & Card-Checkboard Overlay */}

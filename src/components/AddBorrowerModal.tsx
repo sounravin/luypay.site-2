@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CurrencyType, FrequencyType } from '../types';
+import { CurrencyType, FrequencyType, Shareholder } from '../types';
 import { getTodayDateString } from '../utils';
 import { X, Info, Camera, User, Image } from 'lucide-react';
 import { useLanguage } from '../i18n';
@@ -27,6 +27,9 @@ interface AddBorrowerModalProps {
     dueTime?: string;
     profilePhoto?: string;
     coverPhoto?: string;
+    shareholderId?: string;
+    shareholderName?: string;
+    shareholderSharePercent?: number;
   }) => void;
   prefilledData?: {
     name?: string;
@@ -36,9 +39,10 @@ interface AddBorrowerModalProps {
     notes?: string;
     loanDuration?: number;
   } | null;
+  shareholders?: Shareholder[];
 }
 
-export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledData }: AddBorrowerModalProps) {
+export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledData, shareholders = [] }: AddBorrowerModalProps) {
   const { t, language } = useLanguage();
   const [name, setName] = useState('');
 
@@ -58,9 +62,11 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
   const [dueTime, setDueTime] = useState('17:00');
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [coverPhoto, setCoverPhoto] = useState<string>('');
+  const [selectedShareholderId, setSelectedShareholderId] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
+      setSelectedShareholderId('');
       if (prefilledData) {
         setName(prefilledData.name || '');
         setPhone(prefilledData.phone || '');
@@ -274,6 +280,8 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
     if (isNaN(dVal) || dVal <= 0) return alert('សូមបញ្ជាក់ចំនួនដងបង់ប្រាក់ឲ្យបានត្រឹមត្រូវ!');
     if (isNaN(iVal) || iVal <= 0) return alert('សូមបញ្ជាក់ប្រាក់ត្រូវបង់ក្នុងមួយវគ្គឲ្យបានត្រឹមត្រូវ!');
 
+    const matchedShareholder = shareholders?.find((s) => s.id === selectedShareholderId);
+
     onSave({
       name: name.trim(),
       phone: phone.trim(),
@@ -294,6 +302,9 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
       dueTime,
       profilePhoto,
       coverPhoto,
+      shareholderId: matchedShareholder ? matchedShareholder.id : undefined,
+      shareholderName: matchedShareholder ? matchedShareholder.name : undefined,
+      shareholderSharePercent: matchedShareholder ? matchedShareholder.sharePercent : undefined,
     });
 
     // Reset fields
@@ -938,6 +949,30 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                 }`}
               />
             </button>
+          </div>
+
+          {/* Shareholder Partner Selection */}
+          <div className="bg-emerald-50 dark:bg-emerald-950/20 p-3.5 rounded-2xl border border-emerald-200 dark:border-emerald-800/40 space-y-2">
+            <label className="block text-xs font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <span>🤝</span> {language === 'kh' ? 'ភ្ជាប់ជាមួយដៃគូភាគហ៊ុន (Shareholder Partner)' : 'Link to Shareholder Partner'}
+            </label>
+            <select
+              value={selectedShareholderId}
+              onChange={(e) => setSelectedShareholderId(e.target.value)}
+              className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-bold text-slate-800 dark:text-slate-100"
+            >
+              <option value="">{language === 'kh' ? '🚫 គ្មាន (លុយផ្ទាល់ខ្លួន / ម្ចាស់ដើម)' : 'None (Self Capital)'}</option>
+              {(shareholders || []).map((s) => (
+                <option key={s.id} value={s.id}>
+                  🤝 {s.name} (ដើម ${s.capitalUSD.toLocaleString()} | ភាគលាភ {s.sharePercent}%)
+                </option>
+              ))}
+            </select>
+            <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold leading-relaxed">
+              {language === 'kh'
+                ? '💡 ប្រសិនបើជ្រើសរើសភាគហ៊ុន នោះរាល់ប្រាក់ការដែលប្រមូលបាននឹងត្រូវបែងចែក 50% ទៅគណនីភាគហ៊ុន និង 50% ទៅគណនីរបស់អ្នកដោយស្វ័យប្រវត្តិ។'
+                : '💡 If linked, collected interest will automatically split between shareholder portal and main account.'}
+            </p>
           </div>
 
           <div>

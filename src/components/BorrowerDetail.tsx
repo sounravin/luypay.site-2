@@ -10,20 +10,24 @@ import FrameSelectorModal from './FrameSelectorModal';
 
 interface BorrowerDetailProps {
   borrower: Borrower;
-  onClose: () => void;
-  onAddPayment: (borrowerId: string, payment: Omit<Payment, 'id'>) => void;
-  onDeletePayment: (borrowerId: string, paymentId: string) => void;
-  onDeleteBorrower: (borrowerId: string) => void;
-  onToggleArchive: (borrowerId: string) => void;
-  onUpdateStatus: (borrowerId: string, newStatus: 'good' | 'late' | 'regular') => void;
+  onClose?: () => void;
+  onBack?: () => void;
+  onAddPayment?: (borrowerId: string, payment: Omit<Payment, 'id'>) => void;
+  onDeletePayment?: (borrowerId: string, paymentId: string) => void;
+  onDeleteBorrower?: (borrowerId: string) => void;
+  onToggleArchive?: (borrowerId: string) => void;
+  onUpdateStatus?: (borrowerId: string, newStatus: 'good' | 'late' | 'regular') => void;
   onToggleAutoCheckIn?: (borrowerId: string) => void;
   onEditBorrower?: (borrowerId: string, updatedFields: Partial<Borrower>) => void;
   onShowPaymentQr?: (borrower: Borrower) => void;
+  isReadOnlyShareholder?: boolean;
+  shareholders?: any[];
 }
 
 export default function BorrowerDetail({
   borrower,
   onClose,
+  onBack,
   onAddPayment,
   onDeletePayment,
   onDeleteBorrower,
@@ -32,8 +36,11 @@ export default function BorrowerDetail({
   onToggleAutoCheckIn,
   onEditBorrower,
   onShowPaymentQr,
+  isReadOnlyShareholder = false,
+  shareholders = [],
 }: BorrowerDetailProps) {
   const { t, language } = useLanguage();
+  const handleCloseOrBack = onClose || onBack || (() => {});
   const payments = Array.isArray(borrower.payments) ? borrower.payments : [];
   const [customAmount, setCustomAmount] = useState<string>('');
 
@@ -597,6 +604,7 @@ export default function BorrowerDetail({
 
   // Handle checking/unchecking a box
   const handleBoxClick = (index: number) => {
+    if (isReadOnlyShareholder || !onDeletePayment || !onAddPayment) return;
     const existingPayment = paymentBySlot[index];
     if (existingPayment) {
       // Uncheck: delete payment
@@ -620,6 +628,7 @@ export default function BorrowerDetail({
   // Custom/Partial payment submit
   const handleCustomPaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnlyShareholder || !onAddPayment) return;
     const amountVal = parseFloat(customAmount);
     if (isNaN(amountVal) || amountVal <= 0) {
       return alert(language === 'kh' ? 'សូមបញ្ចូលចំនួនទឹកប្រាក់ឲ្យបានត្រឹមត្រូវ!' : 'Please enter a valid amount!');
@@ -676,7 +685,7 @@ export default function BorrowerDetail({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-slate-200 gap-3">
           <div className="flex items-center gap-3">
             <button
-              onClick={onClose}
+              onClick={handleCloseOrBack}
               className="p-1.5 hover:bg-slate-100 active:bg-slate-200 text-slate-500 hover:text-slate-700 rounded-xl transition md:hidden cursor-pointer"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -817,7 +826,7 @@ export default function BorrowerDetail({
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={onClose}
+              onClick={handleCloseOrBack}
               className="p-2 hover:bg-slate-100 active:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-xl transition-all hidden md:block cursor-pointer"
             >
               <X className="w-5 h-5" />
