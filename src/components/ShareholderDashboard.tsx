@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Borrower, Shareholder } from '../types';
 import { calculateShareholderStats, calculatePaymentInterestSplit } from '../utils/shareholderUtils';
 import BorrowerDetail from './BorrowerDetail';
@@ -12,6 +12,40 @@ interface ShareholderDashboardProps {
   onEditBorrower?: (borrowerId: string, updatedFields: Partial<Borrower>) => Promise<void> | void;
 }
 
+// Web Audio API synthesized audio chime alert
+function playNotificationChime() {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(587.33, now); // D5
+    gain1.gain.setValueAtTime(0.25, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.35);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(880, now + 0.15); // A5
+    gain2.gain.setValueAtTime(0.35, now + 0.15);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.15);
+    osc2.stop(now + 0.6);
+  } catch (e) {
+    // Audio context may require user interaction gesture
+  }
+}
+
 export default function ShareholderDashboard({
   shareholder: initialShareholder,
   allShareholders = [],
@@ -22,8 +56,8 @@ export default function ShareholderDashboard({
 }: ShareholderDashboardProps) {
   const [activeShareholder, setActiveShareholder] = useState<Shareholder>(initialShareholder);
 
-  // Sync activeShareholder if initialShareholder changes
-  React.useEffect(() => {
+  // Sync activeShareholder if initialShareholder prop updates
+  useEffect(() => {
     if (initialShareholder && initialShareholder.id !== activeShareholder.id) {
       setActiveShareholder(initialShareholder);
     }
@@ -31,7 +65,7 @@ export default function ShareholderDashboard({
 
   const listToSearch = allShareholders.length > 0 ? allShareholders : [activeShareholder];
 
-  // Login auth state for shareholder portal
+  // Login auth state
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const authKey = `luypay_partner_auth_${initialShareholder.id}`;
     if (localStorage.getItem(authKey) === 'true') return true;
@@ -43,7 +77,19 @@ export default function ShareholderDashboard({
   const [inputPassword, setInputPassword] = useState(initialShareholder.password || 'admin');
   const [loginError, setLoginError] = useState('');
 
-  // Selected borrower for read-only detail view
+  // Mobile App active tab
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'borrowers' | 'notifications' | 'settings'>('dashboard');
+
+  // Change Password state
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [passwordMsg, setPasswordMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Search query for borrowers
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Selected borrower for read-only profile detail
   const [selectedBorrower, setSelectedBorrower] = useState<Borrower | null>(null);
 
   const shareholder = activeShareholder;
@@ -54,39 +100,9 @@ export default function ShareholderDashboard({
       (b.shareholderName && shareholder.name && b.shareholderName.trim().toLowerCase() === shareholder.name.trim().toLowerCase())
   );
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const uInput = inputUsername.trim().toLowerCase();
-    const pInput = inputPassword.trim();
+  // Collect notifications for linked borrowers & payments
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
 
-    const matched = listToSearch.find((s) => {
-      const u = (s.username || 'admin').trim().toLowerCase();
-      const p = (s.password || 'admin').trim();
-      return u === uInput && p === pInput;
-    });
-
-    if (matched) {
-      setActiveShareholder(matched);
-      localStorage.setItem(`luypay_partner_auth_${matched.id}`, 'true');
-      localStorage.setItem('luypay_authenticated_partner_id', matched.id);
-      setIsAuthenticated(true);
-      setLoginError('');
-    } else {
-      setLoginError(
-        language === 'kh'
-          ? 'ឈ្មោះគណនី ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវទេ! (សូមពិនិត្យមើល Username និង Password ដែលម្ចាស់បំណុលបង្កើតឱ្យ)'
-          : 'Invalid username or password! Please check the credentials created for your partner account.'
-      );
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem(`luypay_partner_auth_${shareholder.id}`);
-    localStorage.removeItem('luypay_authenticated_partner_id');
-    setIsAuthenticated(false);
-  };
-
-  // Collect all payments from linked borrowers sorted by date descending
   const paymentHistory: Array<{
     id: string;
     borrowerName: string;
@@ -116,7 +132,143 @@ export default function ShareholderDashboard({
 
   paymentHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // If not authenticated yet, show Login Screen
+  // Generate notifications list
+  const notificationList: Array<{
+    id: string;
+    type: 'payment' | 'new_borrower';
+    title: string;
+    body: string;
+    time: string;
+    amount?: number;
+  }> = [];
+
+  linkedBorrowers.forEach((b) => {
+    notificationList.push({
+      id: `borrower_${b.id}`,
+      type: 'new_borrower',
+      title: language === 'kh' ? 'កូនបំណុលថ្មីត្រូវបានភ្ជាប់' : 'New Linked Borrower',
+      body: language === 'kh'
+        ? `កូនបំណុល "${b.name}" ខ្ចីប្រាក់ចំនួន $${b.principal.toLocaleString()} (ការប្រាក់ $${(b.totalToPay - b.principal).toLocaleString()})`
+        : `Borrower "${b.name}" principal $${b.principal.toLocaleString()} (Interest $${(b.totalToPay - b.principal).toLocaleString()})`,
+      time: b.loanDate || '—',
+      amount: b.principal,
+    });
+  });
+
+  paymentHistory.forEach((p) => {
+    notificationList.push({
+      id: `pay_${p.id}`,
+      type: 'payment',
+      title: language === 'kh' ? 'កូនបំណុលបានបង់ប្រាក់' : 'Payment Received',
+      body: language === 'kh'
+        ? `កូនបំណុល "${p.borrowerName}" បានបង់ប្រាក់ចំនួន $${p.amount.toFixed(2)} (ចំណូលភាគហ៊ុនទទួលបាន +$${p.partnerShare.toFixed(2)})`
+        : `Borrower "${p.borrowerName}" paid $${p.amount.toFixed(2)} (Partner Share +$${p.partnerShare.toFixed(2)})`,
+      time: p.date,
+      amount: p.partnerShare,
+    });
+  });
+
+  notificationList.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const uInput = inputUsername.trim().toLowerCase();
+    const pInput = inputPassword.trim();
+
+    const matched = listToSearch.find((s) => {
+      const u = (s.username || 'admin').trim().toLowerCase();
+      const p = (s.password || 'admin').trim();
+      return u === uInput && p === pInput;
+    });
+
+    if (matched) {
+      setActiveShareholder(matched);
+      localStorage.setItem(`luypay_partner_auth_${matched.id}`, 'true');
+      localStorage.setItem('luypay_authenticated_partner_id', matched.id);
+      setIsAuthenticated(true);
+      setLoginError('');
+      playNotificationChime();
+    } else {
+      setLoginError(
+        language === 'kh'
+          ? 'ឈ្មោះគណនី ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវទេ! (សូមពិនិត្យមើល Username និង Password ដែលម្ចាស់បំណុលបង្កើតឱ្យ)'
+          : 'Invalid username or password! Please check the credentials created for your partner account.'
+      );
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(`luypay_partner_auth_${shareholder.id}`);
+    localStorage.removeItem('luypay_authenticated_partner_id');
+    setIsAuthenticated(false);
+  };
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMsg(null);
+
+    const currentPass = shareholder.password || 'admin';
+    if (currentPasswordInput.trim() !== currentPass.trim()) {
+      setPasswordMsg({
+        type: 'error',
+        text: language === 'kh' ? 'ពាក្យសម្ងាត់ចាស់មិនត្រឹមត្រូវទេ!' : 'Current password is incorrect!',
+      });
+      return;
+    }
+
+    if (newPasswordInput.trim().length < 3) {
+      setPasswordMsg({
+        type: 'error',
+        text: language === 'kh' ? 'ពាក្យសម្ងាត់ថ្មីត្រូវមានយ៉ាងហោចណាស់ 3 តួអក្សរ!' : 'New password must be at least 3 characters!',
+      });
+      return;
+    }
+
+    if (newPasswordInput.trim() !== confirmPasswordInput.trim()) {
+      setPasswordMsg({
+        type: 'error',
+        text: language === 'kh' ? 'ពាក្យសម្ងាត់ថ្មី និងបញ្ជាក់ពាក្យសម្ងាត់មិនត្រូវគ្នាតែ!' : 'New passwords do not match!',
+      });
+      return;
+    }
+
+    const updatedSh: Shareholder = {
+      ...shareholder,
+      password: newPasswordInput.trim(),
+    };
+
+    setActiveShareholder(updatedSh);
+
+    try {
+      const rawGlobal = localStorage.getItem('luypay_shareholders_global');
+      if (rawGlobal) {
+        const list = JSON.parse(rawGlobal);
+        const updatedList = list.map((s: any) => (s.id === updatedSh.id ? { ...s, password: updatedSh.password } : s));
+        localStorage.setItem('luypay_shareholders_global', JSON.stringify(updatedList));
+      }
+    } catch (err) {
+      console.error('Error saving new password:', err);
+    }
+
+    setPasswordMsg({
+      type: 'success',
+      text: language === 'kh' ? 'បានផ្លាស់ប្ដូរពាក្យសម្ងាត់ដោយជោគជ័យ!' : 'Password updated successfully!',
+    });
+
+    setCurrentPasswordInput('');
+    setNewPasswordInput('');
+    setConfirmPasswordInput('');
+    playNotificationChime();
+  };
+
+  // Filter borrowers by search
+  const filteredBorrowers = linkedBorrowers.filter((b) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return b.name.toLowerCase().includes(q) || (b.phone && b.phone.includes(q));
+  });
+
+  // If not authenticated, show Login Screen
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
@@ -129,7 +281,7 @@ export default function ShareholderDashboard({
                 '🤝'
               )}
             </div>
-            <h2 className="text-xl font-black text-white">
+            <h2 className="text-2xl font-black text-white">
               {language === 'kh' ? 'ចូលមើលគណនីភាគហ៊ុន' : 'Shareholder Partner Portal'}
             </h2>
             <p className="text-xs font-bold text-slate-400">
@@ -199,11 +351,10 @@ export default function ShareholderDashboard({
     );
   }
 
-  // If viewing a read-only borrower profile
+  // If viewing read-only borrower profile
   if (selectedBorrower) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6 space-y-4">
-        {/* Banner header for read-only mode */}
         <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-amber-300">
           <div className="flex items-center gap-2">
             <span className="text-xl">👁️</span>
@@ -237,12 +388,12 @@ export default function ShareholderDashboard({
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6 max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-950 text-slate-100 pb-20 sm:pb-8 max-w-5xl mx-auto space-y-4 sm:space-y-6 p-3 sm:p-6">
       
-      {/* Top Portal Header */}
-      <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl shadow-inner overflow-hidden">
+      {/* Top Mobile App Bar / Portal Header */}
+      <div className="bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-3xl shadow-2xl flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl shadow-inner overflow-hidden shrink-0">
             {shareholder.profilePhoto ? (
               <img src={shareholder.profilePhoto} alt={shareholder.name} className="w-full h-full object-cover" />
             ) : (
@@ -251,296 +402,563 @@ export default function ShareholderDashboard({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-black text-white">
+              <h1 className="text-lg sm:text-xl font-black text-white">
                 {shareholder.name}
               </h1>
-              <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-black rounded-lg border border-emerald-500/30">
-                {shareholder.calculationType === 'percent'
-                  ? `ភាគហ៊ុន ${shareholder.sharePercent}%`
-                  : `💵 $${(shareholder.dailyProfitUSD ?? 1.0).toFixed(2)} / ថ្ងៃ`}
-              </span>
+              {shareholder.calculationType === 'percent' && (
+                <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-black rounded-lg border border-emerald-500/30">
+                  {`ភាគហ៊ុន ${shareholder.sharePercent}%`}
+                </span>
+              )}
             </div>
             <p className="text-xs font-bold text-slate-400 mt-0.5">
               {language === 'kh'
-                ? `របាយការណ៍ប្រាក់ចំណូលភាគហ៊ុន - ដើមទុនដើម៖ $${shareholder.capitalUSD.toLocaleString()} USD`
-                : `Partner Revenue Report - Initial Investment: $${shareholder.capitalUSD.toLocaleString()} USD`}
+                ? `ដើមទុនដើម៖ $${shareholder.capitalUSD.toLocaleString()} USD`
+                : `Initial Investment: $${shareholder.capitalUSD.toLocaleString()} USD`}
             </p>
           </div>
         </div>
 
+        {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {/* Notification Bell Button */}
+          <button
+            onClick={() => {
+              setActiveTab('notifications');
+              setUnreadNotificationsCount(0);
+              playNotificationChime();
+            }}
+            className={`p-2.5 rounded-xl border transition relative cursor-pointer ${
+              activeTab === 'notifications'
+                ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
+                : 'bg-slate-800/80 text-slate-200 border-slate-700 hover:bg-slate-700'
+            }`}
+            title={language === 'kh' ? 'ការជូនដំណឹង' : 'Notifications'}
+          >
+            <span className="text-base">🔔</span>
+            {notificationList.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white font-black text-[10px] rounded-full flex items-center justify-center shadow-md animate-pulse">
+                {notificationList.length}
+              </span>
+            )}
+          </button>
+
+          {/* Settings / Change Password Button */}
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`p-2.5 rounded-xl border transition cursor-pointer ${
+              activeTab === 'settings'
+                ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
+                : 'bg-slate-800/80 text-slate-200 border-slate-700 hover:bg-slate-700'
+            }`}
+            title={language === 'kh' ? 'កំណត់ពាក្យសម្ងាត់' : 'Settings'}
+          >
+            <span className="text-base">⚙️</span>
+          </button>
+
           {onBackToMain && (
             <button
               onClick={onBackToMain}
-              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition cursor-pointer"
+              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition cursor-pointer"
             >
-              🏠 {language === 'kh' ? 'កម្មវិធីដើម' : 'Main App'}
+              🏠 <span className="hidden sm:inline">{language === 'kh' ? 'កម្មវិធីដើម' : 'Main App'}</span>
             </button>
           )}
+
           <button
             onClick={handleLogout}
-            className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold transition cursor-pointer"
+            className="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold transition cursor-pointer"
           >
-            🚪 {language === 'kh' ? 'ចាកចេញ' : 'Log Out'}
+            🚪 <span className="hidden sm:inline">{language === 'kh' ? 'ចាកចេញ' : 'Log Out'}</span>
           </button>
         </div>
       </div>
 
-      {/* Financial Metrics Overview & Capital Balance Tracker */}
-      <div className="space-y-3">
-        {/* Row 1: Capital Balance Flow */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1 shadow-md">
-            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block flex items-center justify-between">
-              <span>💰 {language === 'kh' ? 'ដើមទុនសរុប (Total)' : 'Total Capital'}</span>
-              <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-300 rounded-md">100%</span>
-            </span>
-            <p className="text-2xl font-black font-mono text-white">
-              ${stats.initialCapital.toLocaleString()} <span className="text-xs font-normal text-slate-500">USD</span>
-            </p>
-            <span className="text-[10px] text-slate-400 font-bold block">
-              {language === 'kh' ? 'ដើមទុនបញ្ចូលមកកាន់យើង' : 'Provided Investment Capital'}
-            </span>
-          </div>
+      {/* Mobile App View Navigation Tabs */}
+      <div className="grid grid-cols-4 gap-1.5 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl shadow-lg">
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          className={`py-2.5 px-2 rounded-xl text-xs font-black transition flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
+            activeTab === 'dashboard'
+              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+          }`}
+        >
+          <span className="text-base">📊</span>
+          <span className="text-[11px] sm:text-xs">{language === 'kh' ? 'ផ្ទាំងដើម' : 'Dashboard'}</span>
+        </button>
 
-          <div className="bg-slate-900 border border-amber-500/30 p-4 rounded-2xl space-y-1 shadow-md">
-            <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 block flex items-center justify-between">
-              <span>📤 {language === 'kh' ? 'លុយដកអោយខ្ចី (Deployed)' : 'Capital Deployed'}</span>
-              <span className="text-[10px] px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md border border-amber-500/20">
-                {stats.initialCapital > 0 ? ((stats.activeCapitalDeployed / stats.initialCapital) * 100).toFixed(0) : 0}%
-              </span>
-            </span>
-            <p className="text-2xl font-black font-mono text-amber-400">
-              -${stats.activeCapitalDeployed.toLocaleString()} <span className="text-xs font-normal text-amber-500/70">USD</span>
-            </p>
-            <span className="text-[10px] text-amber-300/80 font-bold block">
-              {language === 'kh' ? `ដកទៅកូនបំណុលខ្ចី (${stats.activeBorrowersCount} កម្ចីសកម្ម)` : `Lent out to ${stats.activeBorrowersCount} active loans`}
-            </span>
-          </div>
+        <button
+          onClick={() => setActiveTab('borrowers')}
+          className={`py-2.5 px-2 rounded-xl text-xs font-black transition flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
+            activeTab === 'borrowers'
+              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+          }`}
+        >
+          <span className="text-base">👥</span>
+          <span className="text-[11px] sm:text-xs">
+            {language === 'kh' ? `កូនបំណុល (${linkedBorrowers.length})` : `Borrowers (${linkedBorrowers.length})`}
+          </span>
+        </button>
 
-          <div className="bg-slate-900 border border-emerald-500/40 p-4 rounded-2xl space-y-1 shadow-md relative overflow-hidden">
-            <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
-            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 block flex items-center justify-between">
-              <span>📥 {language === 'kh' ? 'ដើមទុននៅសល់ (Available)' : 'Remaining Capital'}</span>
-              <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30 font-bold">
-                {stats.initialCapital > 0 ? ((stats.remainingCapital / stats.initialCapital) * 100).toFixed(0) : 100}%
-              </span>
+        <button
+          onClick={() => setActiveTab('notifications')}
+          className={`py-2.5 px-2 rounded-xl text-xs font-black transition flex flex-col sm:flex-row items-center justify-center gap-1 relative cursor-pointer ${
+            activeTab === 'notifications'
+              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+          }`}
+        >
+          <span className="text-base">🔔</span>
+          <span className="text-[11px] sm:text-xs">{language === 'kh' ? 'ជូនដំណឹង' : 'Alerts'}</span>
+          {notificationList.length > 0 && (
+            <span className="px-1.5 py-0.2 bg-rose-500 text-white font-black text-[9px] rounded-full">
+              {notificationList.length}
             </span>
-            <p className="text-2xl font-black font-mono text-emerald-400">
-              ${stats.remainingCapital.toLocaleString()} <span className="text-xs font-normal text-emerald-500/70">USD</span>
-            </p>
-            <span className="text-[10px] text-emerald-300/80 font-bold block">
-              {language === 'kh' ? 'ដើមទុននៅសល់មិនទាន់ប្រើ' : 'Available Unused Fund Balance'}
-            </span>
-          </div>
-        </div>
+          )}
+        </button>
 
-        {/* Visual Capital Allocation Bar */}
-        <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl space-y-2">
-          <div className="flex justify-between text-xs font-extrabold text-slate-300">
-            <span className="flex items-center gap-1.5">
-              <span>📊</span>
-              <span>
-                {language === 'kh'
-                  ? `ស្ថានភាពដើមទុន៖ $${stats.initialCapital.toLocaleString()} USD (ដក $${stats.activeCapitalDeployed.toLocaleString()} ➔ នៅសល់ $${stats.remainingCapital.toLocaleString()})`
-                  : `Capital Allocation: $${stats.initialCapital.toLocaleString()} USD (Used $${stats.activeCapitalDeployed.toLocaleString()} ➔ Left $${stats.remainingCapital.toLocaleString()})`}
-              </span>
-            </span>
-            <span className="text-emerald-400 font-mono font-black">
-              {stats.initialCapital > 0 ? ((stats.remainingCapital / stats.initialCapital) * 100).toFixed(1) : '100'}% {language === 'kh' ? 'នៅសល់' : 'Available'}
-            </span>
-          </div>
-          <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden flex p-0.5 border border-slate-800">
-            <div
-              className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, stats.initialCapital > 0 ? (stats.activeCapitalDeployed / stats.initialCapital) * 100 : 0)}%` }}
-              title={`ដកអោយខ្ចី: $${stats.activeCapitalDeployed}`}
-            />
-            <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500 ml-0.5"
-              style={{ width: `${Math.min(100, stats.initialCapital > 0 ? (stats.remainingCapital / stats.initialCapital) * 100 : 100)}%` }}
-              title={`នៅសល់: $${stats.remainingCapital}`}
-            />
-          </div>
-        </div>
-
-        {/* Row 2: Profit & Daily Share Performance */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
-            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
-              {language === 'kh' ? '📈 ប្រាក់ចំណេញទទួលបាន' : 'My Profit Share'}
-            </span>
-            <p className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
-              +${stats.partnerProfitEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-normal text-slate-500">USD</span>
-            </p>
-            <span className="text-[10px] text-emerald-500/80 font-bold block">
-              {shareholder.calculationType === 'percent'
-                ? (language === 'kh' ? `ភាគលាភរបស់អ្នក (${shareholder.sharePercent}%)` : `Your Dividend (${shareholder.sharePercent}%)`)
-                : (language === 'kh' ? 'ប្រាក់ចំណេញភាគហ៊ុនទទួលបានសរុប' : 'Total Earned Dividend')}
-            </span>
-          </div>
-
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
-            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
-              {language === 'kh' ? '💵 ផលចំណេញប្រចាំថ្ងៃសរុប' : 'Total Daily Profit'}
-            </span>
-            <p className="text-xl sm:text-2xl font-black font-mono text-blue-400">
-              ${stats.totalDailyProfitUSD.toFixed(2)} <span className="text-xs font-normal text-slate-500">/ {language === 'kh' ? 'ថ្ងៃ' : 'day'}</span>
-            </p>
-            <span className="text-[10px] text-blue-400/80 font-bold block">
-              {language === 'kh' ? 'គណនាជា ដុល្លារ/ថ្ងៃ លើកម្ចីសកម្ម' : 'Daily Rate on Active Loans'}
-            </span>
-          </div>
-
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
-            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
-              {language === 'kh' ? '👥 កូនបំណុលក្នុងកញ្ចប់' : 'Linked Borrowers'}
-            </span>
-            <p className="text-xl sm:text-2xl font-black font-mono text-amber-400">
-              {stats.activeBorrowersCount} <span className="text-xs font-normal text-slate-500">{language === 'kh' ? 'នាក់' : 'active'}</span>
-            </p>
-            <span className="text-[10px] text-slate-500 font-bold block">
-              {language === 'kh' ? `សរុបទាំងអស់ ${stats.linkedBorrowersCount} នាក់` : `Total ${stats.linkedBorrowersCount} loans`}
-            </span>
-          </div>
-        </div>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`py-2.5 px-2 rounded-xl text-xs font-black transition flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
+            activeTab === 'settings'
+              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+          }`}
+        >
+          <span className="text-base">⚙️</span>
+          <span className="text-[11px] sm:text-xs">{language === 'kh' ? 'កំណត់' : 'Settings'}</span>
+        </button>
       </div>
 
-      {/* Split & Daily Profit Rate Explanation Banner */}
-      <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/30 p-4 rounded-2xl space-y-2">
-        <div className="flex items-start gap-3">
-          <span className="text-2xl shrink-0">💡</span>
-          <div className="text-xs space-y-1">
-            <p className="font-black text-emerald-400 text-sm">
-              {language === 'kh' ? 'គោលការណ៍គណនាផលចំណេញប្រចាំថ្ងៃ (Daily Profit Policy & Rate):' : 'Daily USD Profit Calculation Policy:'}
-            </p>
-            <p className="text-slate-300 font-bold leading-relaxed">
-              {language === 'kh'
-                ? 'រាល់ពេលកូនបំណុលបង់ប្រាក់ប្រចាំថ្ងៃ ដៃគូភាគហ៊ុននឹងទទួលបានផលចំណេញជាដុល្លារតាមអត្រាដែលបានកំណត់ (ឧទាហរណ៍ $100 ខ្ចី ➔ $4.00/ថ្ងៃ, $200 ខ្ចី ➔ $8.00/ថ្ងៃ, $500 ខ្ចី ➔ $20.00/ថ្ងៃ)។'
-                : 'Whenever a borrower makes a daily payment, the shareholder partner receives a calculated daily profit rate (e.g. $100 lent = $4.00/day, $200 lent = $8.00/day).'}
-            </p>
-            <div className="pt-1 flex flex-wrap gap-2 text-[11px] font-mono">
-              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-300 rounded border border-emerald-500/20 font-black">
-                $100 ខ្ចី ➔ $4/ថ្ងៃ
+      {/* TAB 1: DASHBOARD OVERVIEW */}
+      {activeTab === 'dashboard' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          
+          {/* Row 1: Capital Balance Flow */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1 shadow-md">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                <span>💰 {language === 'kh' ? 'ដើមទុនសរុប (Total)' : 'Total Capital'}</span>
+                <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-300 rounded-md">100%</span>
               </span>
-              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-300 rounded border border-emerald-500/20 font-black">
-                $200 ខ្ចី ➔ $8/ថ្ងៃ
+              <p className="text-2xl font-black font-mono text-white">
+                ${stats.initialCapital.toLocaleString()} <span className="text-xs font-normal text-slate-500">USD</span>
+              </p>
+              <span className="text-[10px] text-slate-400 font-bold block">
+                {language === 'kh' ? 'ដើមទុនបញ្ចូលមកកាន់យើង' : 'Provided Investment Capital'}
               </span>
-              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-300 rounded border border-emerald-500/20 font-black">
-                $500 ខ្ចី ➔ $20/ថ្ងៃ
+            </div>
+
+            <div className="bg-slate-900 border border-amber-500/30 p-4 rounded-2xl space-y-1 shadow-md">
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center justify-between">
+                <span>📤 {language === 'kh' ? 'លុយដកអោយខ្ចី (Deployed)' : 'Capital Deployed'}</span>
+                <span className="text-[10px] px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md border border-amber-500/20">
+                  {stats.initialCapital > 0 ? ((stats.activeCapitalDeployed / stats.initialCapital) * 100).toFixed(0) : 0}%
+                </span>
+              </span>
+              <p className="text-2xl font-black font-mono text-amber-400">
+                -${stats.activeCapitalDeployed.toLocaleString()} <span className="text-xs font-normal text-amber-500/70">USD</span>
+              </p>
+              <span className="text-[10px] text-amber-300/80 font-bold block">
+                {language === 'kh' ? `ដកទៅកូនបំណុលខ្ចី (${stats.activeBorrowersCount} កម្ចីសកម្ម)` : `Lent out to ${stats.activeBorrowersCount} active loans`}
+              </span>
+            </div>
+
+            <div className="bg-slate-900 border border-emerald-500/40 p-4 rounded-2xl space-y-1 shadow-md relative overflow-hidden">
+              <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
+              <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center justify-between">
+                <span>📥 {language === 'kh' ? 'ដើមទុននៅសល់ (Available)' : 'Remaining Capital'}</span>
+                <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30 font-bold">
+                  {stats.initialCapital > 0 ? ((stats.remainingCapital / stats.initialCapital) * 100).toFixed(0) : 100}%
+                </span>
+              </span>
+              <p className="text-2xl font-black font-mono text-emerald-400">
+                ${stats.remainingCapital.toLocaleString()} <span className="text-xs font-normal text-emerald-500/70">USD</span>
+              </p>
+              <span className="text-[10px] text-emerald-300/80 font-bold block">
+                {language === 'kh' ? 'ដើមទុននៅសល់មិនទាន់ប្រើ' : 'Available Unused Fund Balance'}
               </span>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Linked Borrowers Section */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-            <span>📋</span> {language === 'kh' ? `កូនបំណុលក្នុងកញ្ចប់ភាគហ៊ុន (${linkedBorrowers.length})` : `Assigned Borrowers (${linkedBorrowers.length})`}
-          </h3>
-          <span className="text-xs font-bold text-slate-400">
-            {language === 'kh' ? 'ចុចលើ Profile ដើម្បីមើលព័ត៌មានលម្អិត' : 'Click profile to view read-only detail'}
-          </span>
-        </div>
-
-        {linkedBorrowers.length === 0 ? (
-          <div className="p-8 bg-slate-900 border border-dashed border-slate-800 rounded-2xl text-center space-y-2">
-            <span className="text-3xl block">👤</span>
-            <p className="text-xs font-bold text-slate-400">
-              {language === 'kh'
-                ? 'មិនទាន់មានកូនបំណុលត្រូវបានភ្ជាប់មកកាន់កញ្ចប់ភាគហ៊ុននេះនៅឡើយទេ'
-                : 'No borrowers assigned to this shareholder yet.'}
-            </p>
+          {/* Visual Capital Allocation Bar */}
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2 shadow-md">
+            <div className="flex justify-between text-xs font-extrabold text-slate-300">
+              <span className="flex items-center gap-1.5">
+                <span>📊</span>
+                <span>
+                  {language === 'kh'
+                    ? `ស្ថានភាពដើមទុន៖ $${stats.initialCapital.toLocaleString()} USD (ដក $${stats.activeCapitalDeployed.toLocaleString()} ➔ នៅសល់ $${stats.remainingCapital.toLocaleString()})`
+                    : `Capital Allocation: $${stats.initialCapital.toLocaleString()} USD (Used $${stats.activeCapitalDeployed.toLocaleString()} ➔ Left $${stats.remainingCapital.toLocaleString()})`}
+                </span>
+              </span>
+              <span className="text-emerald-400 font-mono font-black">
+                {stats.initialCapital > 0 ? ((stats.remainingCapital / stats.initialCapital) * 100).toFixed(1) : '100'}% {language === 'kh' ? 'នៅសល់' : 'Available'}
+              </span>
+            </div>
+            <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden flex p-0.5 border border-slate-800">
+              <div
+                className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(100, stats.initialCapital > 0 ? (stats.activeCapitalDeployed / stats.initialCapital) * 100 : 0)}%` }}
+                title={`ដកអោយខ្ចី: $${stats.activeCapitalDeployed}`}
+              />
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500 ml-0.5"
+                style={{ width: `${Math.min(100, stats.initialCapital > 0 ? (stats.remainingCapital / stats.initialCapital) * 100 : 100)}%` }}
+                title={`នៅសល់: $${stats.remainingCapital}`}
+              />
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {linkedBorrowers.map((b) => {
-              const totalPaid = (b.payments || []).reduce((acc, p) => acc + p.amount, 0);
-              const remaining = Math.max(0, b.totalToPay - totalPaid);
-              const totalInterest = Math.max(0, b.totalToPay - b.principal);
-              const calcMode = b.shareholderCalculationType || shareholder.calculationType || 'daily_usd';
-              const partnerDailyShare = calcMode === 'percent'
-                ? (b.duration > 0 ? ((totalInterest / b.duration) * (b.shareholderSharePercent ?? 50)) / 100 : 0)
-                : (b.shareholderDailyUSD ?? shareholder.dailyProfitUSD ?? 1.0);
 
-              return (
+          {/* Row 2: Profit & Daily Share Performance */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
+                {language === 'kh' ? '📈 ប្រាក់ចំណេញទទួលបាន' : 'My Profit Share'}
+              </span>
+              <p className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
+                +${stats.partnerProfitEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-normal text-slate-500">USD</span>
+              </p>
+              <span className="text-[10px] text-emerald-500/80 font-bold block">
+                {shareholder.calculationType === 'percent'
+                  ? (language === 'kh' ? `ភាគលាភរបស់អ្នក (${shareholder.sharePercent}%)` : `Your Dividend (${shareholder.sharePercent}%)`)
+                  : (language === 'kh' ? 'ប្រាក់ចំណេញភាគហ៊ុនទទួលបានសរុប' : 'Total Earned Dividend')}
+              </span>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
+                {language === 'kh' ? '💵 ផលចំណេញប្រចាំថ្ងៃសរុប' : 'Total Daily Profit'}
+              </span>
+              <p className="text-xl sm:text-2xl font-black font-mono text-blue-400">
+                ${stats.totalDailyProfitUSD.toFixed(2)} <span className="text-xs font-normal text-slate-500">/ {language === 'kh' ? 'ថ្ងៃ' : 'day'}</span>
+              </p>
+              <span className="text-[10px] text-blue-400/80 font-bold block">
+                {language === 'kh' ? 'គណនាជា ដុល្លារ/ថ្ងៃ លើកម្ចីសកម្ម' : 'Daily Rate on Active Loans'}
+              </span>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
+                {language === 'kh' ? '👥 កូនបំណុលក្នុងកញ្ចប់' : 'Linked Borrowers'}
+              </span>
+              <p className="text-xl sm:text-2xl font-black font-mono text-amber-400">
+                {stats.activeBorrowersCount} <span className="text-xs font-normal text-slate-500">{language === 'kh' ? 'នាក់' : 'active'}</span>
+              </p>
+              <span className="text-[10px] text-slate-500 font-bold block">
+                {language === 'kh' ? `សរុបទាំងអស់ ${stats.linkedBorrowersCount} នាក់` : `Total ${stats.linkedBorrowersCount} loans`}
+              </span>
+            </div>
+          </div>
+
+          {/* Profit Split Explanation Banner */}
+          <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/30 p-4 rounded-2xl space-y-2">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl shrink-0">💡</span>
+              <div className="text-xs space-y-1">
+                <p className="font-black text-emerald-400 text-sm">
+                  {language === 'kh' ? 'គោលការណ៍គណនាផលចំណេញប្រចាំថ្ងៃ (Daily Profit Policy & Rate):' : 'Daily Profit Calculation Policy:'}
+                </p>
+                <p className="text-slate-300 font-bold leading-relaxed">
+                  {language === 'kh'
+                    ? 'រាល់ពេលកូនបំណុលបង់ប្រាក់ប្រចាំថ្ងៃ ប្រព័ន្ធនឹងបែងចែកផលចំណេញរវាងម្ចាស់ដើម និងដៃគូភាគហ៊ុនតាមអត្រាដែលបានកំណត់ (ឧទាហរណ៍ ៥០% ម្នាក់ ឬ $4/ថ្ងៃ ចែកជា ២$ ក្នុងមួយនាក់)។'
+                    : 'Whenever a borrower pays, interest revenue is split 50/50 between the main lender and partner account.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* TAB 2: LINKED BORROWERS WITH PRINCIPAL & SPLIT DETAIL */}
+      {activeTab === 'borrowers' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          
+          {/* Search bar */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={language === 'kh' ? "ស្វែងរកកូនបំណុល (តាមឈ្មោះ ឬលេខទូរស័ព្ទ)..." : "Search borrower by name or phone..."}
+                className="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-xs font-bold text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+              />
+              <span className="absolute left-3.5 top-3.5 text-slate-400 text-sm">🔍</span>
+            </div>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="px-3 py-3 bg-slate-800 text-slate-400 hover:text-white rounded-2xl text-xs font-bold transition"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {filteredBorrowers.length === 0 ? (
+            <div className="p-10 bg-slate-900 border border-dashed border-slate-800 rounded-3xl text-center space-y-2">
+              <span className="text-4xl block">👤</span>
+              <p className="text-sm font-black text-slate-300">
+                {language === 'kh' ? 'រកមិនឃើញកូនបំណុលក្នុងកញ្ចប់ភាគហ៊ុនទេ' : 'No borrowers found.'}
+              </p>
+              <p className="text-xs text-slate-500 font-bold">
+                {language === 'kh' ? 'កូនបំណុលដែលបានបង្កើត និងភ្ជាប់ជាមួយភាគហ៊ុនរបស់អ្នក នឹងបង្ហាញនៅទីនេះ' : 'Borrowers assigned to your partner account will appear here.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {filteredBorrowers.map((b) => {
+                const totalPaid = (b.payments || []).reduce((acc, p) => acc + p.amount, 0);
+                const remaining = Math.max(0, b.totalToPay - totalPaid);
+                const totalInterest = Math.max(0, b.totalToPay - b.principal);
+                const calcMode = b.shareholderCalculationType || shareholder.calculationType || 'daily_usd';
+                
+                const dVal = b.duration || 1;
+                const totalDailyInterest = dVal > 0 ? totalInterest / dVal : 0;
+
+                const partnerDailyShare = calcMode === 'percent'
+                  ? (dVal > 0 ? ((totalInterest / dVal) * (b.shareholderSharePercent ?? 50)) / 100 : 0)
+                  : (b.shareholderDailyUSD ?? shareholder.dailyProfitUSD ?? (totalDailyInterest > 0 ? totalDailyInterest / 2 : 1.0));
+
+                const ownerDailyShare = Math.max(0, totalDailyInterest - partnerDailyShare);
+
+                return (
+                  <div
+                    key={b.id}
+                    onClick={() => setSelectedBorrower(b)}
+                    className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 p-4 rounded-3xl space-y-3.5 transition cursor-pointer group shadow-lg relative overflow-hidden"
+                  >
+                    {/* Top card header */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+                          {b.profilePhoto ? (
+                            <img src={b.profilePhoto} alt={b.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xl font-black text-slate-300">{b.name.charAt(0)}</span>
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="text-base font-black text-white group-hover:text-emerald-400 transition">
+                            {b.name}
+                          </h4>
+                          <p className="text-xs font-bold text-slate-400 flex items-center gap-1 mt-0.5">
+                            <span>📞 {b.phone || '—'}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-black rounded-xl group-hover:bg-emerald-500 group-hover:text-slate-950 transition">
+                        {language === 'kh' ? '👁️ មើល Profile' : 'View Profile'}
+                      </span>
+                    </div>
+
+                    {/* PROMINENT BORROWER PRINCIPAL & INTEREST SPLIT BOX */}
+                    <div className="p-3 bg-slate-950 border border-slate-800 rounded-2xl space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                        <div>
+                          <span className="text-[10px] font-black uppercase text-slate-400 block">
+                            💵 {language === 'kh' ? 'ប្រាក់ដើមខ្ចី (Principal)' : 'Loan Principal'}
+                          </span>
+                          <span className="text-lg font-black font-mono text-emerald-400">
+                            ${b.principal.toLocaleString()} <span className="text-xs font-normal text-slate-500">{b.currency}</span>
+                          </span>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="text-[10px] font-black uppercase text-amber-400 block">
+                            📊 {language === 'kh' ? 'ការប្រាក់សរុប (Total Interest)' : 'Total Interest'}
+                          </span>
+                          <span className="text-lg font-black font-mono text-amber-400">
+                            ${totalInterest.toLocaleString()} <span className="text-xs font-normal text-slate-500">{b.currency}</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 2-Way 50/50 Split Grid */}
+                      <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                        <div className="p-2 bg-slate-900 rounded-xl border border-blue-500/20">
+                          <span className="text-[9px] font-black uppercase text-blue-400 block">
+                            👑 {language === 'kh' ? 'ម្ចាស់ដើម' : 'Main Owner'}
+                          </span>
+                          <span className="text-xs font-black font-mono text-blue-400">
+                            ${ownerDailyShare.toFixed(2)}/ថ្ងៃ
+                          </span>
+                        </div>
+
+                        <div className="p-2 bg-slate-900 rounded-xl border border-emerald-500/20">
+                          <span className="text-[9px] font-black uppercase text-emerald-400 block">
+                            🤝 {language === 'kh' ? 'ភាគហ៊ុនខ្ញុំ' : 'My Partner Share'}
+                          </span>
+                          <span className="text-xs font-black font-mono text-emerald-400">
+                            +${partnerDailyShare.toFixed(2)}/ថ្ងៃ
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress & Remaining */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs font-bold text-slate-300">
+                        <span>{language === 'kh' ? 'បានបង់៖' : 'Paid:'} ${totalPaid.toLocaleString()}</span>
+                        <span className="text-amber-400">{language === 'kh' ? 'នៅសល់៖' : 'Remaining:'} ${remaining.toLocaleString()}</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300"
+                          style={{ width: `${Math.min(100, (totalPaid / (b.totalToPay || 1)) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: NOTIFICATIONS & ALERTS */}
+      {activeTab === 'notifications' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between bg-slate-900 p-4 rounded-2xl border border-slate-800">
+            <div>
+              <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <span>🔔</span> {language === 'kh' ? 'របាយការណ៍ជូនដំណឹង live' : 'Live Notifications'}
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {language === 'kh' ? 'ជូនដំណឹងស្វ័យប្រវត្តិនៅពេលមានកូនបំណុលថ្មី ឬមានការបង់ប្រាក់' : 'Auto alerts when new borrowers are created or payments recorded'}
+              </p>
+            </div>
+
+            <button
+              onClick={playNotificationChime}
+              className="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5"
+            >
+              <span>🔊</span> {language === 'kh' ? 'សាកល្បងសំឡេង' : 'Test Sound'}
+            </button>
+          </div>
+
+          {notificationList.length === 0 ? (
+            <div className="p-10 bg-slate-900 border border-dashed border-slate-800 rounded-3xl text-center space-y-2">
+              <span className="text-4xl block">🔔</span>
+              <p className="text-sm font-black text-slate-400">
+                {language === 'kh' ? 'មិនទាន់មានការជូនដំណឹងនៅឡើយទេ' : 'No notifications yet.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {notificationList.map((item) => (
                 <div
-                  key={b.id}
-                  onClick={() => setSelectedBorrower(b)}
-                  className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 p-4 rounded-2xl space-y-3 transition cursor-pointer group shadow-md"
+                  key={item.id}
+                  className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-start gap-3.5 shadow-md hover:border-emerald-500/40 transition"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
-                        {b.profilePhoto ? (
-                          <img src={b.profilePhoto} alt={b.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-lg font-black text-slate-300">{b.name.charAt(0)}</span>
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-black text-white group-hover:text-emerald-400 transition">
-                          {b.name}
-                        </h4>
-                        <p className="text-xs font-bold text-slate-400">📞 {b.phone}</p>
-                      </div>
-                    </div>
-
-                    <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-black rounded-xl">
-                      {language === 'kh' ? '👁️ មើល Profile' : 'View Profile'}
-                    </span>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${
+                    item.type === 'payment' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                  }`}>
+                    {item.type === 'payment' ? '💰' : '🎉'}
                   </div>
-
-                  <div className="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-xl text-center border border-slate-800/80">
-                    <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                        {language === 'kh' ? 'ប្រាក់ដើម' : 'Principal'}
-                      </span>
-                      <span className="text-xs font-black font-mono text-slate-200">
-                        ${b.principal.toLocaleString()}
-                      </span>
+                  <div className="flex-1 space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-white">{item.title}</h4>
+                      <span className="text-[10px] font-bold text-slate-500 font-mono">{item.time}</span>
                     </div>
-
-                    <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold block">
-                        {language === 'kh' ? 'ការសរុប' : 'Total Interest'}
-                      </span>
-                      <span className="text-xs font-black font-mono text-amber-400">
-                        ${totalInterest.toLocaleString()}
-                      </span>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] text-emerald-400 uppercase font-black block">
-                        {language === 'kh' ? 'ចំណេញភាគហ៊ុន/ថ្ងៃ' : 'Partner Share/Day'}
-                      </span>
-                      <span className="text-xs font-black font-mono text-emerald-400">
-                        +${partnerDailyShare.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[11px] font-bold text-slate-400">
-                      <span>{language === 'kh' ? 'បានបង់រួច៖' : 'Paid:'} ${totalPaid.toLocaleString()}</span>
-                      <span>{language === 'kh' ? 'នៅសល់៖' : 'Remaining:'} ${remaining.toLocaleString()}</span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-500 transition-all duration-300"
-                        style={{ width: `${Math.min(100, (totalPaid / (b.totalToPay || 1)) * 100)}%` }}
-                      />
-                    </div>
+                    <p className="text-xs font-bold text-slate-300 leading-relaxed">{item.body}</p>
                   </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 4: SETTINGS & CHANGE PASSWORD */}
+      {activeTab === 'settings' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl">
+            <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-xl">
+                ⚙️
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">
+                  {language === 'kh' ? 'កំណត់ពាក្យសម្ងាត់ និងគណនី' : 'Account & Password Settings'}
+                </h3>
+                <p className="text-xs text-slate-400">
+                  {language === 'kh' ? 'ផ្លាស់ប្ដូរពាក្យសម្ងាត់សម្រាប់ចូលប្រើប្រាស់គណនីភាគហ៊ុនរបស់អ្នក' : 'Change password for your partner portal account'}
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleChangePassword} className="space-y-4 max-w-md pt-2">
+              {passwordMsg && (
+                <div
+                  className={`p-3.5 rounded-2xl text-xs font-black text-center border ${
+                    passwordMsg.type === 'success'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                  }`}
+                >
+                  {passwordMsg.text}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">
+                  {language === 'kh' ? 'ពាក្យសម្ងាត់បច្ចុប្បន្ន (Current Password)' : 'Current Password'}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={currentPasswordInput}
+                  onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-bold text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">
+                  {language === 'kh' ? 'ពាក្យសម្ងាត់ថ្មី (New Password)' : 'New Password'}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={newPasswordInput}
+                  onChange={(e) => setNewPasswordInput(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-bold text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">
+                  {language === 'kh' ? 'បញ្ជាក់ពាក្យសម្ងាត់ថ្មី (Confirm New Password)' : 'Confirm New Password'}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPasswordInput}
+                  onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-bold text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-2xl transition shadow-lg shadow-emerald-500/20 cursor-pointer text-sm"
+              >
+                💾 {language === 'kh' ? 'រក្សាទុកពាក្យសម្ងាត់ថ្មី (Save New Password)' : 'Save New Password'}
+              </button>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
     </div>
   );

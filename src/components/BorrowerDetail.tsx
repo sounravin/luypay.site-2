@@ -490,6 +490,26 @@ export default function BorrowerDetail({
   // Calculate stats
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
 
+  // Shareholder Partner split calculations
+  const isLinkedToShareholder = Boolean(
+    (borrower.shareholderId && borrower.shareholderId !== 'sh_default' && borrower.shareholderId !== 'default') ||
+    (borrower.shareholderName && borrower.shareholderName.trim() !== '')
+  );
+
+  const totalInterestAmt = Math.max(0, borrower.totalToPay - borrower.principal);
+  const durationCount = borrower.duration || 1;
+  const totalDailyInterestAmt = durationCount > 0 ? totalInterestAmt / durationCount : 0;
+
+  const calcMode = borrower.shareholderCalculationType || 'daily_usd';
+  let partnerDailyShare = 0;
+  if (calcMode === 'percent') {
+    const sharePct = borrower.shareholderSharePercent ?? 50;
+    partnerDailyShare = (totalDailyInterestAmt * sharePct) / 100;
+  } else {
+    partnerDailyShare = borrower.shareholderDailyUSD ?? (totalDailyInterestAmt > 0 ? totalDailyInterestAmt / 2 : 1.0);
+  }
+  const ownerDailyShare = Math.max(0, totalDailyInterestAmt - partnerDailyShare);
+
   // Calculate top-up total if it is separate and active
   let topUpTotalToPay = 0;
   if (borrower.topUpLoanAmount !== undefined && borrower.topUpLoanAmount > 0 && borrower.topUpSeparate !== false) {
@@ -1978,6 +1998,47 @@ export default function BorrowerDetail({
                               </button>
                             )}
                           </div>
+
+                          {/* 50/50 Partner Interest Split Box */}
+                          {isLinkedToShareholder && (
+                            <div className="p-3 bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-indigo-500/10 border border-emerald-500/30 rounded-xl space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                  <span>🤝</span>
+                                  <span>{language === 'kh' ? 'ការបែងចែកចំណូលការប្រាក់ 2 នាក់ (50/50 Split)' : '2-Way Interest Revenue Split'}</span>
+                                </span>
+                                <span className="px-2 py-0.5 bg-emerald-500 text-slate-950 font-black rounded-md text-[10px]">
+                                  {borrower.shareholderName || 'ដៃគូភាគហ៊ុន'}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                                <div className="p-2 bg-white/90 dark:bg-slate-900/90 rounded-lg border border-blue-500/20 text-slate-800 dark:text-slate-200">
+                                  <span className="text-[10px] uppercase font-black text-blue-600 dark:text-blue-400 block">
+                                    👑 {language === 'kh' ? 'ម្ចាស់ដើម (My Share)' : 'My Account (Main Lender)'}
+                                  </span>
+                                  <div className="text-sm font-black font-mono text-blue-600 dark:text-blue-400 mt-0.5">
+                                    ${ownerDailyShare.toFixed(2)} <span className="text-[10px] font-normal text-slate-500">/{language === 'kh' ? 'ថ្ងៃ' : 'day'}</span>
+                                  </div>
+                                  <div className="text-[10px] text-slate-500 font-semibold">
+                                    {language === 'kh' ? `សរុប៖ $${(ownerDailyShare * (borrower.duration || 1)).toFixed(2)}` : `Total: $${(ownerDailyShare * (borrower.duration || 1)).toFixed(2)}`}
+                                  </div>
+                                </div>
+
+                                <div className="p-2 bg-white/90 dark:bg-slate-900/90 rounded-lg border border-emerald-500/20 text-slate-800 dark:text-slate-200">
+                                  <span className="text-[10px] uppercase font-black text-emerald-600 dark:text-emerald-400 block">
+                                    🤝 {language === 'kh' ? 'ដៃគូភាគហ៊ុន' : 'Shareholder Partner'}
+                                  </span>
+                                  <div className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                    ${partnerDailyShare.toFixed(2)} <span className="text-[10px] font-normal text-slate-500">/{language === 'kh' ? 'ថ្ងៃ' : 'day'}</span>
+                                  </div>
+                                  <div className="text-[10px] text-slate-500 font-semibold">
+                                    {language === 'kh' ? `សរុប៖ $${(partnerDailyShare * (borrower.duration || 1)).toFixed(2)}` : `Total: $${(partnerDailyShare * (borrower.duration || 1)).toFixed(2)}`}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Installment Boxes grid */}
                           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-6 gap-3 pt-2 overflow-y-auto max-h-[300px] md:max-h-[380px] p-2 border border-slate-200/80 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40">
