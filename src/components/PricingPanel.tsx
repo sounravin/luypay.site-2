@@ -44,6 +44,54 @@ export default function PricingPanel({
   const [countdown, setCountdown] = useState<number>(56);
   const [selectedPlanForPay, setSelectedPlanForPay] = useState<'1_month' | '3_months' | '1_year'>('3_months');
   const [qrScanDetected, setQrScanDetected] = useState<boolean>(false);
+  const [invoiceImage, setInvoiceImage] = useState<string>('');
+  const [uploadError, setUploadError] = useState<string>('');
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError(language === 'kh' ? 'ទំហំរូបភាពធំជាង 5MB!' : 'Image size exceeds 5MB!');
+      return;
+    }
+
+    setUploadError('');
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const base64Str = canvas.toDataURL('image/jpeg', 0.85);
+          setInvoiceImage(base64Str);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     let timer: any;
@@ -82,14 +130,15 @@ export default function PricingPanel({
         displayName: userDisplayName,
         plan: selectedPlanForPay,
         createdAt: new Date().toISOString(),
-        status: 'pending'
+        status: 'pending',
+        invoiceImageUrl: invoiceImage || undefined
       };
 
       await setDoc(doc(db, 'subscription_requests', requestId), requestDoc);
       showToast(
         language === 'kh' 
-          ? 'បានផ្ញើសំណើទិញគម្រោងរួចរាល់! ក្រុមការងារនឹងពិនិត្យ និងអនុម័តជូនក្នុងពេលឆាប់ៗនេះ។' 
-          : 'Purchase request sent successfully! Our team will verify and approve shortly.',
+          ? 'បានផ្ញើសំណើទិញគម្រោង និងវិក្កយបត្ររួចរាល់! ក្រុមការងារនឹងពិនិត្យ និងអនុម័តជូនក្នុងពេលឆាប់ៗនេះ។' 
+          : 'Purchase request & invoice sent successfully! Our team will verify and approve shortly.',
         'success'
       );
       setPaymentStep('success');
@@ -174,38 +223,19 @@ export default function PricingPanel({
     'Dynamic Client Portals for borrowers to view checks & live chat'
   ];
 
-  const handleRequestPlan = async (planId: '1_month' | '3_months' | '1_year') => {
-    const confirmMsg = language === 'kh'
-      ? 'តើអ្នកពិតជាចង់ផ្ញើសំណើទិញគម្រោងនេះមែនទេ? បន្ទាប់ពីផ្ញើជោគជ័យ សូមទាក់ទងមកកាន់ Admin ដើម្បីទូទាត់ប្រាក់ និងបើកដំណើការគណនី។'
-      : 'Do you want to send a purchase request for this plan? Once sent, please contact the Administrator to complete payment and activate your plan.';
-    
-    if (!window.confirm(confirmMsg)) return;
-
-    setSubmittingPlan(planId);
-    try {
-      const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-      const requestDoc: SubscriptionRequest = {
-        id: requestId,
-        username: currentUser,
-        displayName: userDisplayName,
-        plan: planId,
-        createdAt: new Date().toISOString(),
-        status: 'pending'
-      };
-
-      await setDoc(doc(db, 'subscription_requests', requestId), requestDoc);
-      showToast(
-        language === 'kh' 
-          ? 'បានផ្ញើសំណើទិញគម្រោងរួចរាល់! សូមផ្ញើវិក្កយបត្រ ABA ទៅតេឡេក្រាម Admin ដើម្បីបើកដំណើរការ។' 
-          : 'Purchase request sent successfully! Please send the ABA receipt to Admin via Telegram to activate.',
-        'success'
-      );
-    } catch (err) {
-      console.error('Error submitting subscription request:', err);
-      alert(language === 'kh' ? 'មានបញ្ហាក្នុងការផ្ញើសំណើ! សូមព្យាយាមឡើងវិញ។' : 'Failed to send request! Please try again.');
-    } finally {
-      setSubmittingPlan(null);
+  const handleRequestPlan = (planId: '1_month' | '3_months' | '1_year') => {
+    setSelectedPlanForPay(planId);
+    setPaymentStep('scan');
+    const el = document.getElementById('khqr-payment-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
     }
+    showToast(
+      language === 'kh' 
+        ? 'សូមស្កេន KHQR និងផ្ទុកឡើងវិក្កយបត្រដើម្បីផ្ញើសំណើទិញគម្រោង!' 
+        : 'Please scan KHQR and upload payment slip to submit request!',
+      'info'
+    );
   };
 
   return (
@@ -318,7 +348,7 @@ export default function PricingPanel({
       </div>
 
       {/* ABA Card and Payment Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+      <div id="khqr-payment-section" className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
         {/* ABA KHQR Payment Card with Interactive Flow */}
         <div className="bg-[#0B1521] text-white rounded-3xl overflow-hidden border border-slate-800 shadow-2xl flex flex-col relative min-h-[520px]">
           {/* Brand Red Header */}
@@ -544,6 +574,51 @@ export default function PricingPanel({
                         )}
                       </button>
                     ))}
+                  </div>
+
+                  {/* Upload Invoice Image Box */}
+                  <div className="space-y-1.5 text-left pt-2">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                      {language === 'kh' ? 'ផ្ទុកឡើងរូបភាពវិក្កយបត្រ (Invoice Slip)' : 'Upload Payment Slip / Invoice'}
+                    </label>
+                    <div className="border-2 border-dashed border-slate-700/80 hover:border-blue-500/80 rounded-2xl p-3 transition flex flex-col items-center justify-center gap-2 relative overflow-hidden bg-slate-900/60 cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                      />
+                      {invoiceImage ? (
+                        <div className="space-y-1.5 text-center w-full relative z-20">
+                          <img
+                            src={invoiceImage}
+                            alt="Uploaded Receipt"
+                            className="max-h-32 object-contain mx-auto rounded-lg shadow-md border border-slate-700"
+                          />
+                          <p className="text-[10px] text-emerald-400 font-black flex items-center justify-center gap-1">
+                            <span>✓</span> {language === 'kh' ? 'បានផ្ទុកឡើងវិក្កយបត្ររួចរាល់!' : 'Invoice uploaded!'}
+                          </p>
+                          <p className="text-[9px] text-slate-500">
+                            {language === 'kh' ? 'ចុចទីនេះដើម្បីប្តូររូបភាព' : 'Click to change image'}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="text-center space-y-1 py-1">
+                          <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-xs text-slate-300">
+                            📤
+                          </div>
+                          <p className="text-xs font-black text-white">
+                            {language === 'kh' ? 'ជ្រើសរើស ឬទាញទម្លាក់រូបភាពវិក្កយបត្រ' : 'Click or drag receipt image here'}
+                          </p>
+                          <p className="text-[9px] text-slate-400 font-medium">
+                            {language === 'kh' ? 'គាំទ្ររូបភាព PNG, JPG (អតិបរមា 5MB)' : 'Supports PNG, JPG (Max 5MB)'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {uploadError && (
+                      <p className="text-[10px] text-rose-400 font-bold">⚠️ {uploadError}</p>
+                    )}
                   </div>
                 </div>
 

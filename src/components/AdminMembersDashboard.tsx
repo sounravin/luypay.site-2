@@ -1077,6 +1077,26 @@ export default function AdminMembersDashboard({
                                   </span>
                                 </div>
                               </div>
+
+                              {req.invoiceImageUrl && (
+                                <div className="space-y-1">
+                                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">វិក្កយបត្របង់ប្រាក់៖</span>
+                                  <div 
+                                    onClick={() => setSelectedInvoiceUrl(req.invoiceImageUrl || null)}
+                                    className="relative bg-slate-950/5 border border-slate-200 rounded-xl p-1.5 flex justify-center cursor-zoom-in group hover:bg-slate-950/10 transition"
+                                  >
+                                    <img
+                                      src={req.invoiceImageUrl}
+                                      alt="Subscription Payment Slip"
+                                      className="max-h-24 object-contain rounded-md"
+                                      referrerPolicy="no-referrer"
+                                    />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition rounded-xl text-white text-[10px] font-black">
+                                      🔍 ចុចដើម្បីពង្រីក (Click to zoom)
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex gap-2 border-t border-slate-100 pt-3 shrink-0">

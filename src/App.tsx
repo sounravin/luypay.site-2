@@ -149,6 +149,54 @@ export default function App() {
   const [blockScreenPaymentStep, setBlockScreenPaymentStep] = useState<'scan' | 'counting' | 'select_plan' | 'success'>('scan');
   const [blockScreenCountdown, setBlockScreenCountdown] = useState<number>(56);
   const [blockScreenQrScanDetected, setBlockScreenQrScanDetected] = useState<boolean>(false);
+  const [blockScreenInvoiceImage, setBlockScreenInvoiceImage] = useState<string>('');
+  const [blockScreenUploadError, setBlockScreenUploadError] = useState<string>('');
+
+  const handleBlockScreenImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setBlockScreenUploadError(language === 'kh' ? 'ទំហំរូបភាពធំជាង 5MB!' : 'Image size exceeds 5MB!');
+      return;
+    }
+
+    setBlockScreenUploadError('');
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const base64Str = canvas.toDataURL('image/jpeg', 0.85);
+          setBlockScreenInvoiceImage(base64Str);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
   const [mobileHeaderStyle, setMobileHeaderStyle] = useState<'default' | 'angkor'>(() => {
     const saved = safeStorage.getItem('luypay_mobile_header_style');
     if (saved === 'angkor') return 'default';
@@ -671,14 +719,15 @@ export default function App() {
         displayName: userDisplayName || currentUser,
         plan: planId,
         createdAt: new Date().toISOString(),
-        status: 'pending'
+        status: 'pending',
+        invoiceImageUrl: blockScreenInvoiceImage || undefined
       };
 
       await setDoc(doc(db, 'subscription_requests', requestId), requestDoc);
       showToast(
         language === 'kh' 
-          ? 'បានផ្ញើសំណើទិញគម្រោងរួចរាល់! ក្រុមការងារនឹងពិនិត្យ និងអនុម័តជូនក្នុងពេលឆាប់ៗនេះ។' 
-          : 'Purchase request sent successfully! Our team will verify and approve shortly.',
+          ? 'បានផ្ញើសំណើទិញគម្រោង និងវិក្កយបត្ររួចរាល់! ក្រុមការងារនឹងពិនិត្យ និងអនុម័តជូនក្នុងពេលឆាប់ៗនេះ។' 
+          : 'Purchase request & invoice sent successfully! Our team will verify and approve shortly.',
         'success'
       );
       setBlockScreenPaymentStep('success');
@@ -3268,6 +3317,51 @@ export default function App() {
                             </button>
                           ))}
                         </div>
+
+                        {/* Upload Invoice Image Box */}
+                        <div className="space-y-1.5 text-left pt-2">
+                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                            {language === 'kh' ? 'ផ្ទុកឡើងរូបភាពវិក្កយបត្រ (Invoice Slip)' : 'Upload Payment Slip / Invoice'}
+                          </label>
+                          <div className="border-2 border-dashed border-slate-700/80 hover:border-blue-500/80 rounded-2xl p-3 transition flex flex-col items-center justify-center gap-2 relative overflow-hidden bg-slate-900/60 cursor-pointer">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleBlockScreenImageUpload}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                            />
+                            {blockScreenInvoiceImage ? (
+                              <div className="space-y-1.5 text-center w-full relative z-20">
+                                <img
+                                  src={blockScreenInvoiceImage}
+                                  alt="Uploaded Receipt"
+                                  className="max-h-32 object-contain mx-auto rounded-lg shadow-md border border-slate-700"
+                                />
+                                <p className="text-[10px] text-emerald-400 font-black flex items-center justify-center gap-1">
+                                  <span>✓</span> {language === 'kh' ? 'បានផ្ទុកឡើងវិក្កយបត្ររួចរាល់!' : 'Invoice uploaded!'}
+                                </p>
+                                <p className="text-[9px] text-slate-500">
+                                  {language === 'kh' ? 'ចុចទីនេះដើម្បីប្តូររូបភាព' : 'Click to change image'}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="text-center space-y-1 py-1">
+                                <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-xs text-slate-300">
+                                  📤
+                                </div>
+                                <p className="text-xs font-black text-white">
+                                  {language === 'kh' ? 'ជ្រើសរើស ឬទាញទម្លាក់រូបភាពវិក្កយបត្រ' : 'Click or drag receipt image here'}
+                                </p>
+                                <p className="text-[9px] text-slate-400 font-medium">
+                                  {language === 'kh' ? 'គាំទ្ររូបភាព PNG, JPG (អតិបរមា 5MB)' : 'Supports PNG, JPG (Max 5MB)'}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          {blockScreenUploadError && (
+                            <p className="text-[10px] text-rose-400 font-bold">⚠️ {blockScreenUploadError}</p>
+                          )}
+                        </div>
                       </div>
 
                       {/* Submit Request Button */}
@@ -5621,108 +5715,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Payment QR Code (Control QR) Section */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                  <QrCode className="w-4 h-4 text-blue-500" />
-                  <span>{language === 'kh' ? 'ការកំណត់ QR Code ទទួលប្រាក់ (Control QR)' : 'Control QR / Payment QR'}</span>
-                </h4>
-                
-                <div className="flex flex-col items-center gap-4 bg-slate-50 dark:bg-slate-850 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                  <div className="w-32 h-32 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden shadow-inner relative group">
-                    {memberProfile?.paymentQr ? (
-                      <img
-                        src={memberProfile.paymentQr}
-                        alt="Payment QR"
-                        className="w-full h-full object-contain p-2"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div className="text-center p-3 text-slate-400">
-                        <QrCode className="w-8 h-8 mx-auto mb-1 text-slate-300" />
-                        <span className="text-[10px] font-bold block">{language === 'kh' ? 'មិនទាន់មាន QR' : 'No QR set'}</span>
-                      </div>
-                    )}
-                    
-                    <label className="absolute bottom-2 right-2 p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-md cursor-pointer transition border border-white flex items-center justify-center">
-                      <Camera className="w-3.5 h-3.5" />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          
-                          if (file.size > 2 * 1024 * 1024) {
-                            showToast(language === 'kh' ? 'រូបភាពធំជាង 2MB!' : 'Image exceeds 2MB!', 'info');
-                            return;
-                          }
-                          
-                          const reader = new FileReader();
-                          reader.onload = (event) => {
-                            const img = new window.Image();
-                            img.onload = () => {
-                              const canvas = document.createElement('canvas');
-                              const MAX_WIDTH = 300;
-                              const MAX_HEIGHT = 300;
-                              let width = img.width;
-                              let height = img.height;
-                              
-                              if (width > height) {
-                                if (width > MAX_WIDTH) {
-                                  height *= MAX_WIDTH / width;
-                                  width = MAX_WIDTH;
-                                }
-                              } else {
-                                if (height > MAX_HEIGHT) {
-                                  width *= MAX_HEIGHT / height;
-                                  height = MAX_HEIGHT;
-                                }
-                              }
-                              
-                              canvas.width = width;
-                              canvas.height = height;
-                              const ctx = canvas.getContext('2d');
-                              if (ctx) {
-                                ctx.drawImage(img, 0, 0, width, height);
-                                const base64Str = canvas.toDataURL('image/jpeg', 0.85);
-                                handleSaveMemberQR(base64Str);
-                              }
-                            };
-                            img.src = event.target?.result as string;
-                          };
-                          reader.readAsDataURL(file);
-                        }}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                  
-                  {memberProfile?.paymentQr && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const docRef = doc(db, 'members', currentUser);
-                          await setDoc(docRef, { paymentQr: '' }, { merge: true });
-                          showToast(language === 'kh' ? 'បានលុប QR Code រួចរាល់' : 'Removed payment QR!', 'success');
-                        } catch (err) {
-                          console.error('Error removing QR:', err);
-                        }
-                      }}
-                      className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] rounded-lg transition"
-                    >
-                      {language === 'kh' ? 'លុប QR Code នេះចេញ' : 'Remove QR Code'}
-                    </button>
-                  )}
-                  
-                  <p className="text-[10px] text-slate-400 font-bold text-center leading-relaxed">
-                    {language === 'kh' 
-                      ? 'អាប់ឡូត QR កូដទទួលប្រាក់ដើម្បីបង្ហាញនៅលើតំណភ្ជាប់កូនបំណុល (Borrower Link Page) របស់អ្នក។' 
-                      : 'Upload payment QR to display on your Borrower Link Pages.'}
-                  </p>
-                </div>
-              </div>
+
 
               {/* Language Selection Section */}
               <div className="space-y-3">

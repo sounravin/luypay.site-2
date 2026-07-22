@@ -104,6 +104,7 @@ export interface SubscriptionRequest {
   plan: '1_month' | '3_months' | '1_year';
   createdAt: string;
   status: 'pending' | 'approved' | 'rejected';
+  invoiceImageUrl?: string; // Uploaded KHQR payment receipt / invoice image
 }
 
 export interface QRConfig {
