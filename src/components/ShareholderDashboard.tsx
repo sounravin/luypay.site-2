@@ -287,72 +287,150 @@ export default function ShareholderDashboard({
         </div>
       </div>
 
-      {/* Financial Metrics Overview */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
-          <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
-            {language === 'kh' ? '💰 ដើមទុនវិនិយោគសរុប' : 'Total Capital Invested'}
-          </span>
-          <p className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
-            ${stats.initialCapital.toLocaleString()} <span className="text-xs font-normal text-slate-500">USD</span>
-          </p>
-          <span className="text-[10px] text-slate-500 font-bold block">
-            {language === 'kh' ? 'កញ្ចប់ដើមទុនដែលបានផ្តល់' : 'Provided Investment Capital'}
-          </span>
+      {/* Financial Metrics Overview & Capital Balance Tracker */}
+      <div className="space-y-3">
+        {/* Row 1: Capital Balance Flow */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1 shadow-md">
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block flex items-center justify-between">
+              <span>💰 {language === 'kh' ? 'ដើមទុនសរុប (Total)' : 'Total Capital'}</span>
+              <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-300 rounded-md">100%</span>
+            </span>
+            <p className="text-2xl font-black font-mono text-white">
+              ${stats.initialCapital.toLocaleString()} <span className="text-xs font-normal text-slate-500">USD</span>
+            </p>
+            <span className="text-[10px] text-slate-400 font-bold block">
+              {language === 'kh' ? 'ដើមទុនបញ្ចូលមកកាន់យើង' : 'Provided Investment Capital'}
+            </span>
+          </div>
+
+          <div className="bg-slate-900 border border-amber-500/30 p-4 rounded-2xl space-y-1 shadow-md">
+            <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 block flex items-center justify-between">
+              <span>📤 {language === 'kh' ? 'លុយដកអោយខ្ចី (Deployed)' : 'Capital Deployed'}</span>
+              <span className="text-[10px] px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md border border-amber-500/20">
+                {stats.initialCapital > 0 ? ((stats.activeCapitalDeployed / stats.initialCapital) * 100).toFixed(0) : 0}%
+              </span>
+            </span>
+            <p className="text-2xl font-black font-mono text-amber-400">
+              -${stats.activeCapitalDeployed.toLocaleString()} <span className="text-xs font-normal text-amber-500/70">USD</span>
+            </p>
+            <span className="text-[10px] text-amber-300/80 font-bold block">
+              {language === 'kh' ? `ដកទៅកូនបំណុលខ្ចី (${stats.activeBorrowersCount} កម្ចីសកម្ម)` : `Lent out to ${stats.activeBorrowersCount} active loans`}
+            </span>
+          </div>
+
+          <div className="bg-slate-900 border border-emerald-500/40 p-4 rounded-2xl space-y-1 shadow-md relative overflow-hidden">
+            <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
+            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 block flex items-center justify-between">
+              <span>📥 {language === 'kh' ? 'ដើមទុននៅសល់ (Available)' : 'Remaining Capital'}</span>
+              <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-md border border-emerald-500/30 font-bold">
+                {stats.initialCapital > 0 ? ((stats.remainingCapital / stats.initialCapital) * 100).toFixed(0) : 100}%
+              </span>
+            </span>
+            <p className="text-2xl font-black font-mono text-emerald-400">
+              ${stats.remainingCapital.toLocaleString()} <span className="text-xs font-normal text-emerald-500/70">USD</span>
+            </p>
+            <span className="text-[10px] text-emerald-300/80 font-bold block">
+              {language === 'kh' ? 'ដើមទុននៅសល់មិនទាន់ប្រើ' : 'Available Unused Fund Balance'}
+            </span>
+          </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
-          <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
-            {language === 'kh' ? '📈 ប្រាក់ចំណេញទទួលបាន' : 'My Profit Share'}
-          </span>
-          <p className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
-            +${stats.partnerProfitEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-normal text-slate-500">USD</span>
-          </p>
-          <span className="text-[10px] text-emerald-500/80 font-bold block">
-            {shareholder.calculationType === 'percent'
-              ? (language === 'kh' ? `ភាគលាភរបស់អ្នក (${shareholder.sharePercent}%)` : `Your Dividend (${shareholder.sharePercent}%)`)
-              : (language === 'kh' ? 'ផលចំណេញសរុបដែលទទួលបាន' : 'Total Earned USD')}
-          </span>
+        {/* Visual Capital Allocation Bar */}
+        <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl space-y-2">
+          <div className="flex justify-between text-xs font-extrabold text-slate-300">
+            <span className="flex items-center gap-1.5">
+              <span>📊</span>
+              <span>
+                {language === 'kh'
+                  ? `ស្ថានភាពដើមទុន៖ $${stats.initialCapital.toLocaleString()} USD (ដក $${stats.activeCapitalDeployed.toLocaleString()} ➔ នៅសល់ $${stats.remainingCapital.toLocaleString()})`
+                  : `Capital Allocation: $${stats.initialCapital.toLocaleString()} USD (Used $${stats.activeCapitalDeployed.toLocaleString()} ➔ Left $${stats.remainingCapital.toLocaleString()})`}
+              </span>
+            </span>
+            <span className="text-emerald-400 font-mono font-black">
+              {stats.initialCapital > 0 ? ((stats.remainingCapital / stats.initialCapital) * 100).toFixed(1) : '100'}% {language === 'kh' ? 'នៅសល់' : 'Available'}
+            </span>
+          </div>
+          <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden flex p-0.5 border border-slate-800">
+            <div
+              className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(100, stats.initialCapital > 0 ? (stats.activeCapitalDeployed / stats.initialCapital) * 100 : 0)}%` }}
+              title={`ដកអោយខ្ចី: $${stats.activeCapitalDeployed}`}
+            />
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500 ml-0.5"
+              style={{ width: `${Math.min(100, stats.initialCapital > 0 ? (stats.remainingCapital / stats.initialCapital) * 100 : 100)}%` }}
+              title={`នៅសល់: $${stats.remainingCapital}`}
+            />
+          </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
-          <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
-            {language === 'kh' ? '💵 ផលចំណេញប្រចាំថ្ងៃសរុប' : 'Total Daily Profit'}
-          </span>
-          <p className="text-xl sm:text-2xl font-black font-mono text-blue-400">
-            ${stats.totalDailyProfitUSD.toFixed(2)} <span className="text-xs font-normal text-slate-500">/ {language === 'kh' ? 'ថ្ងៃ' : 'day'}</span>
-          </p>
-          <span className="text-[10px] text-blue-400/80 font-bold block">
-            {language === 'kh' ? 'គណនាជា ដុល្លារ/ថ្ងៃ លើកម្ចីសកម្ម' : 'Daily Rate on Active Loans'}
-          </span>
-        </div>
+        {/* Row 2: Profit & Daily Share Performance */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
+              {language === 'kh' ? '📈 ប្រាក់ចំណេញទទួលបាន' : 'My Profit Share'}
+            </span>
+            <p className="text-xl sm:text-2xl font-black font-mono text-emerald-400">
+              +${stats.partnerProfitEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-normal text-slate-500">USD</span>
+            </p>
+            <span className="text-[10px] text-emerald-500/80 font-bold block">
+              {shareholder.calculationType === 'percent'
+                ? (language === 'kh' ? `ភាគលាភរបស់អ្នក (${shareholder.sharePercent}%)` : `Your Dividend (${shareholder.sharePercent}%)`)
+                : (language === 'kh' ? 'ប្រាក់ចំណេញភាគហ៊ុនទទួលបានសរុប' : 'Total Earned Dividend')}
+            </span>
+          </div>
 
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
-          <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
-            {language === 'kh' ? '👥 កូនបំណុលក្នុងកញ្ចប់' : 'Linked Borrowers'}
-          </span>
-          <p className="text-xl sm:text-2xl font-black font-mono text-amber-400">
-            {stats.activeBorrowersCount} <span className="text-xs font-normal text-slate-500">{language === 'kh' ? 'នាក់' : 'active'}</span>
-          </p>
-          <span className="text-[10px] text-slate-500 font-bold block">
-            {language === 'kh' ? `សរុបទាំងអស់ ${stats.linkedBorrowersCount} នាក់` : `Total ${stats.linkedBorrowersCount} loans`}
-          </span>
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
+              {language === 'kh' ? '💵 ផលចំណេញប្រចាំថ្ងៃសរុប' : 'Total Daily Profit'}
+            </span>
+            <p className="text-xl sm:text-2xl font-black font-mono text-blue-400">
+              ${stats.totalDailyProfitUSD.toFixed(2)} <span className="text-xs font-normal text-slate-500">/ {language === 'kh' ? 'ថ្ងៃ' : 'day'}</span>
+            </p>
+            <span className="text-[10px] text-blue-400/80 font-bold block">
+              {language === 'kh' ? 'គណនាជា ដុល្លារ/ថ្ងៃ លើកម្ចីសកម្ម' : 'Daily Rate on Active Loans'}
+            </span>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
+              {language === 'kh' ? '👥 កូនបំណុលក្នុងកញ្ចប់' : 'Linked Borrowers'}
+            </span>
+            <p className="text-xl sm:text-2xl font-black font-mono text-amber-400">
+              {stats.activeBorrowersCount} <span className="text-xs font-normal text-slate-500">{language === 'kh' ? 'នាក់' : 'active'}</span>
+            </p>
+            <span className="text-[10px] text-slate-500 font-bold block">
+              {language === 'kh' ? `សរុបទាំងអស់ ${stats.linkedBorrowersCount} នាក់` : `Total ${stats.linkedBorrowersCount} loans`}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Split Explanation Banner */}
-      <div className="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 p-4 rounded-2xl flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">💡</span>
-          <div className="text-xs space-y-0.5">
-            <p className="font-black text-emerald-400">
-              {language === 'kh' ? 'គោលការណ៍គណនាផលចំណេញប្រចាំថ្ងៃ (Daily Dollar Rate):' : 'Daily USD Profit Calculation Policy:'}
+      {/* Split & Daily Profit Rate Explanation Banner */}
+      <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/30 p-4 rounded-2xl space-y-2">
+        <div className="flex items-start gap-3">
+          <span className="text-2xl shrink-0">💡</span>
+          <div className="text-xs space-y-1">
+            <p className="font-black text-emerald-400 text-sm">
+              {language === 'kh' ? 'គោលការណ៍គណនាផលចំណេញប្រចាំថ្ងៃ (Daily Profit Policy & Rate):' : 'Daily USD Profit Calculation Policy:'}
             </p>
-            <p className="text-slate-300 font-bold">
+            <p className="text-slate-300 font-bold leading-relaxed">
               {language === 'kh'
-                ? 'រាល់ពេលកូនបំណុលបង់ប្រាក់ប្រចាំថ្ងៃ ដៃគូភាគហ៊ុននឹងទទួលបានផលចំណេញជាដុល្លារដែលបានកំណត់ (ឧទាហរណ៍ $1.00/ថ្ងៃ) សម្រាប់កម្ចីនីមួយៗ។'
-                : 'Whenever a borrower makes a daily payment, the shareholder receives a fixed USD profit rate (e.g. $1.00/day) per loan.'}
+                ? 'រាល់ពេលកូនបំណុលបង់ប្រាក់ប្រចាំថ្ងៃ ដៃគូភាគហ៊ុននឹងទទួលបានផលចំណេញជាដុល្លារតាមអត្រាដែលបានកំណត់ (ឧទាហរណ៍ $100 ខ្ចី ➔ $4.00/ថ្ងៃ, $200 ខ្ចី ➔ $8.00/ថ្ងៃ, $500 ខ្ចី ➔ $20.00/ថ្ងៃ)។'
+                : 'Whenever a borrower makes a daily payment, the shareholder partner receives a calculated daily profit rate (e.g. $100 lent = $4.00/day, $200 lent = $8.00/day).'}
             </p>
+            <div className="pt-1 flex flex-wrap gap-2 text-[11px] font-mono">
+              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-300 rounded border border-emerald-500/20 font-black">
+                $100 ខ្ចី ➔ $4/ថ្ងៃ
+              </span>
+              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-300 rounded border border-emerald-500/20 font-black">
+                $200 ខ្ចី ➔ $8/ថ្ងៃ
+              </span>
+              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-300 rounded border border-emerald-500/20 font-black">
+                $500 ខ្ចី ➔ $20/ថ្ងៃ
+              </span>
+            </div>
           </div>
         </div>
       </div>

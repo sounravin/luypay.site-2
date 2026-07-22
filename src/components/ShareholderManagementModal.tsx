@@ -357,10 +357,70 @@ export default function ShareholderManagementModal({
                 </div>
 
                 {calculationType === 'daily_usd' ? (
-                  <div>
-                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                  <div className="space-y-2">
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       {language === 'kh' ? 'ផលចំណេញប្រចាំថ្ងៃ ($ USD / ថ្ងៃ)' : 'Daily Profit ($ USD / Day)'} *
                     </label>
+                    
+                    {/* Quick Selection Presets */}
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setDailyProfitUSD('1.00')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition cursor-pointer ${
+                          dailyProfitUSD === '1.00'
+                            ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50'
+                        }`}
+                      >
+                        $1.00 / ថ្ងៃ
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDailyProfitUSD('2.00')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition cursor-pointer ${
+                          dailyProfitUSD === '2.00'
+                            ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black'
+                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50'
+                        }`}
+                      >
+                        $2.00 / ថ្ងៃ
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDailyProfitUSD('4.00')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition cursor-pointer ${
+                          dailyProfitUSD === '4.00'
+                            ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black'
+                            : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+                        }`}
+                      >
+                        ⚡ $4.00 / ថ្ងៃ ($100 ខ្ចី)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDailyProfitUSD('8.00')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition cursor-pointer ${
+                          dailyProfitUSD === '8.00'
+                            ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black'
+                            : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+                        }`}
+                      >
+                        ⚡ $8.00 / ថ្ងៃ ($200 ខ្ចី)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDailyProfitUSD('20.00')}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition cursor-pointer ${
+                          dailyProfitUSD === '20.00'
+                            ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black'
+                            : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+                        }`}
+                      >
+                        ⚡ $20.00 / ថ្ងៃ ($500 ខ្ចី)
+                      </button>
+                    </div>
+
                     <div className="relative">
                       <span className="absolute left-3.5 top-2.5 text-xs font-mono font-bold text-slate-400">$</span>
                       <input
@@ -374,9 +434,28 @@ export default function ShareholderManagementModal({
                         className="w-full pl-7 pr-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-black text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       />
                     </div>
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-1 block">
-                      {language === 'kh' ? '💡 ឧទាហរណ៍៖ $1.00 / ថ្ងៃ ឬ $2.00 / ថ្ងៃ សម្រាប់កម្ចី' : 'e.g., $1.00 or $2.00 per active day loan'}
-                    </span>
+
+                    {/* Auto Calculation Rate Helper Card */}
+                    <div className="p-2.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-[10px] space-y-1">
+                      <p className="font-extrabold text-slate-700 dark:text-slate-200 flex items-center gap-1">
+                        <span>💡</span>
+                        <span>{language === 'kh' ? 'តារាងគណនាការប្រាក់ប្រចាំថ្ងៃតាមដើមទុនអោយខ្ចី (អត្រា 4% / $100 / ថ្ងៃ)៖' : 'Daily Interest Rate Calculator ($4 per $100 / day):'}</span>
+                      </p>
+                      <div className="grid grid-cols-3 gap-1.5 text-center font-mono font-bold pt-1">
+                        <div className="bg-white dark:bg-slate-900 p-1 rounded border border-slate-200 dark:border-slate-700">
+                          <span className="text-slate-400 block text-[9px]">ខ្ចី $100</span>
+                          <span className="text-emerald-600 dark:text-emerald-400">$4.00 / ថ្ងៃ</span>
+                        </div>
+                        <div className="bg-white dark:bg-slate-900 p-1 rounded border border-slate-200 dark:border-slate-700">
+                          <span className="text-slate-400 block text-[9px]">ខ្ចី $200</span>
+                          <span className="text-emerald-600 dark:text-emerald-400">$8.00 / ថ្ងៃ</span>
+                        </div>
+                        <div className="bg-white dark:bg-slate-900 p-1 rounded border border-slate-200 dark:border-slate-700">
+                          <span className="text-slate-400 block text-[9px]">ខ្ចី $500</span>
+                          <span className="text-emerald-600 dark:text-emerald-400">$20.00 / ថ្ងៃ</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div>
@@ -541,42 +620,90 @@ export default function ShareholderManagementModal({
                           </div>
                         </div>
 
-                        {/* Financial metrics grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                          <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                              {language === 'kh' ? 'ដើមទុនវិនិយោគ' : 'Invested Capital'}
-                            </span>
-                            <span className="text-sm font-black font-mono text-slate-900 dark:text-white">
-                              ${stats.initialCapital.toLocaleString()} USD
-                            </span>
+                        {/* Financial metrics grid with Capital Flow Breakdown */}
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
+                            <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+                              <span className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                                💰 {language === 'kh' ? 'ដើមទុនសរុប' : 'Total Capital'}
+                              </span>
+                              <span className="text-sm font-black font-mono text-slate-900 dark:text-white">
+                                ${stats.initialCapital.toLocaleString()} USD
+                              </span>
+                              <span className="text-[9px] text-slate-400 block font-bold mt-0.5">
+                                {language === 'kh' ? 'បញ្ចុលមកកាន់យើង' : 'Invested Balance'}
+                              </span>
+                            </div>
+
+                            <div className="bg-amber-500/5 dark:bg-amber-950/20 p-2.5 rounded-xl border border-amber-500/20 text-center">
+                              <span className="text-[10px] font-extrabold text-amber-700 dark:text-amber-400 uppercase tracking-wider block">
+                                📤 {language === 'kh' ? 'ដកអោយខ្ចី' : 'Deployed Capital'}
+                              </span>
+                              <span className="text-sm font-black font-mono text-amber-600 dark:text-amber-400">
+                                -${stats.activeCapitalDeployed.toLocaleString()} USD
+                              </span>
+                              <span className="text-[9px] text-amber-600/80 dark:text-amber-400/80 block font-bold mt-0.5">
+                                {stats.activeBorrowersCount} {language === 'kh' ? 'កម្ចីសកម្ម' : 'active loans'}
+                              </span>
+                            </div>
+
+                            <div className="bg-emerald-500/5 dark:bg-emerald-950/20 p-2.5 rounded-xl border border-emerald-500/20 text-center col-span-2 sm:col-span-1">
+                              <span className="text-[10px] font-extrabold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider block">
+                                📥 {language === 'kh' ? 'ដើមទុននៅសល់' : 'Remaining Capital'}
+                              </span>
+                              <span className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400">
+                                ${stats.remainingCapital.toLocaleString()} USD
+                              </span>
+                              <span className="text-[9px] text-emerald-700 dark:text-emerald-400 block font-bold mt-0.5">
+                                {language === 'kh' ? 'មិនទាន់ដកប្រើ' : 'Available Unused'}
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                              {language === 'kh' ? 'ចំណេញប្រចាំថ្ងៃ' : 'Daily Profit USD'}
-                            </span>
-                            <span className="text-sm font-black font-mono text-blue-600 dark:text-blue-400">
-                              ${stats.totalDailyProfitUSD.toFixed(2)} / ថ្ងៃ
-                            </span>
+                          <div className="grid grid-cols-2 gap-2 text-center">
+                            <div className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between px-3">
+                              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                {language === 'kh' ? '📈 ផលចំណេញប្រចាំថ្ងៃ' : 'Daily Profit Rate'}
+                              </span>
+                              <span className="text-xs font-black font-mono text-blue-600 dark:text-blue-400">
+                                ${stats.totalDailyProfitUSD.toFixed(2)} / ថ្ងៃ
+                              </span>
+                            </div>
+
+                            <div className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between px-3">
+                              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                {language === 'kh' ? '💵 ប្រាក់ចំណេញទទួលបាន' : 'Partner Profit'}
+                              </span>
+                              <span className="text-xs font-black font-mono text-emerald-600 dark:text-emerald-400">
+                                +${stats.partnerProfitEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                              {language === 'kh' ? 'ប្រាក់ចំណេញទទួលបាន' : 'Partner Profit'}
-                            </span>
-                            <span className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400">
-                              +${stats.partnerProfitEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                            </span>
-                          </div>
-
-                          <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                              {language === 'kh' ? 'កូនបំណុល' : 'Linked Loans'}
-                            </span>
-                            <span className="text-sm font-black text-amber-600 dark:text-amber-400">
-                              {stats.activeBorrowersCount} {language === 'kh' ? 'នាក់' : 'active'}
-                            </span>
+                          {/* Visual Capital Progress Bar */}
+                          <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1 text-[10px]">
+                            <div className="flex justify-between font-bold text-slate-600 dark:text-slate-300">
+                              <span>
+                                {language === 'kh'
+                                  ? `ស្ថានភាពដើមទុន៖ ដកអោយខ្ចី $${stats.activeCapitalDeployed.toLocaleString()} ($500)`
+                                  : `Capital Usage: Deployed $${stats.activeCapitalDeployed.toLocaleString()}`}
+                              </span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">
+                                {language === 'kh' ? `នៅសល់ $${stats.remainingCapital.toLocaleString()}` : `Remaining $${stats.remainingCapital.toLocaleString()}`}
+                              </span>
+                            </div>
+                            <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
+                              <div
+                                className="h-full bg-amber-500 transition-all duration-300"
+                                style={{ width: `${Math.min(100, stats.initialCapital > 0 ? (stats.activeCapitalDeployed / stats.initialCapital) * 100 : 0)}%` }}
+                                title={`ដកអោយខ្ចី: $${stats.activeCapitalDeployed}`}
+                              />
+                              <div
+                                className="h-full bg-emerald-500 transition-all duration-300"
+                                style={{ width: `${Math.min(100, stats.initialCapital > 0 ? (stats.remainingCapital / stats.initialCapital) * 100 : 100)}%` }}
+                                title={`នៅសល់: $${stats.remainingCapital}`}
+                              />
+                            </div>
                           </div>
                         </div>
 

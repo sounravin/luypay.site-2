@@ -3,6 +3,7 @@ import { Borrower, Payment, Shareholder } from '../types';
 export interface ShareholderStats {
   initialCapital: number;
   activeCapitalDeployed: number;
+  remainingCapital: number;
   linkedBorrowersCount: number;
   activeBorrowersCount: number;
   totalCollectedPayments: number;
@@ -105,9 +106,12 @@ export function calculateShareholderStats(
     });
   });
 
+  const remainingCapital = Math.max(0, shareholder.capitalUSD - activeCapitalDeployed);
+
   return {
     initialCapital: shareholder.capitalUSD,
     activeCapitalDeployed,
+    remainingCapital,
     linkedBorrowersCount: linkedBorrowers.length,
     activeBorrowersCount,
     totalCollectedPayments,

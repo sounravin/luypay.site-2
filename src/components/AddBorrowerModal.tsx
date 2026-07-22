@@ -1015,6 +1015,55 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     <span>⚡</span> {language === 'kh' ? 'ចែកស្មើ 50/50' : 'Auto 50/50 Split'}
                   </button>
                 </div>
+
+                {/* Quick Selection Rate Presets */}
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setShareholderDailyUSD('1.00')}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition cursor-pointer ${
+                      shareholderDailyUSD === '1.00'
+                        ? 'bg-emerald-600 text-white border-emerald-500 font-black'
+                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
+                    }`}
+                  >
+                    $1.00 / ថ្ងៃ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShareholderDailyUSD('2.00')}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition cursor-pointer ${
+                      shareholderDailyUSD === '2.00'
+                        ? 'bg-emerald-600 text-white border-emerald-500 font-black'
+                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
+                    }`}
+                  >
+                    $2.00 / ថ្ងៃ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShareholderDailyUSD('4.00')}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition cursor-pointer ${
+                      shareholderDailyUSD === '4.00'
+                        ? 'bg-emerald-600 text-white border-emerald-500 font-black'
+                        : 'bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/30'
+                    }`}
+                  >
+                    ⚡ $4.00 / ថ្ងៃ ($100 ខ្ចី)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShareholderDailyUSD('8.00')}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition cursor-pointer ${
+                      shareholderDailyUSD === '8.00'
+                        ? 'bg-emerald-600 text-white border-emerald-500 font-black'
+                        : 'bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/30'
+                    }`}
+                  >
+                    ⚡ $8.00 / ថ្ងៃ ($200 ខ្ចី)
+                  </button>
+                </div>
+
                 <div className="relative">
                   <span className="absolute left-3.5 top-2 text-xs font-mono font-bold text-slate-400">$</span>
                   <input
@@ -1027,10 +1076,32 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     className="w-full pl-7 pr-3.5 py-2 text-xs bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-800 rounded-xl font-mono font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
+
+                {/* Capital Deduction Preview */}
+                {(() => {
+                  const sh = shareholders.find((s) => s.id === selectedShareholderId);
+                  const pAmt = parseFloat(principal) || 0;
+                  if (!sh) return null;
+                  return (
+                    <div className="p-2.5 bg-emerald-100/50 dark:bg-emerald-900/30 rounded-xl border border-emerald-200 dark:border-emerald-800/60 text-[10px] space-y-1 text-emerald-900 dark:text-emerald-200">
+                      <p className="font-black flex items-center justify-between">
+                        <span>💰 ស្ថានភាពដើមទុនភាគហ៊ុន ({sh.name})៖</span>
+                        <span className="font-mono">${sh.capitalUSD.toLocaleString()} USD</span>
+                      </p>
+                      <div className="flex items-center justify-between font-bold text-slate-600 dark:text-slate-300 pt-0.5 border-t border-emerald-200 dark:border-emerald-800/40">
+                        <span>📤 ដកបង្កើតកម្ចីនេះ៖ -${pAmt.toLocaleString()}</span>
+                        <span className="text-emerald-700 dark:text-emerald-400 font-black font-mono">
+                          ➔ នៅសល់៖ ${Math.max(0, sh.capitalUSD - pAmt).toLocaleString()} USD
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold leading-relaxed">
                   {language === 'kh'
-                    ? `💡 រាល់ពេលកូនបំណុលបង់ប្រាក់ ដៃគូភាគហ៊ុននឹងទទួលបានផលចំណេញ $${(parseFloat(shareholderDailyUSD) || 0).toFixed(2)}/ថ្ងៃ សម្រាប់កម្ចីនេះ (គណនាចេញពីការប្រាក់សរុបចែកជាពីរ)។`
-                    : `💡 Partner receives $${(parseFloat(shareholderDailyUSD) || 0).toFixed(2)} profit per daily payment installment (50/50 split of daily interest).`}
+                    ? `💡 រាល់ពេលកូនបំណុលបង់ប្រាក់ ដៃគូភាគហ៊ុននឹងទទួលបានផលចំណេញ $${(parseFloat(shareholderDailyUSD) || 0).toFixed(2)}/ថ្ងៃ សម្រាប់កម្ចីនេះ។`
+                    : `💡 Partner receives $${(parseFloat(shareholderDailyUSD) || 0).toFixed(2)} profit per daily payment installment.`}
                 </p>
               </div>
             )}
