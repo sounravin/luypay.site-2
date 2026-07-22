@@ -92,12 +92,41 @@ export default function Header({
         weekly = (interestPerPeriod / 30) * 7;
       }
 
+      // Check if borrower is linked to a shareholder partner
+      const isLinkedToShareholder = Boolean(
+        (b.shareholderId && b.shareholderId !== 'sh_default' && b.shareholderId !== 'default') ||
+        (b.shareholderName && b.shareholderName.trim() !== '')
+      );
+
+      let ownerDaily = daily;
+      let ownerWeekly = weekly;
+
+      if (isLinkedToShareholder) {
+        const calcMode = b.shareholderCalculationType || 'daily_usd';
+        let partnerDailyShare = 0;
+
+        if (calcMode === 'percent') {
+          const sharePct = b.shareholderSharePercent ?? 50;
+          partnerDailyShare = (daily * sharePct) / 100;
+        } else {
+          if (typeof b.shareholderDailyUSD === 'number' && b.shareholderDailyUSD > 0) {
+            partnerDailyShare = b.shareholderDailyUSD;
+          } else {
+            // Default 50/50 split of daily interest
+            partnerDailyShare = daily / 2;
+          }
+        }
+
+        ownerDaily = Math.max(0, daily - partnerDailyShare);
+        ownerWeekly = ownerDaily * (b.frequency === 'monthly' ? 7 : b.frequency === 'weekly' ? 1 : 7);
+      }
+
       if (b.currency === 'USD') {
-        dailyInterestUSD += daily;
-        weeklyInterestUSD += weekly;
+        dailyInterestUSD += ownerDaily;
+        weeklyInterestUSD += ownerWeekly;
       } else {
-        dailyInterestKHR += daily;
-        weeklyInterestKHR += weekly;
+        dailyInterestKHR += ownerDaily;
+        weeklyInterestKHR += ownerWeekly;
       }
     });
 

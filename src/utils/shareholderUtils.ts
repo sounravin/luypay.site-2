@@ -38,8 +38,11 @@ export function calculatePaymentInterestSplit(
 
   // Check calculation mode: 'daily_usd' (default) vs 'percent'
   const calcMode = borrower.shareholderCalculationType || shareholder?.calculationType || 'daily_usd';
-  const dailyUSD = borrower.shareholderDailyUSD ?? shareholder?.dailyProfitUSD ?? 1.0;
   const sharePercent = borrower.shareholderSharePercent ?? shareholder?.sharePercent ?? 50;
+
+  const dVal = borrower.duration || 1;
+  const totalDailyInterest = dVal > 0 ? totalInterest / dVal : 0;
+  const dailyUSD = borrower.shareholderDailyUSD ?? shareholder?.dailyProfitUSD ?? (totalDailyInterest > 0 ? totalDailyInterest / 2 : 1.0);
 
   let partnerShare = 0;
 
