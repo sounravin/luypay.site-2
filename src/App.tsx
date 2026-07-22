@@ -150,18 +150,6 @@ export default function App() {
   });
   const [isShareholdersModalOpen, setIsShareholdersModalOpen] = useState(false);
   const [isShareholderLockModalOpen, setIsShareholderLockModalOpen] = useState(false);
-
-  // Check if member has access to Shareholder Management Add-on ($10)
-  const canAccessShareholders = currentUser === 'sounravin' || memberProfile?.hasShareholderModule === true;
-
-  const handleOpenShareholders = () => {
-    if (canAccessShareholders) {
-      setIsShareholdersModalOpen(true);
-    } else {
-      setIsShareholderLockModalOpen(true);
-    }
-    playClickSound();
-  };
   const [shareholders, setShareholders] = useState<Shareholder[]>(() => {
     const savedLocal = safeStorage.getItem(`luypay_shareholders_${currentUser}`);
     const savedGlobal = safeStorage.getItem('luypay_shareholders_global');
@@ -195,7 +183,7 @@ export default function App() {
   const [hasLoadedProfile, setHasLoadedProfile] = useState<boolean>(false);
   const [mySubRequests, setMySubRequests] = useState<SubscriptionRequest[]>([]);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState<boolean>(false);
-  const [approvalModalPlan, setApprovalModalPlan] = useState<'1_month' | '3_months' | '1_year'>('1_month');
+  const [approvalModalPlan, setApprovalModalPlan] = useState<'1_month' | '3_months' | '1_year' | 'shareholder_addon'>('1_month');
   const [blockScreenSelectedPlan, setBlockScreenSelectedPlan] = useState<'1_month' | '3_months' | '1_year'>('3_months');
   const [blockScreenSubmitting, setBlockScreenSubmitting] = useState<boolean>(false);
   const [blockScreenPaymentStep, setBlockScreenPaymentStep] = useState<'scan' | 'counting' | 'select_plan' | 'success'>('scan');
@@ -203,6 +191,18 @@ export default function App() {
   const [blockScreenQrScanDetected, setBlockScreenQrScanDetected] = useState<boolean>(false);
   const [blockScreenInvoiceImage, setBlockScreenInvoiceImage] = useState<string>('');
   const [blockScreenUploadError, setBlockScreenUploadError] = useState<string>('');
+
+  // Check if member has access to Shareholder Management Add-on ($10)
+  const canAccessShareholders = currentUser === 'sounravin' || memberProfile?.hasShareholderModule === true;
+
+  const handleOpenShareholders = () => {
+    if (canAccessShareholders) {
+      setIsShareholdersModalOpen(true);
+    } else {
+      setIsShareholderLockModalOpen(true);
+    }
+    playClickSound();
+  };
 
   const handleBlockScreenImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
