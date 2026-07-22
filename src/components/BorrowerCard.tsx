@@ -310,6 +310,11 @@ export default function BorrowerCard({
                   💸 {language === 'kh' ? `ថែម៖ ${formatMoney(borrower.topUpLoanAmount, borrower.currency)}` : `Top-up: ${formatMoney(borrower.topUpLoanAmount, borrower.currency)}`}
                 </span>
               )}
+              {borrower.shareholderName && (
+                <span className="inline-flex items-center text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25" title="ដៃគូភាគហ៊ុន">
+                  🤝 {borrower.shareholderName} ({borrower.shareholderCalculationType === 'percent' ? `${borrower.shareholderSharePercent ?? 50}%` : `$${(borrower.shareholderDailyUSD ?? 1.0).toFixed(2)}/ថ្ងៃ`})
+                </span>
+              )}
             </div>
             {borrower.phone ? (
               <div className={`flex items-center gap-1 text-xs ${themeConfig.textMuted}`}>

@@ -561,10 +561,23 @@ export default function App() {
       console.warn('Unable to subscribe to settings/sponsor_config in real-time (using default offline values):', err.message || err);
     });
 
+    const unsubscribeShareholders = onSnapshot(doc(db, 'settings', 'shareholders_config'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (Array.isArray(data.list) && data.list.length > 0) {
+          setShareholders(data.list);
+          safeStorage.setItem('luypay_shareholders_global', JSON.stringify(data.list));
+        }
+      }
+    }, (err) => {
+      console.warn('Unable to subscribe to settings/shareholders_config:', err.message || err);
+    });
+
     return () => {
       unsubscribeQR();
       unsubscribeLogo();
       unsubscribeSponsor();
+      unsubscribeShareholders();
     };
   }, []);
 
@@ -2065,12 +2078,36 @@ export default function App() {
   const handleSaveShareholders = (updated: Shareholder[]) => {
     setShareholders(updated);
     safeStorage.setItem(`luypay_shareholders_${currentUser}`, JSON.stringify(updated));
-    if (isLoggedIn) {
-      try {
-        setDoc(doc(db, 'settings', `shareholders_${currentUser}`), { list: updated });
-      } catch (e) {
-        console.error('Error syncing shareholders to firestore:', e);
+    safeStorage.setItem('luypay_shareholders_global', JSON.stringify(updated));
+
+    // Also update all borrowers linked to any renamed/updated shareholder
+    const updatedBorrowers = borrowers.map((b) => {
+      const matchedSh = updated.find(
+        (s) => s.id === b.shareholderId || (b.shareholderName && b.shareholderName.trim().toLowerCase() === s.name.trim().toLowerCase())
+      );
+      if (matchedSh) {
+        return {
+          ...b,
+          shareholderId: matchedSh.id,
+          shareholderName: matchedSh.name,
+          shareholderSharePercent: matchedSh.sharePercent,
+        };
       }
+      return b;
+    });
+
+    if (JSON.stringify(updatedBorrowers) !== JSON.stringify(borrowers)) {
+      setBorrowers(updatedBorrowers);
+      saveBorrowers(updatedBorrowers);
+    }
+
+    try {
+      setDoc(doc(db, 'settings', 'shareholders_config'), { list: updated });
+      if (currentUser) {
+        setDoc(doc(db, 'settings', `shareholders_${currentUser}`), { list: updated });
+      }
+    } catch (e) {
+      console.error('Error syncing shareholders to firestore:', e);
     }
   };
 

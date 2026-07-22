@@ -30,6 +30,8 @@ interface AddBorrowerModalProps {
     shareholderId?: string;
     shareholderName?: string;
     shareholderSharePercent?: number;
+    shareholderCalculationType?: 'daily_usd' | 'percent';
+    shareholderDailyUSD?: number;
   }) => void;
   prefilledData?: {
     name?: string;
@@ -63,6 +65,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [coverPhoto, setCoverPhoto] = useState<string>('');
   const [selectedShareholderId, setSelectedShareholderId] = useState<string>('');
+  const [shareholderDailyUSD, setShareholderDailyUSD] = useState<string>('1.00');
 
   useEffect(() => {
     if (isOpen) {
@@ -305,6 +308,8 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
       shareholderId: matchedShareholder ? matchedShareholder.id : undefined,
       shareholderName: matchedShareholder ? matchedShareholder.name : undefined,
       shareholderSharePercent: matchedShareholder ? matchedShareholder.sharePercent : undefined,
+      shareholderCalculationType: matchedShareholder ? (matchedShareholder.calculationType || 'daily_usd') : undefined,
+      shareholderDailyUSD: matchedShareholder ? (parseFloat(shareholderDailyUSD) || matchedShareholder.dailyProfitUSD || 1.0) : undefined,
     });
 
     // Reset fields
@@ -952,27 +957,54 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
           </div>
 
           {/* Shareholder Partner Selection */}
-          <div className="bg-emerald-50 dark:bg-emerald-950/20 p-3.5 rounded-2xl border border-emerald-200 dark:border-emerald-800/40 space-y-2">
+          <div className="bg-emerald-50 dark:bg-emerald-950/20 p-3.5 rounded-2xl border border-emerald-200 dark:border-emerald-800/40 space-y-2.5">
             <label className="block text-xs font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
               <span>🤝</span> {language === 'kh' ? 'ភ្ជាប់ជាមួយដៃគូភាគហ៊ុន (Shareholder Partner)' : 'Link to Shareholder Partner'}
             </label>
             <select
               value={selectedShareholderId}
-              onChange={(e) => setSelectedShareholderId(e.target.value)}
+              onChange={(e) => {
+                const shId = e.target.value;
+                setSelectedShareholderId(shId);
+                const sh = shareholders?.find((s) => s.id === shId);
+                if (sh) {
+                  setShareholderDailyUSD((sh.dailyProfitUSD ?? 1.0).toString());
+                }
+              }}
               className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-bold text-slate-800 dark:text-slate-100"
             >
               <option value="">{language === 'kh' ? '🚫 គ្មាន (លុយផ្ទាល់ខ្លួន / ម្ចាស់ដើម)' : 'None (Self Capital)'}</option>
               {(shareholders || []).map((s) => (
                 <option key={s.id} value={s.id}>
-                  🤝 {s.name} (ដើម ${s.capitalUSD.toLocaleString()} | ភាគលាភ {s.sharePercent}%)
+                  🤝 {s.name} (ដើម ${s.capitalUSD.toLocaleString()} | {s.calculationType === 'percent' ? `ភាគលាភ ${s.sharePercent}%` : `ចំណេញ $${(s.dailyProfitUSD ?? 1.0).toFixed(2)}/ថ្ងៃ`})
                 </option>
               ))}
             </select>
-            <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold leading-relaxed">
-              {language === 'kh'
-                ? '💡 ប្រសិនបើជ្រើសរើសភាគហ៊ុន នោះរាល់ប្រាក់ការដែលប្រមូលបាននឹងត្រូវបែងចែក 50% ទៅគណនីភាគហ៊ុន និង 50% ទៅគណនីរបស់អ្នកដោយស្វ័យប្រវត្តិ។'
-                : '💡 If linked, collected interest will automatically split between shareholder portal and main account.'}
-            </p>
+
+            {selectedShareholderId && (
+              <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/40 space-y-1.5 animate-in fade-in duration-200">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300">
+                  {language === 'kh' ? 'ផលចំណេញប្រចាំថ្ងៃសម្រាប់ដៃគូ ($ USD / ថ្ងៃ)' : 'Partner Daily Profit ($ USD / Day)'}
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-2 text-xs font-mono font-bold text-slate-400">$</span>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={shareholderDailyUSD}
+                    onChange={(e) => setShareholderDailyUSD(e.target.value)}
+                    placeholder="1.00"
+                    className="w-full pl-7 pr-3.5 py-2 text-xs bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-800 rounded-xl font-mono font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold leading-relaxed">
+                  {language === 'kh'
+                    ? `💡 រាល់ពេលកូនបំណុលបង់ប្រាក់ ដៃគូភាគហ៊ុននឹងទទួលបានផលចំណេញ $${(parseFloat(shareholderDailyUSD) || 0).toFixed(2)}/ថ្ងៃ សម្រាប់កម្ចីនេះ។`
+                    : `💡 Partner receives $${(parseFloat(shareholderDailyUSD) || 0).toFixed(2)} profit per daily payment installment for this loan.`}
+                </p>
+              </div>
+            )}
           </div>
 
           <div>

@@ -9,27 +9,56 @@ export interface ShareholderStats {
   totalInterestCollected: number;
   partnerProfitEarned: number;
   mainLenderProfitEarned: number;
+  totalDailyProfitUSD: number;
 }
 
 export function calculateBorrowerInterestPerInstallment(borrower: Borrower): number {
   if (!borrower.duration || borrower.duration <= 0) return 0;
-  const totalInterest = Math.max(0, borrower.totalToPay - borrower.principal);
+  const isInterestOnly = (borrower as any).isInterestOnly;
+  const totalInterest = isInterestOnly
+    ? borrower.totalToPay
+    : Math.max(0, borrower.totalToPay - borrower.principal);
   return totalInterest / borrower.duration;
 }
 
-export function calculatePaymentInterestSplit(borrower: Borrower, payment: Payment) {
-  const sharePercent = borrower.shareholderSharePercent ?? 50;
-  const interestPerInstallment = calculateBorrowerInterestPerInstallment(borrower);
-  
-  // Cap at payment amount
-  const actualInterest = Math.min(payment.amount, interestPerInstallment);
-  const partnerShare = (actualInterest * sharePercent) / 100;
-  const mainLenderShare = actualInterest - partnerShare;
+export function calculatePaymentInterestSplit(
+  borrower: Borrower,
+  payment: Payment,
+  shareholder?: Shareholder
+) {
+  const isInterestOnly = (borrower as any).isInterestOnly;
+  const totalInterest = isInterestOnly
+    ? borrower.totalToPay
+    : Math.max(0, borrower.totalToPay - borrower.principal);
+
+  // Interest ratio contained in total loan amount
+  const interestRatio = borrower.totalToPay > 0 ? totalInterest / borrower.totalToPay : 0;
+  const actualInterest = Math.max(0, payment.amount * interestRatio);
+
+  // Check calculation mode: 'daily_usd' (default) vs 'percent'
+  const calcMode = borrower.shareholderCalculationType || shareholder?.calculationType || 'daily_usd';
+  const dailyUSD = borrower.shareholderDailyUSD ?? shareholder?.dailyProfitUSD ?? 1.0;
+  const sharePercent = borrower.shareholderSharePercent ?? shareholder?.sharePercent ?? 50;
+
+  let partnerShare = 0;
+
+  if (calcMode === 'percent') {
+    partnerShare = (actualInterest * sharePercent) / 100;
+  } else {
+    // Default: Daily fixed dollar profit per daily payment installment
+    const installmentAmt = borrower.installmentAmount > 0 ? borrower.installmentAmount : 1;
+    const installmentRatio = payment.amount / installmentAmt;
+    partnerShare = Math.max(0, dailyUSD * installmentRatio);
+  }
+
+  const mainLenderShare = Math.max(0, payment.amount - partnerShare);
 
   return {
     actualInterest,
     partnerShare,
     mainLenderShare,
+    calcMode,
+    dailyUSD,
     sharePercent,
   };
 }
@@ -38,8 +67,12 @@ export function calculateShareholderStats(
   shareholder: Shareholder,
   borrowers: Borrower[]
 ): ShareholderStats {
+  // Comprehensive matching by ID, Name, or default fallback
   const linkedBorrowers = borrowers.filter(
-    (b) => b.shareholderId === shareholder.id || (shareholder.id === 'default' && b.shareholderId === shareholder.id)
+    (b) =>
+      b.shareholderId === shareholder.id ||
+      (b.shareholderName && b.shareholderName.trim().toLowerCase() === shareholder.name.trim().toLowerCase()) ||
+      (shareholder.id === 'sh_default' && (!b.shareholderId || b.shareholderId === 'sh_default' || b.shareholderId === 'default'))
   );
 
   let activeCapitalDeployed = 0;
@@ -48,26 +81,27 @@ export function calculateShareholderStats(
   let totalInterestCollected = 0;
   let partnerProfitEarned = 0;
   let mainLenderProfitEarned = 0;
+  let totalDailyProfitUSD = 0;
 
   linkedBorrowers.forEach((b) => {
     // Active loans count & capital
-    const isCompleted = b.payments && b.payments.length >= b.duration;
+    const totalPaid = (b.payments || []).reduce((sum, p) => sum + (p?.amount || 0), 0);
+    const isCompleted = totalPaid >= b.totalToPay;
+    const dailyUSD = b.shareholderDailyUSD ?? shareholder.dailyProfitUSD ?? 1.0;
+
     if (!isCompleted && !b.isArchived) {
       activeCapitalDeployed += b.principal;
       activeBorrowersCount++;
+      totalDailyProfitUSD += dailyUSD;
     }
-
-    const sharePercent = b.shareholderSharePercent ?? shareholder.sharePercent ?? 50;
-    const interestPerInstallment = calculateBorrowerInterestPerInstallment(b);
 
     (b.payments || []).forEach((p) => {
       totalCollectedPayments += p.amount;
-      const actualInterest = Math.min(p.amount, interestPerInstallment);
-      totalInterestCollected += actualInterest;
+      const split = calculatePaymentInterestSplit(b, p, shareholder);
+      totalInterestCollected += split.actualInterest;
 
-      const pShare = (actualInterest * sharePercent) / 100;
-      partnerProfitEarned += pShare;
-      mainLenderProfitEarned += (actualInterest - pShare);
+      partnerProfitEarned += split.partnerShare;
+      mainLenderProfitEarned += split.mainLenderShare;
     });
   });
 
@@ -80,5 +114,7 @@ export function calculateShareholderStats(
     totalInterestCollected,
     partnerProfitEarned,
     mainLenderProfitEarned,
+    totalDailyProfitUSD,
   };
 }
+

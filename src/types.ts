@@ -63,6 +63,8 @@ export interface Borrower {
   shareholderId?: string; // ID of linked shareholder/investor partner
   shareholderName?: string; // Name of linked shareholder
   shareholderSharePercent?: number; // Partner's profit split share % (defaults to 50%)
+  shareholderCalculationType?: 'daily_usd' | 'percent'; // Calculation mode ('daily_usd' or 'percent')
+  shareholderDailyUSD?: number; // Daily fixed profit in USD per installment/day (e.g. $1.00/day)
 }
 
 export interface Shareholder {
@@ -73,6 +75,8 @@ export interface Shareholder {
   password: string; // default "admin" or custom
   capitalUSD: number; // initial invested capital e.g. 500
   sharePercent: number; // default 50%
+  calculationType?: 'daily_usd' | 'percent'; // default "daily_usd"
+  dailyProfitUSD?: number; // fixed daily profit in USD (e.g. 1.00 USD/day)
   notes?: string;
   createdAt: string;
   userId?: string; // owner lender ID

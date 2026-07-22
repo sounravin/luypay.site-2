@@ -28,6 +28,8 @@ export default function ShareholderManagementModal({
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('admin');
   const [capitalUSD, setCapitalUSD] = useState('500');
+  const [calculationType, setCalculationType] = useState<'daily_usd' | 'percent'>('daily_usd');
+  const [dailyProfitUSD, setDailyProfitUSD] = useState('1.00');
   const [sharePercent, setSharePercent] = useState('50');
   const [notes, setNotes] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -41,6 +43,8 @@ export default function ShareholderManagementModal({
     setUsername('admin');
     setPassword('admin');
     setCapitalUSD('500');
+    setCalculationType('daily_usd');
+    setDailyProfitUSD('1.00');
     setSharePercent('50');
     setNotes('');
     setIsEditing(true);
@@ -53,7 +57,9 @@ export default function ShareholderManagementModal({
     setUsername(s.username || 'admin');
     setPassword(s.password || 'admin');
     setCapitalUSD(s.capitalUSD.toString());
-    setSharePercent(s.sharePercent.toString());
+    setCalculationType(s.calculationType || 'daily_usd');
+    setDailyProfitUSD((s.dailyProfitUSD ?? 1.0).toString());
+    setSharePercent((s.sharePercent ?? 50).toString());
     setNotes(s.notes || '');
     setIsEditing(true);
   };
@@ -63,6 +69,7 @@ export default function ShareholderManagementModal({
     if (!name.trim()) return;
 
     const cap = parseFloat(capitalUSD) || 0;
+    const dailyProfit = parseFloat(dailyProfitUSD) || 1.0;
     const split = parseFloat(sharePercent) || 50;
 
     if (editingId) {
@@ -75,6 +82,8 @@ export default function ShareholderManagementModal({
               username: username.trim() || 'admin',
               password: password.trim() || 'admin',
               capitalUSD: cap,
+              calculationType,
+              dailyProfitUSD: dailyProfit,
               sharePercent: split,
               notes: notes.trim(),
             }
@@ -89,6 +98,8 @@ export default function ShareholderManagementModal({
         username: username.trim() || 'admin',
         password: password.trim() || 'admin',
         capitalUSD: cap,
+        calculationType,
+        dailyProfitUSD: dailyProfit,
         sharePercent: split,
         notes: notes.trim(),
         createdAt: new Date().toISOString(),
@@ -96,6 +107,16 @@ export default function ShareholderManagementModal({
       onSaveShareholders([...shareholders, newShareholder]);
     }
 
+    setEditingId(null);
+    setName('');
+    setPhone('');
+    setUsername('admin');
+    setPassword('admin');
+    setCapitalUSD('500');
+    setCalculationType('daily_usd');
+    setDailyProfitUSD('1.00');
+    setSharePercent('50');
+    setNotes('');
     setIsEditing(false);
   };
 
@@ -251,24 +272,78 @@ export default function ShareholderManagementModal({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
-                    {language === 'kh' ? 'ភាគរយបែងចែកការ (Profit Share %)' : 'Profit Share %'}
+                <div className="sm:col-span-2 bg-emerald-500/10 dark:bg-emerald-950/30 p-3 rounded-2xl border border-emerald-500/20 space-y-2">
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
+                    {language === 'kh' ? 'របៀបគណនាផលចំណេញ (Calculation Mode)' : 'Calculation Mode'}
                   </label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    max="100"
-                    value={sharePercent}
-                    onChange={(e) => setSharePercent(e.target.value)}
-                    placeholder="50"
-                    className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-black text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                  />
-                  <span className="text-[10px] text-slate-400 font-bold mt-1 block">
-                    {language === 'kh' ? 'កំណត់ 50% = ចែកគ្នាម្នាក់ពាក់កណ្តាល' : '50% = 50/50 Profit Split'}
-                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCalculationType('daily_usd')}
+                      className={`px-3 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                        calculationType === 'daily_usd'
+                          ? 'bg-emerald-500 text-slate-950 shadow-md'
+                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800'
+                      }`}
+                    >
+                      <span>💵</span> {language === 'kh' ? 'គណនាជា ដុល្លារ/ថ្ងៃ ($)' : 'Fixed USD / Day'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCalculationType('percent')}
+                      className={`px-3 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                        calculationType === 'percent'
+                          ? 'bg-emerald-500 text-slate-950 shadow-md'
+                          : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800'
+                      }`}
+                    >
+                      <span>📊</span> {language === 'kh' ? 'គណនាជា ភាគរយ (%)' : 'Profit Split %'}
+                    </button>
+                  </div>
                 </div>
+
+                {calculationType === 'daily_usd' ? (
+                  <div>
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                      {language === 'kh' ? 'ផលចំណេញប្រចាំថ្ងៃ ($ USD / ថ្ងៃ)' : 'Daily Profit ($ USD / Day)'} *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-2.5 text-xs font-mono font-bold text-slate-400">$</span>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        step="any"
+                        value={dailyProfitUSD}
+                        onChange={(e) => setDailyProfitUSD(e.target.value)}
+                        placeholder="1.00"
+                        className="w-full pl-7 pr-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-black text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-1 block">
+                      {language === 'kh' ? '💡 ឧទាហរណ៍៖ $1.00 / ថ្ងៃ ឬ $2.00 / ថ្ងៃ សម្រាប់កម្ចី' : 'e.g., $1.00 or $2.00 per active day loan'}
+                    </span>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                      {language === 'kh' ? 'ភាគរយបែងចែកការ (Profit Share %)' : 'Profit Share %'}
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      max="100"
+                      value={sharePercent}
+                      onChange={(e) => setSharePercent(e.target.value)}
+                      placeholder="50"
+                      className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-black text-blue-600 dark:text-blue-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    />
+                    <span className="text-[10px] text-slate-400 font-bold mt-1 block">
+                      {language === 'kh' ? 'កំណត់ 50% = ចែកគ្នាម្នាក់ពាក់កណ្តាល' : '50% = 50/50 Profit Split'}
+                    </span>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
@@ -368,7 +443,9 @@ export default function ShareholderManagementModal({
                                 {s.name}
                               </span>
                               <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-[10px] font-black border border-emerald-500/20">
-                                {s.sharePercent}% {language === 'kh' ? 'ភាគលាភ' : 'Share'}
+                                {s.calculationType === 'percent'
+                                  ? `${s.sharePercent}% ${language === 'kh' ? 'ភាគលាភ' : 'Share'}`
+                                  : `💵 $${(s.dailyProfitUSD ?? 1.0).toFixed(2)}/ថ្ងៃ`}
                               </span>
                             </div>
                             {s.phone && (
@@ -407,16 +484,16 @@ export default function ShareholderManagementModal({
 
                           <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                              {language === 'kh' ? 'ដើមបង្វិលសកម្ម' : 'Active Deployed'}
+                              {language === 'kh' ? 'ចំណេញប្រចាំថ្ងៃ' : 'Daily Profit USD'}
                             </span>
                             <span className="text-sm font-black font-mono text-blue-600 dark:text-blue-400">
-                              ${stats.activeCapitalDeployed.toLocaleString()} USD
+                              ${stats.totalDailyProfitUSD.toFixed(2)} / ថ្ងៃ
                             </span>
                           </div>
 
                           <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                              {language === 'kh' ? 'ប្រាក់ចំណេញ (50%)' : 'Partner Profit'}
+                              {language === 'kh' ? 'ប្រាក់ចំណេញទទួលបាន' : 'Partner Profit'}
                             </span>
                             <span className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400">
                               +${stats.partnerProfitEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD

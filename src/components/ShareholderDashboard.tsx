@@ -32,7 +32,12 @@ export default function ShareholderDashboard({
   const [selectedBorrower, setSelectedBorrower] = useState<Borrower | null>(null);
 
   const stats = calculateShareholderStats(shareholder, borrowers);
-  const linkedBorrowers = borrowers.filter((b) => b.shareholderId === shareholder.id);
+  const linkedBorrowers = borrowers.filter(
+    (b) =>
+      b.shareholderId === shareholder.id ||
+      (b.shareholderName && b.shareholderName.trim().toLowerCase() === shareholder.name.trim().toLowerCase()) ||
+      (shareholder.id === 'sh_default' && (!b.shareholderId || b.shareholderId === 'sh_default' || b.shareholderId === 'default'))
+  );
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,7 +220,9 @@ export default function ShareholderDashboard({
                 {shareholder.name}
               </h1>
               <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-black rounded-lg border border-emerald-500/30">
-                {language === 'kh' ? `ភាគហ៊ុន ${shareholder.sharePercent}%` : `${shareholder.sharePercent}% Partner`}
+                {shareholder.calculationType === 'percent'
+                  ? `ភាគហ៊ុន ${shareholder.sharePercent}%`
+                  : `💵 $${(shareholder.dailyProfitUSD ?? 1.0).toFixed(2)} / ថ្ងៃ`}
               </span>
             </div>
             <p className="text-xs font-bold text-slate-400 mt-0.5">
@@ -266,19 +273,21 @@ export default function ShareholderDashboard({
             +${stats.partnerProfitEarned.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-normal text-slate-500">USD</span>
           </p>
           <span className="text-[10px] text-emerald-500/80 font-bold block">
-            {language === 'kh' ? `ភាគលាភរបស់អ្នក (${shareholder.sharePercent}%)` : `Your Dividend (${shareholder.sharePercent}%)`}
+            {shareholder.calculationType === 'percent'
+              ? (language === 'kh' ? `ភាគលាភរបស់អ្នក (${shareholder.sharePercent}%)` : `Your Dividend (${shareholder.sharePercent}%)`)
+              : (language === 'kh' ? 'ផលចំណេញសរុបដែលទទួលបាន' : 'Total Earned USD')}
           </span>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-1">
           <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
-            {language === 'kh' ? '💵 ដើមទុនសកម្មលើទីផ្សារ' : 'Active Capital Deployed'}
+            {language === 'kh' ? '💵 ផលចំណេញប្រចាំថ្ងៃសរុប' : 'Total Daily Profit'}
           </span>
           <p className="text-xl sm:text-2xl font-black font-mono text-blue-400">
-            ${stats.activeCapitalDeployed.toLocaleString()} <span className="text-xs font-normal text-slate-500">USD</span>
+            ${stats.totalDailyProfitUSD.toFixed(2)} <span className="text-xs font-normal text-slate-500">/ {language === 'kh' ? 'ថ្ងៃ' : 'day'}</span>
           </p>
           <span className="text-[10px] text-blue-400/80 font-bold block">
-            {language === 'kh' ? 'កំពុងដំណើការលើកម្ចី' : 'Currently Deployed'}
+            {language === 'kh' ? 'គណនាជា ដុល្លារ/ថ្ងៃ លើកម្ចីសកម្ម' : 'Daily Rate on Active Loans'}
           </span>
         </div>
 
@@ -301,12 +310,12 @@ export default function ShareholderDashboard({
           <span className="text-2xl">💡</span>
           <div className="text-xs space-y-0.5">
             <p className="font-black text-emerald-400">
-              {language === 'kh' ? 'គោលការណ៍បែងចែកប្រាក់ចំណេញ (50% / 50% Split):' : 'Profit Split Policy:'}
+              {language === 'kh' ? 'គោលការណ៍គណនាផលចំណេញប្រចាំថ្ងៃ (Daily Dollar Rate):' : 'Daily USD Profit Calculation Policy:'}
             </p>
             <p className="text-slate-300 font-bold">
               {language === 'kh'
-                ? 'ឧទាហរណ៍៖ ដើម $500 ទទួលការបាន $20/ថ្ងៃ នឹងត្រូវបែងចែក $10 ទៅគណនីភាគហ៊ុន និង $10 ទៅគណនីម្ចាស់បំណុលដើម។'
-                : 'Example: $500 capital earning $20/day interest is automatically split $10 to shareholder and $10 to main lender.'}
+                ? 'រាល់ពេលកូនបំណុលបង់ប្រាក់ប្រចាំថ្ងៃ ដៃគូភាគហ៊ុននឹងទទួលបានផលចំណេញជាដុល្លារដែលបានកំណត់ (ឧទាហរណ៍ $1.00/ថ្ងៃ) សម្រាប់កម្ចីនីមួយៗ។'
+                : 'Whenever a borrower makes a daily payment, the shareholder receives a fixed USD profit rate (e.g. $1.00/day) per loan.'}
             </p>
           </div>
         </div>
@@ -338,8 +347,10 @@ export default function ShareholderDashboard({
               const totalPaid = (b.payments || []).reduce((acc, p) => acc + p.amount, 0);
               const remaining = Math.max(0, b.totalToPay - totalPaid);
               const totalInterest = Math.max(0, b.totalToPay - b.principal);
-              const dailyInterest = b.duration > 0 ? totalInterest / b.duration : 0;
-              const partnerDailyShare = (dailyInterest * (b.shareholderSharePercent ?? 50)) / 100;
+              const calcMode = b.shareholderCalculationType || shareholder.calculationType || 'daily_usd';
+              const partnerDailyShare = calcMode === 'percent'
+                ? (b.duration > 0 ? ((totalInterest / b.duration) * (b.shareholderSharePercent ?? 50)) / 100 : 0)
+                : (b.shareholderDailyUSD ?? shareholder.dailyProfitUSD ?? 1.0);
 
               return (
                 <div
@@ -437,7 +448,7 @@ export default function ShareholderDashboard({
                   <th className="py-2.5 px-3">{language === 'kh' ? 'កូនបំណុល' : 'Borrower'}</th>
                   <th className="py-2.5 px-3 text-right">{language === 'kh' ? 'ប្រាក់បង់សរុប' : 'Total Paid'}</th>
                   <th className="py-2.5 px-3 text-right">{language === 'kh' ? 'ការរួម' : 'Interest'}</th>
-                  <th className="py-2.5 px-3 text-right text-emerald-400">{language === 'kh' ? 'ចំណេញភាគហ៊ុន (50%)' : 'My Share (50%)'}</th>
+                  <th className="py-2.5 px-3 text-right text-emerald-400">{language === 'kh' ? 'ចំណេញភាគហ៊ុន' : 'Partner Share'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-bold">
