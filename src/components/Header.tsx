@@ -33,6 +33,7 @@ interface HeaderProps {
   onSelectBorrower: (id: string) => void;
   appTheme?: AppThemeType;
   buttonStyle?: ButtonStyleType;
+  onOpenShareholders?: () => void;
 }
 
 export default function Header({ 
@@ -45,7 +46,8 @@ export default function Header({
   borrowers,
   onSelectBorrower,
   appTheme = 'slate',
-  buttonStyle = 'kbach'
+  buttonStyle = 'kbach',
+  onOpenShareholders
 }: HeaderProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { t, language, setLanguage } = useLanguage();
@@ -282,6 +284,18 @@ export default function Header({
               {selectedCount > 0 ? ` (${selectedCount})` : ''}
             </span>
           </motion.button>
+          {onOpenShareholders && (
+            <motion.button
+              id="shareholders-btn"
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onOpenShareholders}
+              className={`${getButtonStyleClass(buttonStyle, 'amber')} px-4 py-2.5 text-xs flex items-center gap-1.5 font-black text-amber-950 bg-gradient-to-r from-amber-400 to-yellow-400 border border-amber-300 shadow-sm`}
+            >
+              <Users className="w-4 h-4 text-amber-950" />
+              <span>🤝 {language === 'kh' ? 'ដៃគូភាគហ៊ុន' : 'Shareholders'}</span>
+            </motion.button>
+          )}
           <motion.button
             id="add-borrower-btn"
             whileHover={{ scale: 1.02, y: -1 }}

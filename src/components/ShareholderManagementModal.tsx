@@ -125,7 +125,7 @@ export default function ShareholderManagementModal({
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col text-slate-800 dark:text-slate-100">
         
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850">
+        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-850">
           <div className="flex items-center gap-2.5">
             <span className="p-2.5 bg-emerald-500/10 text-emerald-500 rounded-2xl text-xl">🤝</span>
             <div>
@@ -139,16 +139,67 @@ export default function ShareholderManagementModal({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition text-slate-500 hover:text-slate-700 dark:text-slate-400 cursor-pointer"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+            {shareholders.length > 0 && (
+              <a
+                href={`${window.location.origin}${window.location.pathname}?partner=${shareholders[0].id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3.5 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 text-xs font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-sm border border-amber-300"
+              >
+                <span>🌐</span>
+                <span>{language === 'kh' ? 'បើក Link ដៃគូភាគហ៊ុន' : 'Open Partner Link'}</span>
+              </a>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition text-slate-500 hover:text-slate-700 dark:text-slate-400 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Content Area */}
         <div className="p-5 overflow-y-auto space-y-5 flex-1">
+
+          {/* Quick Access Top Banner for Partner Link */}
+          {shareholders.length > 0 && (
+            <div className="bg-gradient-to-r from-amber-500/15 via-emerald-500/15 to-blue-500/15 border-2 border-amber-400/40 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🚀</span>
+                  <h4 className="text-xs font-black text-amber-900 dark:text-amber-200 uppercase tracking-wide">
+                    {language === 'kh' ? 'Link សម្រាប់ចូល Login ដៃគូភាគហ៊ុន' : 'Partner Portal Login Link'}
+                  </h4>
+                </div>
+                <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                  {language === 'kh'
+                    ? 'ចុចប៊ូតុងខាងក្រោមដើម្បីបើកផ្ទាំង Login ដៃគូភាគហ៊ុន ឬចម្លង Link ផ្ញើទៅកាន់ដៃគូ'
+                    : 'Click below to open the partner portal view or copy the link for your partner'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                <a
+                  href={`${window.location.origin}${window.location.pathname}?partner=${shareholders[0].id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 text-xs font-black rounded-xl transition shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span>🌐</span>
+                  <span>{language === 'kh' ? 'បើកមើល Link ដៃគូ' : 'Open Partner Portal'}</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => copyPortalLink(shareholders[0].id)}
+                  className="px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 text-xs font-black rounded-xl transition flex items-center justify-center gap-1 cursor-pointer shadow-xs"
+                >
+                  <span>{copiedId === shareholders[0].id ? '✅' : '📋'}</span>
+                  <span className="hidden sm:inline">{copiedId === shareholders[0].id ? (language === 'kh' ? 'បានចម្លង!' : 'Copied!') : (language === 'kh' ? 'ចម្លង Link' : 'Copy')}</span>
+                </button>
+              </div>
+            </div>
+          )}
           {isEditing ? (
             /* Add/Edit Form */
             <form onSubmit={handleSave} className="space-y-4 bg-slate-50 dark:bg-slate-850 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800">
@@ -383,29 +434,42 @@ export default function ShareholderManagementModal({
                         </div>
 
                         {/* Credentials & Copy Portal Link */}
-                        <div className="bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-xl flex flex-wrap items-center justify-between gap-2">
-                          <div className="space-y-0.5">
+                        <div className="bg-emerald-500/5 border border-emerald-500/20 p-3.5 rounded-2xl space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
                             <p className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
                               🔑 {language === 'kh' ? 'ព័ត៌មាន Login ម្ចាស់ភាគហ៊ុន៖' : 'Partner Credentials:'}
-                              <span className="font-mono bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-emerald-500/30 text-slate-900 dark:text-slate-100">
+                              <span className="font-mono bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-emerald-500/30 text-slate-900 dark:text-slate-100">
                                 Username: <b>{s.username || 'admin'}</b> | Password: <b>{s.password || 'admin'}</b>
                               </span>
                             </p>
+
+                            <button
+                              onClick={() => copyPortalLink(s.id)}
+                              className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                            >
+                              <span>{copiedId === s.id ? '✅' : '🔗'}</span>
+                              {copiedId === s.id
+                                ? language === 'kh'
+                                  ? 'បានចម្លង Link រួចរាល់!'
+                                  : 'Copied Link!'
+                                : language === 'kh'
+                                ? 'ចម្លង Link ចូលមើល Portal'
+                                : 'Copy Partner Link'}
+                            </button>
                           </div>
 
-                          <button
-                            onClick={() => copyPortalLink(s.id)}
-                            className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black rounded-lg transition cursor-pointer flex items-center gap-1 shadow-xs"
-                          >
-                            <span>{copiedId === s.id ? '✅' : '🔗'}</span>
-                            {copiedId === s.id
-                              ? language === 'kh'
-                                ? 'បានចម្លង Link រួចរាល់!'
-                                : 'Copied Link!'
-                              : language === 'kh'
-                              ? 'ចម្លង Link ចូលមើល Portal'
-                              : 'Copy Partner Link'}
-                          </button>
+                          <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-emerald-500/20 font-mono text-[11px] text-slate-600 dark:text-slate-300 overflow-x-auto">
+                            <span className="text-emerald-500 font-bold shrink-0">🌐 Link Portal:</span>
+                            <span className="truncate select-all">{portalLink}</span>
+                            <a
+                              href={portalLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="ml-auto text-xs text-blue-500 hover:underline font-sans font-bold shrink-0"
+                            >
+                              {language === 'kh' ? 'បើក Link ↗' : 'Open ↗'}
+                            </a>
+                          </div>
                         </div>
                       </div>
                     );

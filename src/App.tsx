@@ -4863,6 +4863,25 @@ export default function App() {
             {currentUser === 'sounravin' ? 'គ្រប់គ្រងប្រព័ន្ធ' : 'គណនី & សមាជិកភាព'}
           </p>
 
+          {/* Shareholder Partners Button */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              setIsShareholdersModalOpen(true);
+              playClickSound();
+            }}
+            className="w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-extrabold rounded-xl transition-all border duration-200 cursor-pointer bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30 hover:border-amber-400 shadow-md shadow-amber-500/10"
+          >
+            <span className="flex items-center gap-2.5">
+              <Users className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>🤝 {language === 'kh' ? 'គ្រប់គ្រង ដៃគូភាគហ៊ុន' : 'Shareholders Management'}</span>
+            </span>
+            <span className="px-2 py-0.5 text-[9px] rounded-md font-black bg-amber-500/20 text-amber-200 border border-amber-400/30">
+              {shareholders.length}
+            </span>
+          </motion.button>
+
           {currentUser === 'sounravin' && (
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -5202,6 +5221,19 @@ export default function App() {
             >
               <span>📝 {language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger Records'}</span>
             </button>
+            <button
+              onClick={() => {
+                setIsShareholdersModalOpen(true);
+                playClickSound();
+              }}
+              className={`py-2 px-2.5 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1 shrink-0 ${
+                mobileHeaderStyle === 'angkor'
+                  ? 'bg-amber-950/60 text-amber-300 hover:text-amber-100 border border-amber-400/40 shadow-xs'
+                  : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-400/30'
+              }`}
+            >
+              <span>🤝 {language === 'kh' ? 'ដៃគូភាគហ៊ុន' : 'Shareholders'}</span>
+            </button>
             {currentUser === 'sounravin' ? (
               <button
                 onClick={() => setActiveSection('admin_dashboard')}
@@ -5470,6 +5502,7 @@ export default function App() {
                 onSelectBorrower={setSelectedBorrowerId}
                 appTheme={appTheme}
                 buttonStyle={buttonStyle}
+                onOpenShareholders={() => setIsShareholdersModalOpen(true)}
               />
 
               {/* Special Member Referral & Sync Panel */}
