@@ -2126,15 +2126,13 @@ export default function App() {
         (b.shareholderName && targetName && b.shareholderName.trim().toLowerCase() === targetName);
 
       if (isLinked) {
-        const {
-          shareholderId: _id,
-          shareholderName: _name,
-          shareholderSharePercent: _pct,
-          shareholderCalculationType: _type,
-          shareholderDailyUSD: _daily,
-          ...cleaned
-        } = b;
-        return cleaned as Borrower;
+        const cleaned = { ...b };
+        delete cleaned.shareholderId;
+        delete cleaned.shareholderName;
+        delete cleaned.shareholderSharePercent;
+        delete cleaned.shareholderCalculationType;
+        delete cleaned.shareholderDailyUSD;
+        return cleaned;
       }
       return b;
     });
@@ -2144,6 +2142,11 @@ export default function App() {
 
     setBorrowers(updatedBorrowers);
     saveBorrowers(updatedBorrowers);
+    showToast(
+      language === 'kh'
+        ? `បានសម្អាតទិន្នន័យភាគហ៊ុន ${targetSh?.name || ''} រួចរាល់!`
+        : `Cleared data for ${targetSh?.name || ''}`
+    );
   };
 
   // Automatically backfill any missing short IDs for loaded borrowers

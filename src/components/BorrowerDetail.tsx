@@ -2122,69 +2122,72 @@ export default function BorrowerDetail({
                     </div>
 
                     {/* Bottom row: Payment History Logs */}
-                    <div className="p-5 border border-slate-200 bg-slate-50/50 rounded-2xl overflow-y-auto max-h-[260px] shadow-sm">
-                      <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                        <span>🕒</span> 
-                        <span>{language === 'kh' ? 'ប្រវត្តិនៃការបង់ប្រាក់ (Payment History)' : 'Payment History Logs'}</span>
-                      </h3>
-                      
-                      {payments.length === 0 ? (
-                        <div className="text-center py-6 text-slate-400 text-sm">
-                          {language === 'kh' ? 'មិនទាន់មានប្រវត្តិបង់ប្រាក់នៅឡើយទេ។' : 'No payment history logged yet.'}
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-left text-xs border-collapse">
-                            <thead>
-                              <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase">
-                                <th className="py-2 px-3">{language === 'kh' ? 'ថ្ងៃបង់ប្រាក់' : 'Payment Date'}</th>
-                                <th className="py-2 px-3">{language === 'kh' ? 'ចំនួនទឹកប្រាក់' : 'Amount'}</th>
-                                <th className="py-2 px-3">{language === 'kh' ? 'ប្រភេទការបង់' : 'Payment Type'}</th>
-                                <th className="py-2 px-3">{language === 'kh' ? 'កំណត់សម្គាល់' : 'Notes/Memo'}</th>
-                                {!isReadOnlyShareholder && <th className="py-2 px-3 text-right">{language === 'kh' ? 'សកម្មភាព' : 'Action'}</th>}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 font-semibold text-slate-600">
-                              {[...payments].reverse().map((pay) => (
-                                <tr key={pay.id} className="hover:bg-slate-100/50">
-                                  <td className="py-2 px-3 text-slate-800">{formatKhmerDate(pay.date)}</td>
-                                  <td className="py-2 px-3 text-blue-600 font-extrabold">{formatMoney(pay.amount, borrower.currency)}</td>
-                                  <td className="py-2 px-3">
-                                    {pay.installmentIndex !== -1 ? (
-                                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[10px] font-bold">
-                                        {language === 'kh' ? `វគ្គទី ${pay.installmentIndex + 1}` : `Term ${pay.installmentIndex + 1}`}
-                                      </span>
-                                    ) : (
-                                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[10px] font-bold">
-                                        {language === 'kh' ? 'បង់តាមចិត្ត' : 'Custom'}
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="py-2 px-3 text-slate-400 italic max-w-[200px] truncate">{pay.note || '-'}</td>
-                                  {!isReadOnlyShareholder && (
-                                    <td className="py-2 px-3 text-right">
-                                      <button
-                                        onClick={() => {
-                                          const confirmMsg = language === 'kh'
-                                            ? 'តើអ្នកចង់លុបការបង់ប្រាក់នេះឡើងវិញមែនទេ?'
-                                            : 'Are you sure you want to delete this payment record?';
-                                          if (confirm(confirmMsg)) {
-                                            onDeletePayment(borrower.id, pay.id);
-                                          }
-                                        }}
-                                        className="p-1 hover:bg-rose-50 text-rose-500 hover:text-rose-700 rounded-md transition cursor-pointer"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    </td>
-                                  )}
+                    {/* Borrower Payment History Logs (Hidden for shareholder partner read-only accounts) */}
+                    {!isReadOnlyShareholder && (
+                      <div className="p-5 border border-slate-200 bg-slate-50/50 rounded-2xl overflow-y-auto max-h-[260px] shadow-sm">
+                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                          <span>🕒</span> 
+                          <span>{language === 'kh' ? 'ប្រវត្តិនៃការបង់ប្រាក់ (Payment History)' : 'Payment History Logs'}</span>
+                        </h3>
+                        
+                        {payments.length === 0 ? (
+                          <div className="text-center py-6 text-slate-400 text-sm">
+                            {language === 'kh' ? 'មិនទាន់មានប្រវត្តិបង់ប្រាក់នៅឡើយទេ។' : 'No payment history logged yet.'}
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs border-collapse">
+                              <thead>
+                                <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase">
+                                  <th className="py-2 px-3">{language === 'kh' ? 'ថ្ងៃបង់ប្រាក់' : 'Payment Date'}</th>
+                                  <th className="py-2 px-3">{language === 'kh' ? 'ចំនួនទឹកប្រាក់' : 'Amount'}</th>
+                                  <th className="py-2 px-3">{language === 'kh' ? 'ប្រភេទការបង់' : 'Payment Type'}</th>
+                                  <th className="py-2 px-3">{language === 'kh' ? 'កំណត់សម្គាល់' : 'Notes/Memo'}</th>
+                                  {!isReadOnlyShareholder && <th className="py-2 px-3 text-right">{language === 'kh' ? 'សកម្មភាព' : 'Action'}</th>}
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 font-semibold text-slate-600">
+                                {[...payments].reverse().map((pay) => (
+                                  <tr key={pay.id} className="hover:bg-slate-100/50">
+                                    <td className="py-2 px-3 text-slate-800">{formatKhmerDate(pay.date)}</td>
+                                    <td className="py-2 px-3 text-blue-600 font-extrabold">{formatMoney(pay.amount, borrower.currency)}</td>
+                                    <td className="py-2 px-3">
+                                      {pay.installmentIndex !== -1 ? (
+                                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[10px] font-bold">
+                                          {language === 'kh' ? `វគ្គទី ${pay.installmentIndex + 1}` : `Term ${pay.installmentIndex + 1}`}
+                                        </span>
+                                      ) : (
+                                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[10px] font-bold">
+                                          {language === 'kh' ? 'បង់តាមចិត្ត' : 'Custom'}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="py-2 px-3 text-slate-400 italic max-w-[200px] truncate">{pay.note || '-'}</td>
+                                    {!isReadOnlyShareholder && (
+                                      <td className="py-2 px-3 text-right">
+                                        <button
+                                          onClick={() => {
+                                            const confirmMsg = language === 'kh'
+                                              ? 'តើអ្នកចង់លុបការបង់ប្រាក់នេះឡើងវិញមែនទេ?'
+                                              : 'Are you sure you want to delete this payment record?';
+                                            if (confirm(confirmMsg)) {
+                                              onDeletePayment(borrower.id, pay.id);
+                                            }
+                                          }}
+                                          className="p-1 hover:bg-rose-50 text-rose-500 hover:text-rose-700 rounded-md transition cursor-pointer"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </td>
+                                    )}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Partner Revenue History for this Loan */}
                     {((isReadOnlyShareholder && (shareholders?.length ?? 0) > 0) || borrower.shareholderId || borrower.shareholderName) && (

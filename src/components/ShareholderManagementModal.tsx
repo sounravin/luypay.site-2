@@ -150,6 +150,11 @@ export default function ShareholderManagementModal({
     if (window.confirm(confirmMessage)) {
       if (onClearShareholderData) {
         onClearShareholderData(s.id);
+        alert(
+          language === 'kh'
+            ? `បានសម្អាតទិន្នន័យកម្ចី និងប្រាក់ចំណេញរបស់ "${s.name}" រួចរាល់!`
+            : `Successfully cleared data for "${s.name}"!`
+        );
       }
     }
   };

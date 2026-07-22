@@ -50,9 +50,8 @@ export default function ShareholderDashboard({
   const stats = calculateShareholderStats(shareholder, borrowers);
   const linkedBorrowers = borrowers.filter(
     (b) =>
-      b.shareholderId === shareholder.id ||
-      (b.shareholderName && b.shareholderName.trim().toLowerCase() === shareholder.name.trim().toLowerCase()) ||
-      (shareholder.id === 'sh_default' && (!b.shareholderId || b.shareholderId === 'sh_default' || b.shareholderId === 'default'))
+      (b.shareholderId && b.shareholderId === shareholder.id) ||
+      (b.shareholderName && shareholder.name && b.shareholderName.trim().toLowerCase() === shareholder.name.trim().toLowerCase())
   );
 
   const handleLogin = (e: React.FormEvent) => {

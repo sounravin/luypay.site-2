@@ -992,7 +992,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
               }}
               className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-bold text-slate-800 dark:text-slate-100"
             >
-              <option value="">{language === 'kh' ? '🚫 គ្មាន (លុយផ្ទាល់ខ្លួន / ម្ចាស់ដើម)' : 'None (Self Capital)'}</option>
+              <option value="">{language === 'kh' ? '🚫 គ្មាន (លុយផ្ទាល់ខ្លួន)' : 'None (Self Capital)'}</option>
               {(shareholders || []).map((s) => (
                 <option key={s.id} value={s.id}>
                   🤝 {s.name} (ដើម ${s.capitalUSD.toLocaleString()} | {s.calculationType === 'percent' ? `ភាគលាភ ${s.sharePercent}%` : `ចំណេញ $${(s.dailyProfitUSD ?? 1.0).toFixed(2)}/ថ្ងៃ`})
