@@ -2115,6 +2115,37 @@ export default function App() {
     }
   };
 
+  const handleClearShareholderData = (shareholderId: string) => {
+    const targetSh = shareholders.find((s) => s.id === shareholderId);
+    const targetName = targetSh ? targetSh.name.trim().toLowerCase() : '';
+
+    // Unlink all borrowers associated with this shareholder
+    const updatedBorrowers = borrowers.map((b) => {
+      const isLinked =
+        b.shareholderId === shareholderId ||
+        (b.shareholderName && targetName && b.shareholderName.trim().toLowerCase() === targetName);
+
+      if (isLinked) {
+        const {
+          shareholderId: _id,
+          shareholderName: _name,
+          shareholderSharePercent: _pct,
+          shareholderCalculationType: _type,
+          shareholderDailyUSD: _daily,
+          ...cleaned
+        } = b;
+        return cleaned as Borrower;
+      }
+      return b;
+    });
+
+    // Clear local authentication token for partner portal
+    localStorage.removeItem(`luypay_partner_auth_${shareholderId}`);
+
+    setBorrowers(updatedBorrowers);
+    saveBorrowers(updatedBorrowers);
+  };
+
   // Automatically backfill any missing short IDs for loaded borrowers
   useEffect(() => {
     if (borrowers.length === 0) return;
@@ -5859,6 +5890,7 @@ export default function App() {
         borrowers={borrowers}
         language={language}
         onSaveShareholders={handleSaveShareholders}
+        onClearShareholderData={handleClearShareholderData}
       />
 
       {/* Detail & Card-Checkboard Overlay */}

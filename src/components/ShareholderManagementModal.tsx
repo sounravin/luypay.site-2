@@ -7,6 +7,7 @@ interface ShareholderManagementModalProps {
   onClose: () => void;
   shareholders: Shareholder[];
   onSaveShareholders: (updated: Shareholder[]) => void;
+  onClearShareholderData?: (shareholderId: string) => void;
   borrowers: Borrower[];
   language: 'kh' | 'en';
 }
@@ -16,6 +17,7 @@ export default function ShareholderManagementModal({
   onClose,
   shareholders,
   onSaveShareholders,
+  onClearShareholderData,
   borrowers,
   language,
 }: ShareholderManagementModalProps) {
@@ -32,6 +34,7 @@ export default function ShareholderManagementModal({
   const [dailyProfitUSD, setDailyProfitUSD] = useState('1.00');
   const [sharePercent, setSharePercent] = useState('50');
   const [notes, setNotes] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -48,6 +51,7 @@ export default function ShareholderManagementModal({
     setDailyProfitUSD('1.00');
     setSharePercent('50');
     setNotes('');
+    setProfilePhoto('');
     setIsEditing(true);
   };
 
@@ -62,6 +66,7 @@ export default function ShareholderManagementModal({
     setDailyProfitUSD((s.dailyProfitUSD ?? 1.0).toString());
     setSharePercent((s.sharePercent ?? 50).toString());
     setNotes(s.notes || '');
+    setProfilePhoto(s.profilePhoto || '');
     setIsEditing(true);
   };
 
@@ -87,6 +92,7 @@ export default function ShareholderManagementModal({
               dailyProfitUSD: dailyProfit,
               sharePercent: split,
               notes: notes.trim(),
+              profilePhoto: profilePhoto || undefined,
             }
           : s
       );
@@ -104,6 +110,7 @@ export default function ShareholderManagementModal({
         sharePercent: split,
         notes: notes.trim(),
         createdAt: new Date().toISOString(),
+        profilePhoto: profilePhoto || undefined,
       };
       onSaveShareholders([...shareholders, newShareholder]);
     }
@@ -118,6 +125,7 @@ export default function ShareholderManagementModal({
     setDailyProfitUSD('1.00');
     setSharePercent('50');
     setNotes('');
+    setProfilePhoto('');
     setIsEditing(false);
   };
 
@@ -130,6 +138,19 @@ export default function ShareholderManagementModal({
       )
     ) {
       onSaveShareholders(shareholders.filter((s) => s.id !== id));
+    }
+  };
+
+  const handleClearData = (s: Shareholder) => {
+    const confirmMessage =
+      language === 'kh'
+        ? `តើអ្នកពិតជាចង់ Clear សម្អាតទិន្នន័យកម្ចី និងប្រាក់ចំណេញរបស់ម្ចាស់ភាគហ៊ុន "${s.name}" នេះមែនទេ?\n\n- រាល់កម្ចីដែលភ្ជាប់ជាមួយភាគហ៊ុននេះ នឹងត្រូវ Unlink (សម្អាតចេញ)\n- ប្រាក់ចំណេញដែលទទួលបាននឹងត្រូវកំណត់មក $0.00 ឡើងវិញ`
+        : `Are you sure you want to clear all linked loans and profit data for "${s.name}"?\n\n- All linked loans will be unlinked.\n- Profit stats will reset to $0.00.`;
+
+    if (window.confirm(confirmMessage)) {
+      if (onClearShareholderData) {
+        onClearShareholderData(s.id);
+      }
     }
   };
 
@@ -186,49 +207,80 @@ export default function ShareholderManagementModal({
         {/* Content Area */}
         <div className="p-5 overflow-y-auto space-y-5 flex-1">
 
-          {/* Quick Access Top Banner for Partner Link */}
-          {shareholders.length > 0 && (
-            <div className="bg-gradient-to-r from-amber-500/15 via-emerald-500/15 to-blue-500/15 border-2 border-amber-400/40 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🚀</span>
-                  <h4 className="text-xs font-black text-amber-900 dark:text-amber-200 uppercase tracking-wide">
-                    {language === 'kh' ? 'Link សម្រាប់ចូល Login ដៃគូភាគហ៊ុន' : 'Partner Portal Login Link'}
-                  </h4>
-                </div>
-                <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                  {language === 'kh'
-                    ? 'ចុចប៊ូតុងខាងក្រោមដើម្បីបើកផ្ទាំង Login ដៃគូភាគហ៊ុន ឬចម្លង Link ផ្ញើទៅកាន់ដៃគូ'
-                    : 'Click below to open the partner portal view or copy the link for your partner'}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-                <a
-                  href={`${window.location.origin}${window.location.pathname}?partner=${shareholders[0].id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 text-xs font-black rounded-xl transition shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <span>🌐</span>
-                  <span>{language === 'kh' ? 'បើកមើល Link ដៃគូ' : 'Open Partner Portal'}</span>
-                </a>
-                <button
-                  type="button"
-                  onClick={() => copyPortalLink(shareholders[0])}
-                  className="px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 text-xs font-black rounded-xl transition flex items-center justify-center gap-1 cursor-pointer shadow-xs"
-                >
-                  <span>{copiedId === shareholders[0].id ? '✅' : '📋'}</span>
-                  <span className="hidden sm:inline">{copiedId === shareholders[0].id ? (language === 'kh' ? 'បានចម្លង!' : 'Copied!') : (language === 'kh' ? 'ចម្លង Link' : 'Copy')}</span>
-                </button>
-              </div>
-            </div>
-          )}
           {isEditing ? (
             /* Add/Edit Form */
             <form onSubmit={handleSave} className="space-y-4 bg-slate-50 dark:bg-slate-850 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800">
               <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
                 <span>📝</span> {editingId ? (language === 'kh' ? 'កែប្រែព័ត៌មានភាគហ៊ុន' : 'Edit Shareholder') : (language === 'kh' ? 'បន្ថែមម្ចាស់ភាគហ៊ុនថ្មី' : 'Add New Shareholder')}
               </h4>
+
+              {/* Profile Photo Upload */}
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                  📷 {language === 'kh' ? 'រូប Profile ម្ចាស់ភាគហ៊ុន' : 'Shareholder Profile Photo'}
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-emerald-500/30 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
+                    {profilePhoto ? (
+                      <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl">🤝</span>
+                    )}
+                  </div>
+                  <div className="flex-1 flex flex-wrap items-center gap-2">
+                    <label className="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-black rounded-xl cursor-pointer transition flex items-center gap-1.5">
+                      <span>📸</span>
+                      <span>{language === 'kh' ? 'ជ្រើសរើសរូបថត' : 'Upload Photo'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const img = new Image();
+                            img.src = ev.target?.result as string;
+                            img.onload = () => {
+                              const canvas = document.createElement('canvas');
+                              const MAX_SIZE = 300;
+                              let width = img.width;
+                              let height = img.height;
+                              if (width > height) {
+                                if (width > MAX_SIZE) {
+                                  height *= MAX_SIZE / width;
+                                  width = MAX_SIZE;
+                                }
+                              } else {
+                                if (height > MAX_SIZE) {
+                                  width *= MAX_SIZE / height;
+                                  height = MAX_SIZE;
+                                }
+                              }
+                              canvas.width = width;
+                              canvas.height = height;
+                              const ctx = canvas.getContext('2d');
+                              ctx?.drawImage(img, 0, 0, width, height);
+                              setProfilePhoto(canvas.toDataURL('image/jpeg', 0.8));
+                            };
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
+                    {profilePhoto && (
+                      <button
+                        type="button"
+                        onClick={() => setProfilePhoto('')}
+                        className="px-3 py-2 bg-rose-500/10 text-rose-500 border border-rose-500/20 text-xs font-bold rounded-xl hover:bg-rose-500/20 cursor-pointer"
+                      >
+                        ✕ {language === 'kh' ? 'លុបរូប' : 'Remove'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -439,22 +491,31 @@ export default function ShareholderManagementModal({
                         className="bg-slate-50 dark:bg-slate-850 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3 hover:border-emerald-500/40 transition"
                       >
                         <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-2.5">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-base font-black text-slate-900 dark:text-white">
-                                {s.name}
-                              </span>
-                              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-[10px] font-black border border-emerald-500/20">
-                                {s.calculationType === 'percent'
-                                  ? `${s.sharePercent}% ${language === 'kh' ? 'ភាគលាភ' : 'Share'}`
-                                  : `💵 $${(s.dailyProfitUSD ?? 1.0).toFixed(2)}/ថ្ងៃ`}
-                              </span>
+                          <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
+                              {s.profilePhoto ? (
+                                <img src={s.profilePhoto} alt={s.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-xl">🤝</span>
+                              )}
                             </div>
-                            {s.phone && (
-                              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
-                                📞 {s.phone}
-                              </p>
-                            )}
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-base font-black text-slate-900 dark:text-white">
+                                  {s.name}
+                                </span>
+                                <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg text-[10px] font-black border border-emerald-500/20">
+                                  {s.calculationType === 'percent'
+                                    ? `${s.sharePercent}% ${language === 'kh' ? 'ភាគលាភ' : 'Share'}`
+                                    : `💵 $${(s.dailyProfitUSD ?? 1.0).toFixed(2)}/ថ្ងៃ`}
+                                </span>
+                              </div>
+                              {s.phone && (
+                                <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                                  📞 {s.phone}
+                                </p>
+                              )}
+                            </div>
                           </div>
 
                           <div className="flex items-center gap-1.5">
@@ -463,6 +524,13 @@ export default function ShareholderManagementModal({
                               className="px-2.5 py-1 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-[11px] font-bold transition cursor-pointer"
                             >
                               ✏️ {language === 'kh' ? 'កែប្រែ' : 'Edit'}
+                            </button>
+                            <button
+                              onClick={() => handleClearData(s)}
+                              className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1"
+                              title={language === 'kh' ? 'សម្អាតទិន្នន័យកម្ចី និងប្រាក់ចំណេញរបស់ភាគហ៊ុននេះ' : 'Clear linked loan & profit data'}
+                            >
+                              🧹 {language === 'kh' ? 'Clear ទិន្នន័យ' : 'Clear Data'}
                             </button>
                             <button
                               onClick={() => handleDelete(s.id)}

@@ -123,8 +123,12 @@ export default function ShareholderDashboard({
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 animate-in fade-in zoom-in-95 duration-200">
           <div className="text-center space-y-2">
-            <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-inner text-emerald-400">
-              🤝
+            <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-inner text-emerald-400 overflow-hidden">
+              {shareholder.profilePhoto ? (
+                <img src={shareholder.profilePhoto} alt={shareholder.name} className="w-full h-full object-cover" />
+              ) : (
+                '🤝'
+              )}
             </div>
             <h2 className="text-xl font-black text-white">
               {language === 'kh' ? 'ចូលមើលគណនីភាគហ៊ុន' : 'Shareholder Partner Portal'}
@@ -227,6 +231,7 @@ export default function ShareholderDashboard({
           onDeleteBorrower={() => {}}
           onEditBorrower={onEditBorrower}
           isReadOnlyShareholder={true}
+          shareholders={[shareholder]}
         />
       </div>
     );
@@ -238,8 +243,12 @@ export default function ShareholderDashboard({
       {/* Top Portal Header */}
       <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl shadow-inner">
-            🤝
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl shadow-inner overflow-hidden">
+            {shareholder.profilePhoto ? (
+              <img src={shareholder.profilePhoto} alt={shareholder.name} className="w-full h-full object-cover" />
+            ) : (
+              '🤝'
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -452,46 +461,6 @@ export default function ShareholderDashboard({
                 </div>
               );
             })}
-          </div>
-        )}
-      </div>
-
-      {/* Payment Income History Log Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-xl">
-        <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-          <span>🧾</span> {language === 'kh' ? `ប្រវត្តិទទួលបានប្រាក់ចំណូលភាគហ៊ុន (${paymentHistory.length})` : `Partner Revenue History (${paymentHistory.length})`}
-        </h3>
-
-        {paymentHistory.length === 0 ? (
-          <p className="text-xs font-bold text-slate-400 text-center py-6">
-            {language === 'kh' ? 'មិនទាន់មានប្រវត្តិបង់ប្រាក់ពីកូនបំណុលនៅឡើយទេ' : 'No payment records yet.'}
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-slate-800 text-slate-400 uppercase font-black tracking-wider text-[10px]">
-                  <th className="py-2.5 px-3">{language === 'kh' ? 'កាលបរិច្ឆេទ' : 'Date'}</th>
-                  <th className="py-2.5 px-3">{language === 'kh' ? 'កូនបំណុល' : 'Borrower'}</th>
-                  <th className="py-2.5 px-3 text-right">{language === 'kh' ? 'ប្រាក់បង់សរុប' : 'Total Paid'}</th>
-                  <th className="py-2.5 px-3 text-right">{language === 'kh' ? 'ការរួម' : 'Interest'}</th>
-                  <th className="py-2.5 px-3 text-right text-emerald-400">{language === 'kh' ? 'ចំណេញភាគហ៊ុន' : 'Partner Share'}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60 font-bold">
-                {paymentHistory.map((ph) => (
-                  <tr key={ph.id} className="hover:bg-slate-850/50 transition">
-                    <td className="py-3 px-3 text-slate-300 font-mono">{ph.date}</td>
-                    <td className="py-3 px-3 text-white font-black">{ph.borrowerName}</td>
-                    <td className="py-3 px-3 text-right font-mono text-slate-200">${ph.amount.toFixed(2)}</td>
-                    <td className="py-3 px-3 text-right font-mono text-amber-400">${ph.actualInterest.toFixed(2)}</td>
-                    <td className="py-3 px-3 text-right font-mono text-emerald-400 font-black">
-                      +${ph.partnerShare.toFixed(2)} USD
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         )}
       </div>

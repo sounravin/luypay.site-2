@@ -7,6 +7,7 @@ import LiveChat from './LiveChat';
 import { motion, AnimatePresence } from 'motion/react';
 import AvatarWithFrame from './AvatarWithFrame';
 import FrameSelectorModal from './FrameSelectorModal';
+import { calculatePaymentInterestSplit } from '../utils/shareholderUtils';
 
 interface BorrowerDetailProps {
   borrower: Borrower;
@@ -67,6 +68,12 @@ export default function BorrowerDetail({
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [isFrameModalOpen, setIsFrameModalOpen] = useState<boolean>(false);
   const [detailTab, setDetailTab] = useState<'schedule' | 'personal' | 'verification' | 'statement'>('schedule');
+
+  useEffect(() => {
+    if (isReadOnlyShareholder && detailTab !== 'schedule') {
+      setDetailTab('schedule');
+    }
+  }, [isReadOnlyShareholder, detailTab]);
   const [rejectingReportId, setRejectingReportId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState<string>('');
 
@@ -738,7 +745,7 @@ export default function BorrowerDetail({
                   {language === 'kh' ? 'រក្សាទុក' : 'Save Changes'}
                 </motion.button>
               </>
-            ) : (
+            ) : !isReadOnlyShareholder ? (
               <>
                 {/* Copy Share Link button - Takes full width on mobile (col-span-2) */}
                 <motion.button
@@ -821,7 +828,7 @@ export default function BorrowerDetail({
                   <span>{language === 'kh' ? 'លុបអ្នកខ្ចី' : 'Delete'}</span>
                 </motion.button>
               </>
-            )}
+            ) : null}
 
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -1682,59 +1689,63 @@ export default function BorrowerDetail({
                 </span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => setDetailTab('statement')}
-                className={`py-3.5 text-xs sm:text-sm font-extrabold relative transition-colors duration-200 cursor-pointer ${
-                  detailTab === 'statement' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-b-2 border-transparent'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <span>📄</span>
-                  <span>{language === 'kh' ? 'លិខិតសងប្រាក់អេឡិចត្រូនិច' : 'Digital Debt Statement'}</span>
-                  {isOnline ? (
-                    <span className="flex h-2.5 w-2.5 relative">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              {!isReadOnlyShareholder && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setDetailTab('statement')}
+                    className={`py-3.5 text-xs sm:text-sm font-extrabold relative transition-colors duration-200 cursor-pointer ${
+                      detailTab === 'statement' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-b-2 border-transparent'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span>📄</span>
+                      <span>{language === 'kh' ? 'លិខិតសងប្រាក់អេឡិចត្រូនិច' : 'Digital Debt Statement'}</span>
+                      {isOnline ? (
+                        <span className="flex h-2.5 w-2.5 relative">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                      ) : (
+                        borrower.lastActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                        )
+                      )}
                     </span>
-                  ) : (
-                    borrower.lastActive && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                    )
-                  )}
-                </span>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setDetailTab('personal')}
-                className={`py-3.5 text-xs sm:text-sm font-extrabold relative transition-colors duration-200 cursor-pointer ${
-                  detailTab === 'personal' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-b-2 border-transparent'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <span>👤</span>
-                  <span>{language === 'kh' ? 'ព័ត៌មានផ្ទាល់ខ្លួន' : 'Personal & Loan Info'}</span>
-                </span>
-              </button>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setDetailTab('personal')}
+                    className={`py-3.5 text-xs sm:text-sm font-extrabold relative transition-colors duration-200 cursor-pointer ${
+                      detailTab === 'personal' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-b-2 border-transparent'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span>👤</span>
+                      <span>{language === 'kh' ? 'ព័ត៌មានផ្ទាល់ខ្លួន' : 'Personal & Loan Info'}</span>
+                    </span>
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => setDetailTab('verification')}
-                className={`py-3.5 text-xs sm:text-sm font-extrabold relative transition-colors duration-200 cursor-pointer ${
-                  detailTab === 'verification' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-b-2 border-transparent'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <span>✨</span>
-                  <span>{language === 'kh' ? 'ផ្ទៀងផ្ទាត់ការបង់' : 'Verify Payments'}</span>
-                  {Array.isArray(borrower.reportedPayments) && borrower.reportedPayments.filter(r => r.status === 'pending').length > 0 && (
-                    <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-bounce">
-                      {borrower.reportedPayments.filter(r => r.status === 'pending').length}
+                  <button
+                    type="button"
+                    onClick={() => setDetailTab('verification')}
+                    className={`py-3.5 text-xs sm:text-sm font-extrabold relative transition-colors duration-200 cursor-pointer ${
+                      detailTab === 'verification' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-b-2 border-transparent'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <span>✨</span>
+                      <span>{language === 'kh' ? 'ផ្ទៀងផ្ទាត់ការបង់' : 'Verify Payments'}</span>
+                      {Array.isArray(borrower.reportedPayments) && borrower.reportedPayments.filter(r => r.status === 'pending').length > 0 && (
+                        <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-bounce">
+                          {borrower.reportedPayments.filter(r => r.status === 'pending').length}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </span>
-              </button>
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Tab Contents with Framer Motion Transition */}
@@ -1929,8 +1940,8 @@ export default function BorrowerDetail({
                 ) : detailTab === 'schedule' ? (
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                      {/* Column 2: Visual Installment Card / Box Checklist (7 cols) */}
-                      <div className="lg:col-span-7 flex flex-col space-y-6">
+                      {/* Column 2: Visual Installment Card / Box Checklist */}
+                      <div className={`${isReadOnlyShareholder ? 'lg:col-span-12' : 'lg:col-span-7'} flex flex-col space-y-6`}>
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3 flex-1 flex flex-col shadow-sm">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div>
@@ -1939,7 +1950,7 @@ export default function BorrowerDetail({
                                 {language === 'kh' ? 'ចុចលើប្រអប់លេខនីមួយៗ ដើម្បីកត់ត្រាសងប្រាក់រហ័ស ឬលុបការបង់ប្រាក់។' : 'Click any box to quickly record installment payment or uncheck to delete.'}
                               </p>
                             </div>
-                            {totalPaid < borrower.totalToPay && (
+                            {totalPaid < borrower.totalToPay && !isReadOnlyShareholder && (
                               <button
                                 onClick={() => {
                                   const unpaidIndices: number[] = [];
@@ -1978,8 +1989,10 @@ export default function BorrowerDetail({
                                 <button
                                   key={index}
                                   id={`day-box-${index}`}
-                                  onClick={() => handleBoxClick(index)}
-                                  className={`aspect-square p-2 rounded-xl flex flex-col justify-between items-center border transition-all duration-150 cursor-pointer shadow-sm ${
+                                  onClick={() => !isReadOnlyShareholder && handleBoxClick(index)}
+                                  className={`aspect-square p-2 rounded-xl flex flex-col justify-between items-center border transition-all duration-150 shadow-sm ${
+                                    isReadOnlyShareholder ? 'cursor-default' : 'cursor-pointer'
+                                  } ${
                                     isPaid
                                       ? 'bg-emerald-500 hover:bg-emerald-600 border-emerald-600 text-white shadow-emerald-500/20 dark:bg-emerald-600 dark:hover:bg-emerald-500 dark:border-emerald-400 dark:text-white'
                                       : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700 dark:bg-slate-800/90 dark:hover:bg-slate-750 dark:border-slate-700 dark:text-slate-200'
@@ -2016,94 +2029,96 @@ export default function BorrowerDetail({
                       </div>
 
                       {/* Payment Reminder Textbox Card (5 cols) */}
-                      <div className="lg:col-span-5 flex flex-col">
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3 flex-1 flex flex-col shadow-sm">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <h3 className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
-                                <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                <span>📣 {language === 'kh' ? 'សារជូនដំណឹងសងប្រាក់' : 'Reminder Message'}</span>
-                              </h3>
-                              <p className="text-xs text-slate-400 mt-0.5">
-                                {language === 'kh' ? 'អ្នកអាចសរសេរ ឬកែសម្រួលសារជូនដំណឹងនេះ រួចចម្លងដើម្បីផ្ញើទៅកាន់កូនបំណុលរបស់អ្នក។' : 'You can customize this text message and copy it to send as SMS, Telegram, etc.'}
-                              </p>
+                      {!isReadOnlyShareholder && (
+                        <div className="lg:col-span-5 flex flex-col">
+                          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3 flex-1 flex flex-col shadow-sm">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h3 className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                                  <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                  <span>📣 {language === 'kh' ? 'សារជូនដំណឹងសងប្រាក់' : 'Reminder Message'}</span>
+                                </h3>
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                  {language === 'kh' ? 'អ្នកអាចសរសេរ ឬកែសម្រួលសារជូនដំណឹងនេះ រួចចម្លងដើម្បីផ្ញើទៅកាន់កូនបំណុលរបស់អ្នក។' : 'You can customize this text message and copy it to send as SMS, Telegram, etc.'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Template Presets */}
+                            <div className="flex flex-wrap gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setReminderMessage(getDefaultTemplate('general'))}
+                                className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition flex items-center gap-1 cursor-pointer"
+                              >
+                                🔔 {language === 'kh' ? 'សារទូទៅ' : 'General'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setReminderMessage(getDefaultTemplate('urgent'))}
+                                className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-rose-100 bg-rose-50 hover:bg-rose-100/75 text-rose-700 transition flex items-center gap-1 cursor-pointer"
+                              >
+                                ⚠️ {language === 'kh' ? 'សាររំលឹកបន្ទាន់' : 'Urgent Notice'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setReminderMessage(getDefaultTemplate('thanks'))}
+                                className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-emerald-100 bg-emerald-50 hover:bg-emerald-100/75 text-emerald-700 transition flex items-center gap-1 cursor-pointer"
+                              >
+                                🎉 {language === 'kh' ? 'សារថ្លែងអំណរគុណ' : 'Thank You'}
+                              </button>
+                            </div>
+
+                            {/* Message Textarea */}
+                            <div className="relative flex-1 min-h-[100px] flex flex-col">
+                              <textarea
+                                value={reminderMessage}
+                                onChange={(e) => setReminderMessage(e.target.value)}
+                                rows={4}
+                                className="w-full flex-1 p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-bold text-slate-700 leading-relaxed resize-none"
+                                placeholder={language === 'kh' ? "សរសេរសារជូនដំណឹងនៅទីនេះ..." : "Write message here..."}
+                              />
+                            </div>
+
+                            {/* Action buttons */}
+                            <div className="flex items-center gap-2 pt-2">
+                              <button
+                                type="button"
+                                onClick={handleCopyMessage}
+                                className={`flex-1 py-2 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition duration-150 cursor-pointer ${
+                                  msgCopied
+                                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-600/20'
+                                    : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 border-blue-600 shadow-sm shadow-blue-600/15'
+                                }`}
+                              >
+                                {msgCopied ? (
+                                  <>
+                                    <Check className="w-4 h-4 stroke-[3px]" />
+                                    <span>{language === 'kh' ? 'បានចម្លងសារជូនដំណឹងរួចរាល់!' : 'Reminder Message Copied!'}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-4 h-4" />
+                                    <span>{language === 'kh' ? 'ចម្លងសារ និងតំណភ្ជាប់' : 'Copy Reminder Message'}</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const isFullyPaid = remaining <= 0;
+                                  setReminderMessage(getDefaultTemplate(isFullyPaid ? 'thanks' : 'general'));
+                                }}
+                                className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl border border-slate-200 transition cursor-pointer flex items-center justify-center"
+                                title={language === 'kh' ? "កំណត់ឡើងវិញ" : "Reset Template"}
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
-
-                          {/* Template Presets */}
-                          <div className="flex flex-wrap gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setReminderMessage(getDefaultTemplate('general'))}
-                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition flex items-center gap-1 cursor-pointer"
-                            >
-                              🔔 {language === 'kh' ? 'សារទូទៅ' : 'General'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setReminderMessage(getDefaultTemplate('urgent'))}
-                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-rose-100 bg-rose-50 hover:bg-rose-100/75 text-rose-700 transition flex items-center gap-1 cursor-pointer"
-                            >
-                              ⚠️ {language === 'kh' ? 'សាររំលឹកបន្ទាន់' : 'Urgent Notice'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setReminderMessage(getDefaultTemplate('thanks'))}
-                              className="px-2.5 py-1 text-[10px] font-bold rounded-lg border border-emerald-100 bg-emerald-50 hover:bg-emerald-100/75 text-emerald-700 transition flex items-center gap-1 cursor-pointer"
-                            >
-                              🎉 {language === 'kh' ? 'សារថ្លែងអំណរគុណ' : 'Thank You'}
-                            </button>
-                          </div>
-
-                          {/* Message Textarea */}
-                          <div className="relative flex-1 min-h-[100px] flex flex-col">
-                            <textarea
-                              value={reminderMessage}
-                              onChange={(e) => setReminderMessage(e.target.value)}
-                              rows={4}
-                              className="w-full flex-1 p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-bold text-slate-700 leading-relaxed resize-none"
-                              placeholder={language === 'kh' ? "សរសេរសារជូនដំណឹងនៅទីនេះ..." : "Write message here..."}
-                            />
-                          </div>
-
-                          {/* Action buttons */}
-                          <div className="flex items-center gap-2 pt-2">
-                            <button
-                              type="button"
-                              onClick={handleCopyMessage}
-                              className={`flex-1 py-2 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition duration-150 cursor-pointer ${
-                                msgCopied
-                                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm shadow-emerald-600/20'
-                                  : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 border-blue-600 shadow-sm shadow-blue-600/15'
-                              }`}
-                            >
-                              {msgCopied ? (
-                                <>
-                                  <Check className="w-4 h-4 stroke-[3px]" />
-                                  <span>{language === 'kh' ? 'បានចម្លងសារជូនដំណឹងរួចរាល់!' : 'Reminder Message Copied!'}</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-4 h-4" />
-                                  <span>{language === 'kh' ? 'ចម្លងសារ និងតំណភ្ជាប់' : 'Copy Reminder Message'}</span>
-                                </>
-                              )}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const isFullyPaid = remaining <= 0;
-                                setReminderMessage(getDefaultTemplate(isFullyPaid ? 'thanks' : 'general'));
-                              }}
-                              className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl border border-slate-200 transition cursor-pointer flex items-center justify-center"
-                              title={language === 'kh' ? "កំណត់ឡើងវិញ" : "Reset Template"}
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </button>
-                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* Bottom row: Payment History Logs */}
@@ -2126,7 +2141,7 @@ export default function BorrowerDetail({
                                 <th className="py-2 px-3">{language === 'kh' ? 'ចំនួនទឹកប្រាក់' : 'Amount'}</th>
                                 <th className="py-2 px-3">{language === 'kh' ? 'ប្រភេទការបង់' : 'Payment Type'}</th>
                                 <th className="py-2 px-3">{language === 'kh' ? 'កំណត់សម្គាល់' : 'Notes/Memo'}</th>
-                                <th className="py-2 px-3 text-right">{language === 'kh' ? 'សកម្មភាព' : 'Action'}</th>
+                                {!isReadOnlyShareholder && <th className="py-2 px-3 text-right">{language === 'kh' ? 'សកម្មភាព' : 'Action'}</th>}
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 font-semibold text-slate-600">
@@ -2146,21 +2161,23 @@ export default function BorrowerDetail({
                                     )}
                                   </td>
                                   <td className="py-2 px-3 text-slate-400 italic max-w-[200px] truncate">{pay.note || '-'}</td>
-                                  <td className="py-2 px-3 text-right">
-                                    <button
-                                      onClick={() => {
-                                        const confirmMsg = language === 'kh'
-                                          ? 'តើអ្នកចង់លុបការបង់ប្រាក់នេះឡើងវិញមែនទេ?'
-                                          : 'Are you sure you want to delete this payment record?';
-                                        if (confirm(confirmMsg)) {
-                                          onDeletePayment(borrower.id, pay.id);
-                                        }
-                                      }}
-                                      className="p-1 hover:bg-rose-50 text-rose-500 hover:text-rose-700 rounded-md transition cursor-pointer"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </td>
+                                  {!isReadOnlyShareholder && (
+                                    <td className="py-2 px-3 text-right">
+                                      <button
+                                        onClick={() => {
+                                          const confirmMsg = language === 'kh'
+                                            ? 'តើអ្នកចង់លុបការបង់ប្រាក់នេះឡើងវិញមែនទេ?'
+                                            : 'Are you sure you want to delete this payment record?';
+                                          if (confirm(confirmMsg)) {
+                                            onDeletePayment(borrower.id, pay.id);
+                                          }
+                                        }}
+                                        className="p-1 hover:bg-rose-50 text-rose-500 hover:text-rose-700 rounded-md transition cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </td>
+                                  )}
                                 </tr>
                               ))}
                             </tbody>
@@ -2168,6 +2185,67 @@ export default function BorrowerDetail({
                         </div>
                       )}
                     </div>
+
+                    {/* Partner Revenue History for this Loan */}
+                    {((isReadOnlyShareholder && (shareholders?.length ?? 0) > 0) || borrower.shareholderId || borrower.shareholderName) && (
+                      <div className="p-5 border border-emerald-500/20 bg-emerald-500/5 rounded-2xl space-y-3 shadow-xs">
+                        <h3 className="text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <span>💵</span>
+                            <span>{language === 'kh' ? 'ប្រវត្តិទទួលបានប្រាក់ចំណូលភាគហ៊ុនលើកម្ចីនេះ' : 'Partner Revenue History for this Loan'}</span>
+                          </span>
+                          <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-xl border border-emerald-500/20">
+                            {language === 'kh' ? 'ចំណេញភាគហ៊ុនសរុប៖ ' : 'Total Partner Profit: '}
+                            +${payments.reduce((sum, p) => {
+                              const activeShareholder = (shareholders || []).find(s => s.id === borrower.shareholderId) || (shareholders || [])[0];
+                              const split = calculatePaymentInterestSplit(borrower, p, activeShareholder);
+                              return sum + split.partnerShare;
+                            }, 0).toFixed(2)} USD
+                          </span>
+                        </h3>
+
+                        {payments.length === 0 ? (
+                          <div className="text-center py-4 text-slate-400 text-xs font-bold">
+                            {language === 'kh' ? 'មិនទាន់មានប្រវត្តិបង់ប្រាក់សម្រាប់គណនីកូនបំណុលនេះនៅឡើយទេ' : 'No payments logged for this borrower yet.'}
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs border-collapse">
+                              <thead>
+                                <tr className="border-b border-emerald-500/20 text-emerald-800 dark:text-emerald-400 font-bold uppercase text-[10px]">
+                                  <th className="py-2 px-3">{language === 'kh' ? 'ថ្ងៃបង់ប្រាក់' : 'Payment Date'}</th>
+                                  <th className="py-2 px-3 text-right">{language === 'kh' ? 'ប្រាក់បង់សរុប' : 'Total Paid'}</th>
+                                  <th className="py-2 px-3 text-right">{language === 'kh' ? 'ការប្រាក់' : 'Actual Interest'}</th>
+                                  <th className="py-2 px-3 text-right text-emerald-600 dark:text-emerald-400 font-black">
+                                    {language === 'kh' ? 'ប្រាក់ចំណេញភាគហ៊ុន' : 'Partner Share'}
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-emerald-500/10 font-semibold text-slate-700 dark:text-slate-300">
+                                {[...payments].reverse().map((pay) => {
+                                  const activeShareholder = (shareholders || []).find(s => s.id === borrower.shareholderId) || (shareholders || [])[0];
+                                  const split = calculatePaymentInterestSplit(borrower, pay, activeShareholder);
+                                  return (
+                                    <tr key={pay.id} className="hover:bg-emerald-500/10 transition">
+                                      <td className="py-2.5 px-3 font-mono">{formatKhmerDate(pay.date)}</td>
+                                      <td className="py-2.5 px-3 text-right font-mono text-slate-800 dark:text-slate-200">
+                                        {formatMoney(pay.amount, borrower.currency)}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-right font-mono text-amber-600 dark:text-amber-400">
+                                        ${split.actualInterest.toFixed(2)}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400 font-black">
+                                        +${split.partnerShare.toFixed(2)} USD
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : detailTab === 'statement' ? (
                   <div className="space-y-6">

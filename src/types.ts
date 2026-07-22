@@ -80,6 +80,7 @@ export interface Shareholder {
   notes?: string;
   createdAt: string;
   userId?: string; // owner lender ID
+  profilePhoto?: string; // base64 encoded profile photo string
 }
 
 export interface ChatMessage {
