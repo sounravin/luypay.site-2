@@ -5,9 +5,17 @@ import firebaseConfig from '../../firebase-applet-config.json';
 // Initialize Firebase app
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore with specific database ID if provided
-const db = firebaseConfig.firestoreDatabaseId 
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app);
+// Initialize Firestore using default database unless a custom database ID is explicitly specified
+let db;
+try {
+  const customDbId = firebaseConfig.firestoreDatabaseId;
+  if (customDbId && customDbId !== firebaseConfig.projectId && customDbId !== '(default)') {
+    db = getFirestore(app, customDbId);
+  } else {
+    db = getFirestore(app);
+  }
+} catch (e) {
+  db = getFirestore(app);
+}
 
 export { app, db };
