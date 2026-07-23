@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest, Shareholder } from './types';
+import { Borrower, LedgerStats, CurrencyType, FrequencyType, Payment, Member, SubscriptionRequest, Shareholder } from './types';
 import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound, backfillShortIds, formatMoney } from './utils';
 import Header from './components/Header';
 import BorrowerCard from './components/BorrowerCard';
@@ -2791,52 +2791,137 @@ export default function App() {
     const fileReader = new FileReader();
     fileReader.onload = async (event) => {
       try {
-        const parsed = JSON.parse(event.target?.result as string);
-        if (Array.isArray(parsed)) {
-          // simple check for schema validation
-          const looksValid = parsed.every(item => item.id && item.name && Array.isArray(item.payments));
-          if (!looksValid) {
-            alert('ទម្រង់ឯកសារទិន្នន័យមិនត្រឹមត្រូវឡើយ!');
-            return;
-          }
-
-          let finalImportList: Borrower[] = [];
-          if (confirm('តើអ្នកចង់នាំចូល និងបញ្ចូលជាមួយទិន្នន័យចាស់ដែលមានស្រាប់មែនទេ? (ចុច បោះបង់ ដើម្បីជំនួសទាំងស្រុង)')) {
-            // merge data by appending and removing duplicates by ID
-            const existingIds = new Set(borrowers.map(b => b.id));
-            const merged = [...borrowers];
-            parsed.forEach(item => {
-              if (!existingIds.has(item.id)) {
-                merged.push(item);
-              }
-            });
-            finalImportList = merged;
-          } else {
-            finalImportList = parsed;
-          }
-
-          const sanitized = finalImportList.map((b) => sanitizeForFirestore(b));
-          const userStorageKey = getUserLocalStorageKey(currentUser);
-          const jsonStr = JSON.stringify(sanitized);
-
-          // Force immediate synchronous state + dual local storage & IndexedDB write
-          setBorrowers(sanitized);
-          safeStorage.setItem(userStorageKey, jsonStr);
-          await largeMediaStorage.save(userStorageKey, jsonStr).catch(() => {});
-
-          // Save to Cloud Firestore
-          await saveBorrowers(sanitized);
-
-          showToast('បាននាំចូល និងរក្សាទុកទិន្នន័យក្នុងប្រព័ន្ធដោយជោគជ័យ (Saved to Mobile & Cloud Storage)!');
-        } else {
-          alert('ឯកសារត្រូវតែជាបញ្ជីទិន្នន័យ (Array)!');
+        const fileContent = event.target?.result as string;
+        if (!fileContent || !fileContent.trim()) {
+          alert('ឯកសារទិន្នន័យទទេស្អាត!');
+          return;
         }
+
+        const parsed = JSON.parse(fileContent);
+        
+        // Extract array from parsed JSON whether it's direct array or wrapped in object
+        let rawList: any[] = [];
+        if (Array.isArray(parsed)) {
+          rawList = parsed;
+        } else if (parsed && typeof parsed === 'object') {
+          if (Array.isArray(parsed.borrowers)) rawList = parsed.borrowers;
+          else if (Array.isArray(parsed.data)) rawList = parsed.data;
+          else if (Array.isArray(parsed.list)) rawList = parsed.list;
+          else if (Array.isArray(parsed.items)) rawList = parsed.items;
+        }
+
+        if (!rawList || rawList.length === 0) {
+          alert('ឯកសារ JSON នេះគ្មានទិន្នន័យកូនបំណុលឡើយ!');
+          return;
+        }
+
+        // Normalize every record so it matches Borrower interface completely
+        const normalizedList: Borrower[] = rawList.map((item: any, idx: number) => {
+          const principal = Number(item.principal || item.loanAmount || item.amount || 0);
+          const duration = Number(item.duration || 1);
+          const totalToPay = Number(item.totalToPay || item.totalToCollect || principal);
+          const installmentAmount = Number(
+            item.installmentAmount || (duration > 0 ? Math.round(totalToPay / duration) : totalToPay)
+          );
+          const freq: FrequencyType = item.frequency === 'weekly' || item.frequency === 'monthly' ? item.frequency : 'daily';
+          const curr: CurrencyType = item.currency === 'KHR' ? 'KHR' : 'USD';
+
+          return {
+            id: String(item.id || `b_imp_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`),
+            shortId: item.shortId ? String(item.shortId) : undefined,
+            name: String(item.name || item.borrowerName || item.clientName || `កូនបំណុល #${idx + 1}`),
+            phone: String(item.phone || item.phoneNumber || ''),
+            loanDate: String(item.loanDate || item.startDate || getTodayDateString()),
+            principal,
+            totalToPay,
+            installmentAmount,
+            frequency: freq,
+            duration,
+            currency: curr,
+            notes: item.notes ? String(item.notes) : '',
+            payments: Array.isArray(item.payments) ? item.payments : [],
+            isArchived: Boolean(item.isArchived || item.standing === 'archived' || item.standing === 'completed'),
+            interestType: item.interestType || 'fixed',
+            interestValue: Number(item.interestValue || item.rate || 0),
+            paymentMode: item.paymentMode || 'all',
+            interestCalculation: item.interestCalculation || 'flat',
+            statusTag: item.statusTag || 'good',
+            autoCheckIn: Boolean(item.autoCheckIn),
+            dueTime: item.dueTime || undefined,
+            noticeMessage: item.noticeMessage || undefined,
+            chatMessages: Array.isArray(item.chatMessages) ? item.chatMessages : [],
+            profilePhoto: item.profilePhoto || item.photoURL || undefined,
+            avatarFrame: item.avatarFrame || undefined,
+            coverPhoto: item.coverPhoto || undefined,
+            paymentQr: item.paymentQr || undefined,
+            userId: item.userId || currentUser || undefined,
+            reportedPayments: Array.isArray(item.reportedPayments) ? item.reportedPayments : [],
+          };
+        });
+
+        const isMerge = confirm(
+          language === 'kh'
+            ? 'តើអ្នកចង់នាំចូល និងបញ្ចូលជាមួយទិន្នន័យចាស់ដែលមានស្រាប់មែនទេ?\n\n• ចុច "OK" ដើម្បីបញ្ចូលបន្ថែម (Merge)\n• ចុច "Cancel" ដើម្បីជំនួសទិន្នន័យចាស់ទាំងអស់ (Replace All)'
+            : 'Do you want to merge with existing data?\n\n• Click "OK" to Merge\n• Click "Cancel" to Replace All'
+        );
+
+        let finalImportList: Borrower[] = [];
+        if (isMerge) {
+          // Merge: update existing ones by ID or append new ones
+          const existingMap = new Map(borrowers.map(b => [b.id, b]));
+          normalizedList.forEach(item => {
+            existingMap.set(item.id, item); // Imported item updates or appends
+          });
+          finalImportList = Array.from(existingMap.values());
+        } else {
+          // Replace all: remove old documents from Firestore that are not in the new import list
+          if (isLoggedIn) {
+            const importedIds = new Set(normalizedList.map(b => b.id));
+            const toDelete = borrowers.filter(b => !importedIds.has(b.id));
+            for (const oldB of toDelete) {
+              try {
+                await deleteDoc(doc(db, 'borrowers', oldB.id));
+              } catch (err) {
+                console.warn('Unable to delete old doc from firestore during import replace:', err);
+              }
+            }
+          }
+          finalImportList = normalizedList;
+        }
+
+        // Sort descending by ID
+        finalImportList.sort((a, b) => b.id.localeCompare(a.id));
+
+        const sanitized = finalImportList.map((b) => sanitizeForFirestore(b));
+        const userStorageKey = getUserLocalStorageKey(currentUser);
+        const guestStorageKey = getUserLocalStorageKey(null);
+        const jsonStr = JSON.stringify(sanitized);
+
+        // 1. Instantly update React state
+        setBorrowers(sanitized);
+
+        // 2. Instantly persist to synchronous localStorage AND asynchronous IndexedDB
+        safeStorage.setItem(userStorageKey, jsonStr);
+        safeStorage.setItem(guestStorageKey, jsonStr);
+        await largeMediaStorage.save(userStorageKey, jsonStr).catch(() => {});
+        await largeMediaStorage.save(guestStorageKey, jsonStr).catch(() => {});
+
+        // 3. Persist to Cloud Firestore database
+        await saveBorrowers(sanitized);
+
+        showToast(
+          language === 'kh'
+            ? 'បាននាំចូល និងរក្សាទុកទិន្នន័យក្នុងប្រព័ន្ធដោយជោគជ័យ!'
+            : 'Backup data imported & saved successfully across mobile & desktop!',
+          'success'
+        );
       } catch (err) {
+        console.error('Import error:', err);
         alert('មានបញ្ហាក្នុងការអានឯកសារ JSON នេះ៖ ' + err);
       }
     };
     fileReader.readAsText(files[0]);
-    // reset target value so the same file can be uploaded again
+    // reset target value so the same file can be selected again
     e.target.value = '';
   };
 
@@ -4301,6 +4386,13 @@ export default function App() {
                 </button>
 
                 {/* Import Button */}
+                <input
+                  id="mobile-import-file"
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportBackup}
+                  className="hidden"
+                />
                 <button 
                   onClick={() => { document.getElementById('mobile-import-file')?.click(); playClickSound(); }}
                   className="flex flex-col items-center gap-1.5 text-center cursor-pointer group border-none bg-transparent"
