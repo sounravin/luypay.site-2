@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Borrower, LedgerStats, CurrencyType, FrequencyType, Payment, Member, SubscriptionRequest, Shareholder } from './types';
+import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest, Shareholder } from './types';
 import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound, backfillShortIds, formatMoney } from './utils';
 import Header from './components/Header';
 import BorrowerCard from './components/BorrowerCard';
@@ -131,10 +131,7 @@ export default function App() {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
 
   // Secure Auth State
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    const saved = safeStorage.getItem('luypay_logged_in');
-    return saved !== 'false';
-  });
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => safeStorage.getItem('luypay_logged_in') === 'true');
   const [currentUser, setCurrentUser] = useState<string>(() => safeStorage.getItem('luypay_current_user') || 'sounravin');
   const [userDisplayName, setUserDisplayName] = useState<string>(() => safeStorage.getItem('luypay_user_display_name') || 'Soun Ravin');
   const [userAuthType, setUserAuthType] = useState<'credentials' | 'google' | 'facebook'>(() => (safeStorage.getItem('luypay_auth_type') as any) || 'credentials');
@@ -938,6 +935,23 @@ export default function App() {
   const [isSponsorDismissed, setIsSponsorDismissed] = useState<boolean>(() => {
     return safeStorage.getItem('luypay_sponsor_dismissed') === 'true';
   });
+  const [hideBorrowerAvatarFrames, setHideBorrowerAvatarFrames] = useState<boolean>(() => {
+    return safeStorage.getItem('luypay_hide_borrower_avatar_frames') === 'true';
+  });
+
+  const handleRemoveAllBorrowerAvatarFrames = () => {
+    const isKh = language === 'kh';
+    if (confirm(isKh ? 'តើអ្នកពិតជាចង់លុបស៊ុម Avatar នៅលើផ្ទាំងកូនបំណុលទាំងអស់មែនទេ? (ទិន្នន័យកូនបំណុល និងប្រវត្តិកម្ចីទាំងអស់នឹងត្រូវរក្សាទុក ១០០% ដោយគ្មានការប៉ះពាល់)' : 'Are you sure you want to remove Avatar Frames from all debtor cards? (All debtor data and loan logs will be 100% preserved)')) {
+      setHideBorrowerAvatarFrames(true);
+      safeStorage.setItem('luypay_hide_borrower_avatar_frames', 'true');
+      const updatedBorrowers = borrowers.map(b => ({
+        ...b,
+        avatarFrame: 'none'
+      }));
+      saveBorrowers(updatedBorrowers);
+      showToast(isKh ? 'បានលុបស៊ុម Avatar លើផ្ទាំងកូនបំណុលទាំងអស់រួចរាល់! ទិន្នន័យកូនបំណុលទាំងអស់ត្រូវបានរក្សាទុក ១០០% ដោយសុវត្ថិភាព។' : 'Removed Avatar Frames from all debtor cards! All debtor data was preserved 100%.', 'success');
+    }
+  };
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingOldPassword, setSettingOldPassword] = useState('');
   const [settingNewPassword, setSettingNewPassword] = useState('');
@@ -1509,166 +1523,130 @@ export default function App() {
   // Cloud Sync Status
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('offline');
 
-  // Real-time synchronization across browser tabs/windows (for both Mobile and Computer views)
+  // Load and sync with Firestore if logged in or viewing partner portal, otherwise load from localStorage
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (!e.key) return;
-      const userStorageKey = getUserLocalStorageKey(currentUser);
-      
-      if (e.key === userStorageKey && e.newValue) {
+    if (!isLoggedIn && !partnerParam) {
+      setCloudSyncStatus('offline');
+      const stored = safeStorage.getItem(getUserLocalStorageKey(null));
+      let currentBorrowers: Borrower[] = [];
+      if (stored) {
         try {
-          const updatedList = JSON.parse(e.newValue);
-          setBorrowers(updatedList);
+          currentBorrowers = JSON.parse(stored);
         } catch (err) {
-          console.warn('Browser storage sync error:', err);
+          currentBorrowers = SEED_BORROWERS;
         }
-      } else if (e.key === `luypay_shareholders_${currentUser}` && e.newValue) {
-        try {
-          setShareholders(JSON.parse(e.newValue));
-        } catch (err) {}
-      } else if (e.key === 'luypay_theme' && e.newValue) {
-        setTheme(e.newValue as 'light' | 'dark');
-      } else if (e.key === 'luypay_app_theme' && e.newValue) {
-        setAppTheme(e.newValue as AppThemeType);
+      } else {
+        currentBorrowers = SEED_BORROWERS;
       }
-    };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [currentUser]);
-
-  // Load and sync with Firestore in real-time
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadData = async () => {
-      // Cloud Firestore Mode
-      setCloudSyncStatus('syncing');
-      const q = query(collection(db, 'borrowers'));
-      
-      const unsubscribe = onSnapshot(q, async (snapshot) => {
-        if (!isMounted) return;
-        const fbBorrowers: Borrower[] = [];
-        snapshot.forEach((docSnap) => {
-          fbBorrowers.push({ id: docSnap.id, ...docSnap.data() } as Borrower);
-        });
-
-        // Sort descending by id
-        fbBorrowers.sort((a, b) => b.id.localeCompare(a.id));
-
-        const userStorageKey = getUserLocalStorageKey(currentUser);
-        let stored = safeStorage.getItem(userStorageKey);
+      const { updatedList, hasChanges } = runAutoCheckInForBorrowers(currentBorrowers);
+      if (hasChanges) {
+        setBorrowers(updatedList);
+        safeStorage.setItem(getUserLocalStorageKey(null), JSON.stringify(updatedList));
+      } else {
+        setBorrowers(currentBorrowers);
         if (!stored) {
-          stored = await safeStorage.getItemAsync(userStorageKey);
+          safeStorage.setItem(getUserLocalStorageKey(null), JSON.stringify(SEED_BORROWERS));
         }
+      }
+      return;
+    }
 
+    // Cloud Firestore Mode
+    setCloudSyncStatus('syncing');
+    const q = (isLoggedIn && currentUser)
+      ? query(collection(db, 'borrowers'), where('userId', '==', currentUser))
+      : query(collection(db, 'borrowers'));
+    
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const fbBorrowers: Borrower[] = [];
+      snapshot.forEach((docSnap) => {
+        fbBorrowers.push({ id: docSnap.id, ...docSnap.data() } as Borrower);
+      });
+
+      // Sort descending by id
+      fbBorrowers.sort((a, b) => b.id.localeCompare(a.id));
+
+      const userStorageKey = getUserLocalStorageKey(currentUser);
+
+      // If Firestore is empty
+      if (fbBorrowers.length === 0) {
+        // Try to migrate local storage data to Firestore (for any user who might have worked offline)
+        const stored = safeStorage.getItem(userStorageKey);
         let localData: Borrower[] = [];
         if (stored) {
           try {
             localData = JSON.parse(stored);
           } catch (e) {}
         }
+        
+        if (localData.length === 0 && currentUser === 'sounravin') {
+          localData = SEED_BORROWERS;
+        }
 
-        // If Firestore is empty
-        if (fbBorrowers.length === 0) {
-          if (localData.length === 0 && currentUser === 'sounravin') {
-            localData = SEED_BORROWERS;
-          }
-
-          if (localData.length > 0) {
-            // Upload local data to Firestore as initial seed / migration
-            try {
-              const { updatedList } = runAutoCheckInForBorrowers(localData);
-              
-              // Chunking local data for batch commits
-              const CHUNK_SIZE = 400;
-              for (let i = 0; i < updatedList.length; i += CHUNK_SIZE) {
-                const batch = writeBatch(db);
-                const chunk = updatedList.slice(i, i + CHUNK_SIZE);
-                chunk.forEach((b) => {
-                  const docRef = doc(db, 'borrowers', b.id);
-                  const docData = sanitizeForFirestore({ ...b, userId: currentUser || 'guest' });
-                  batch.set(docRef, docData);
-                });
-                await batch.commit();
-              }
-              
-              setCloudSyncStatus('synced');
-              setBorrowers(updatedList);
-            } catch (err) {
-              console.error('Error migrating to Firestore:', err);
-              setCloudSyncStatus('error');
-              // Show the local data anyway so they can see their offline/imported data
-              setBorrowers(localData);
+        if (localData.length > 0) {
+          // Upload local data to Firestore as initial seed / migration
+          try {
+            const { updatedList } = runAutoCheckInForBorrowers(localData);
+            
+            // Chunking local data for batch commits
+            const CHUNK_SIZE = 400;
+            for (let i = 0; i < updatedList.length; i += CHUNK_SIZE) {
+              const batch = writeBatch(db);
+              const chunk = updatedList.slice(i, i + CHUNK_SIZE);
+              chunk.forEach((b) => {
+                const docRef = doc(db, 'borrowers', b.id);
+                const docData = sanitizeForFirestore({ ...b, userId: currentUser || 'guest' });
+                batch.set(docRef, docData);
+              });
+              await batch.commit();
             }
-          } else {
-            setBorrowers([]);
-            safeStorage.setItem(userStorageKey, JSON.stringify([]));
+            
             setCloudSyncStatus('synced');
+            setBorrowers(updatedList);
+          } catch (err) {
+            console.error('Error migrating to Firestore:', err);
+            setCloudSyncStatus('error');
+            // Show the local data anyway so they can see their offline data
+            setBorrowers(localData);
           }
         } else {
-          // Merge local data (especially recently imported data) with Firestore data to prevent wiping imported items
-          let combined = [...fbBorrowers];
-          if (localData.length > 0) {
-            const fbIds = new Set(fbBorrowers.map((b) => b.id));
-            let mergedNew = false;
-            localData.forEach((lb) => {
-              if (!fbIds.has(lb.id)) {
-                combined.push(lb);
-                mergedNew = true;
-              }
-            });
-            if (mergedNew) {
-              combined.sort((a, b) => b.id.localeCompare(a.id));
-            }
-          }
-
-          const { updatedList, hasChanges } = runAutoCheckInForBorrowers(combined);
-          if (hasChanges) {
-            saveBorrowers(updatedList);
-          } else {
-            setBorrowers(updatedList);
-            safeStorage.setItem(userStorageKey, JSON.stringify(updatedList));
-            setCloudSyncStatus('synced');
-          }
+          setBorrowers([]);
+          safeStorage.setItem(userStorageKey, JSON.stringify([]));
+          setCloudSyncStatus('synced');
         }
-      }, async (error) => {
-        if (!isMounted) return;
-        console.warn('Unable to load realtime database updates from cloud storage (falling back to offline local storage):', error.message || error);
-        setCloudSyncStatus('error');
-        
-        // Fallback to local storage or IndexedDB on Firestore errors (like quota exceeded)
-        const userStorageKey = getUserLocalStorageKey(currentUser);
-        let stored = safeStorage.getItem(userStorageKey);
-        if (!stored) {
-          stored = await safeStorage.getItemAsync(userStorageKey);
+      } else {
+        const { updatedList, hasChanges } = runAutoCheckInForBorrowers(fbBorrowers);
+        if (hasChanges) {
+          saveBorrowers(updatedList);
+        } else {
+          setBorrowers(fbBorrowers);
+          safeStorage.setItem(userStorageKey, JSON.stringify(fbBorrowers));
+          setCloudSyncStatus('synced');
         }
-
-        if (stored) {
-          try {
-            const localData = JSON.parse(stored);
-            const { updatedList } = runAutoCheckInForBorrowers(localData);
-            setBorrowers(updatedList);
-          } catch (e: any) {
-            console.warn('Unable to parse local storage fallback data:', e.message || e);
-          }
-        } else if (currentUser === 'sounravin') {
-          setBorrowers(SEED_BORROWERS);
+      }
+    }, (error) => {
+      console.warn('Unable to load realtime database updates from cloud storage (falling back to offline local storage):', error.message || error);
+      setCloudSyncStatus('error');
+      
+      // Fallback to local storage on Firestore errors (like quota exceeded)
+      const userStorageKey = getUserLocalStorageKey(currentUser);
+      const stored = safeStorage.getItem(userStorageKey);
+      if (stored) {
+        try {
+          const localData = JSON.parse(stored);
+          const { updatedList } = runAutoCheckInForBorrowers(localData);
+          setBorrowers(updatedList);
+        } catch (e: any) {
+          console.warn('Unable to parse local storage fallback data:', e.message || e);
         }
-      });
-
-      return unsubscribe;
-    };
-
-    let unsubFn: (() => void) | undefined;
-    loadData().then((unsub) => {
-      unsubFn = unsub;
+      } else if (currentUser === 'sounravin') {
+        // Fallback to seed data for default user if no local storage exists
+        setBorrowers(SEED_BORROWERS);
+      }
     });
 
-    return () => {
-      isMounted = false;
-      if (unsubFn) unsubFn();
-    };
+    return () => unsubscribe();
   }, [isLoggedIn, currentUser]);
 
   // Real-time synchronization for admin dashboard and user profile
@@ -2214,31 +2192,31 @@ export default function App() {
     }, 800);
   };
 
-  // Save to local storage and sync to Cloud Firestore
+  // Save to local storage and sync to Firestore if logged in
   const saveBorrowers = async (newList: Borrower[]) => {
     const sanitizedList = newList.map((b) => sanitizeForFirestore(b));
     setBorrowers(sanitizedList);
-    const userStorageKey = getUserLocalStorageKey(currentUser);
-    safeStorage.setItem(userStorageKey, JSON.stringify(sanitizedList));
-    largeMediaStorage.save(userStorageKey, JSON.stringify(sanitizedList)).catch(() => {});
+    safeStorage.setItem(getUserLocalStorageKey(currentUser), JSON.stringify(sanitizedList));
     
-    setCloudSyncStatus('syncing');
-    try {
-      const CHUNK_SIZE = 400;
-      for (let i = 0; i < sanitizedList.length; i += CHUNK_SIZE) {
-        const chunk = sanitizedList.slice(i, i + CHUNK_SIZE);
-        const batch = writeBatch(db);
-        chunk.forEach((b) => {
-          const docRef = doc(db, 'borrowers', b.id);
-          const docData = sanitizeForFirestore({ ...b, userId: currentUser || 'sounravin' });
-          batch.set(docRef, docData);
-        });
-        await batch.commit();
+    if (isLoggedIn) {
+      setCloudSyncStatus('syncing');
+      try {
+        const CHUNK_SIZE = 400;
+        for (let i = 0; i < sanitizedList.length; i += CHUNK_SIZE) {
+          const chunk = sanitizedList.slice(i, i + CHUNK_SIZE);
+          const batch = writeBatch(db);
+          chunk.forEach((b) => {
+            const docRef = doc(db, 'borrowers', b.id);
+            const docData = sanitizeForFirestore({ ...b, userId: currentUser || 'guest' });
+            batch.set(docRef, docData);
+          });
+          await batch.commit();
+        }
+        setCloudSyncStatus('synced');
+      } catch (err) {
+        console.error('Error syncing list to Firestore:', err);
+        setCloudSyncStatus('error');
       }
-      setCloudSyncStatus('synced');
-    } catch (err) {
-      console.error('Error syncing list to Firestore:', err);
-      setCloudSyncStatus('error');
     }
   };
 
@@ -2639,17 +2617,17 @@ export default function App() {
   const handleDeleteBorrower = async (borrowerId: string) => {
     const newList = borrowers.filter((b) => b.id !== borrowerId);
     setBorrowers(newList);
-    const userKey = getUserLocalStorageKey(currentUser);
-    safeStorage.setItem(userKey, JSON.stringify(newList));
-    largeMediaStorage.save(userKey, JSON.stringify(newList)).catch(() => {});
+    safeStorage.setItem(getUserLocalStorageKey(currentUser), JSON.stringify(newList));
     
-    setCloudSyncStatus('syncing');
-    try {
-      await deleteDoc(doc(db, 'borrowers', borrowerId));
-      setCloudSyncStatus('synced');
-    } catch (err) {
-      console.error('Error deleting from Firestore:', err);
-      setCloudSyncStatus('error');
+    if (isLoggedIn) {
+      setCloudSyncStatus('syncing');
+      try {
+        await deleteDoc(doc(db, 'borrowers', borrowerId));
+        setCloudSyncStatus('synced');
+      } catch (err) {
+        console.error('Error deleting from Firestore:', err);
+        setCloudSyncStatus('error');
+      }
     }
     setSelectedBorrowerId(null);
     showToast('បានលុបព័ត៌មានអ្នកខ្ចីរួចរាល់ហើយ!', 'info');
@@ -2756,137 +2734,41 @@ export default function App() {
     if (!files || files.length === 0) return;
 
     const fileReader = new FileReader();
-    fileReader.onload = async (event) => {
+    fileReader.onload = (event) => {
       try {
-        const fileContent = event.target?.result as string;
-        if (!fileContent || !fileContent.trim()) {
-          alert('ឯកសារទិន្នន័យទទេស្អាត!');
-          return;
-        }
-
-        const parsed = JSON.parse(fileContent);
-        
-        // Extract array from parsed JSON whether it's direct array or wrapped in object
-        let rawList: any[] = [];
+        const parsed = JSON.parse(event.target?.result as string);
         if (Array.isArray(parsed)) {
-          rawList = parsed;
-        } else if (parsed && typeof parsed === 'object') {
-          if (Array.isArray(parsed.borrowers)) rawList = parsed.borrowers;
-          else if (Array.isArray(parsed.data)) rawList = parsed.data;
-          else if (Array.isArray(parsed.list)) rawList = parsed.list;
-          else if (Array.isArray(parsed.items)) rawList = parsed.items;
-        }
-
-        if (!rawList || rawList.length === 0) {
-          alert('ឯកសារ JSON នេះគ្មានទិន្នន័យកូនបំណុលឡើយ!');
-          return;
-        }
-
-        // Normalize every record so it matches Borrower interface completely
-        const normalizedList: Borrower[] = rawList.map((item: any, idx: number) => {
-          const principal = Number(item.principal || item.loanAmount || item.amount || 0);
-          const duration = Number(item.duration || 1);
-          const totalToPay = Number(item.totalToPay || item.totalToCollect || principal);
-          const installmentAmount = Number(
-            item.installmentAmount || (duration > 0 ? Math.round(totalToPay / duration) : totalToPay)
-          );
-          const freq: FrequencyType = item.frequency === 'weekly' || item.frequency === 'monthly' ? item.frequency : 'daily';
-          const curr: CurrencyType = item.currency === 'KHR' ? 'KHR' : 'USD';
-
-          return {
-            id: String(item.id || `b_imp_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`),
-            shortId: item.shortId ? String(item.shortId) : undefined,
-            name: String(item.name || item.borrowerName || item.clientName || `កូនបំណុល #${idx + 1}`),
-            phone: String(item.phone || item.phoneNumber || ''),
-            loanDate: String(item.loanDate || item.startDate || getTodayDateString()),
-            principal,
-            totalToPay,
-            installmentAmount,
-            frequency: freq,
-            duration,
-            currency: curr,
-            notes: item.notes ? String(item.notes) : '',
-            payments: Array.isArray(item.payments) ? item.payments : [],
-            isArchived: Boolean(item.isArchived || item.standing === 'archived' || item.standing === 'completed'),
-            interestType: item.interestType || 'fixed',
-            interestValue: Number(item.interestValue || item.rate || 0),
-            paymentMode: item.paymentMode || 'all',
-            interestCalculation: item.interestCalculation || 'flat',
-            statusTag: item.statusTag || 'good',
-            autoCheckIn: Boolean(item.autoCheckIn),
-            dueTime: item.dueTime || undefined,
-            noticeMessage: item.noticeMessage || undefined,
-            chatMessages: Array.isArray(item.chatMessages) ? item.chatMessages : [],
-            profilePhoto: item.profilePhoto || item.photoURL || undefined,
-            avatarFrame: item.avatarFrame || undefined,
-            coverPhoto: item.coverPhoto || undefined,
-            paymentQr: item.paymentQr || undefined,
-            userId: item.userId || currentUser || undefined,
-            reportedPayments: Array.isArray(item.reportedPayments) ? item.reportedPayments : [],
-          };
-        });
-
-        const isMerge = confirm(
-          language === 'kh'
-            ? 'តើអ្នកចង់នាំចូល និងបញ្ចូលជាមួយទិន្នន័យចាស់ដែលមានស្រាប់មែនទេ?\n\n• ចុច "OK" ដើម្បីបញ្ចូលបន្ថែម (Merge)\n• ចុច "Cancel" ដើម្បីជំនួសទិន្នន័យចាស់ទាំងអស់ (Replace All)'
-            : 'Do you want to merge with existing data?\n\n• Click "OK" to Merge\n• Click "Cancel" to Replace All'
-        );
-
-        let finalImportList: Borrower[] = [];
-        if (isMerge) {
-          // Merge: update existing ones by ID or append new ones
-          const existingMap = new Map(borrowers.map(b => [b.id, b]));
-          normalizedList.forEach(item => {
-            existingMap.set(item.id, item); // Imported item updates or appends
-          });
-          finalImportList = Array.from(existingMap.values());
-        } else {
-          // Replace all: remove old documents from Firestore that are not in the new import list
-          const importedIds = new Set(normalizedList.map(b => b.id));
-          const toDelete = borrowers.filter(b => !importedIds.has(b.id));
-          for (const oldB of toDelete) {
-            try {
-              await deleteDoc(doc(db, 'borrowers', oldB.id));
-            } catch (err) {
-              console.warn('Unable to delete old doc from firestore during import replace:', err);
-            }
+          // simple check for schema validation
+          const looksValid = parsed.every(item => item.id && item.name && Array.isArray(item.payments));
+          if (!looksValid) {
+            alert('ទម្រង់ឯកសារទិន្នន័យមិនត្រឹមត្រូវឡើយ!');
+            return;
           }
-          finalImportList = normalizedList;
+
+          if (confirm('តើអ្នកចង់នាំចូល និងបញ្ចូលជាមួយទិន្នន័យចាស់ដែលមានស្រាប់មែនទេ? (ចុច បោះបង់ ដើម្បីជំនួសទាំងស្រុង)')) {
+            // merge data by appending and removing duplicates by ID
+            const existingIds = new Set(borrowers.map(b => b.id));
+            const merged = [...borrowers];
+            parsed.forEach(item => {
+              if (!existingIds.has(item.id)) {
+                merged.push(item);
+              }
+            });
+            saveBorrowers(merged);
+            showToast('បាននាំចូល និងបញ្ចូលទិន្នន័យដោយជោគជ័យ!');
+          } else {
+            saveBorrowers(parsed);
+            showToast('បានជំនួសទិន្នន័យចាស់ និងនាំចូលទិន្នន័យថ្មីទាំងស្រុង!');
+          }
+        } else {
+          alert('ឯកសារត្រូវតែជាបញ្ជីទិន្នន័យ (Array)!');
         }
-
-        // Sort descending by ID
-        finalImportList.sort((a, b) => b.id.localeCompare(a.id));
-
-        const sanitized = finalImportList.map((b) => sanitizeForFirestore(b));
-        const userStorageKey = getUserLocalStorageKey(currentUser);
-        const guestStorageKey = getUserLocalStorageKey(null);
-        const jsonStr = JSON.stringify(sanitized);
-
-        // 1. Instantly update React state
-        setBorrowers(sanitized);
-
-        // 2. Instantly persist to synchronous localStorage AND asynchronous IndexedDB
-        safeStorage.setItem(userStorageKey, jsonStr);
-        safeStorage.setItem(guestStorageKey, jsonStr);
-        await largeMediaStorage.save(userStorageKey, jsonStr).catch(() => {});
-        await largeMediaStorage.save(guestStorageKey, jsonStr).catch(() => {});
-
-        // 3. Persist to Cloud Firestore database
-        await saveBorrowers(sanitized);
-
-        showToast(
-          language === 'kh'
-            ? 'បាននាំចូល និងរក្សាទុកទិន្នន័យក្នុងប្រព័ន្ធដោយជោគជ័យ!'
-            : 'Backup data imported & saved successfully across mobile & desktop!',
-          'success'
-        );
       } catch (err) {
-        console.error('Import error:', err);
         alert('មានបញ្ហាក្នុងការអានឯកសារ JSON នេះ៖ ' + err);
       }
     };
     fileReader.readAsText(files[0]);
-    // reset target value so the same file can be selected again
+    // reset target value so the same file can be uploaded again
     e.target.value = '';
   };
 
@@ -4351,13 +4233,6 @@ export default function App() {
                 </button>
 
                 {/* Import Button */}
-                <input
-                  id="mobile-import-file"
-                  type="file"
-                  accept=".json"
-                  onChange={handleImportBackup}
-                  className="hidden"
-                />
                 <button 
                   onClick={() => { document.getElementById('mobile-import-file')?.click(); playClickSound(); }}
                   className="flex flex-col items-center gap-1.5 text-center cursor-pointer group border-none bg-transparent"
@@ -5508,19 +5383,9 @@ export default function App() {
                     </a>
                   </div>
                 </div>
-                <div className="flex flex-col gap-1 mt-1">
-                  <p className={`text-[9px] leading-none ${
-                    mobileHeaderStyle === 'angkor' ? 'text-amber-200/80 font-bold' : 'opacity-70'
-                  }`}>{t('accountLabel')} {userDisplayName} ({currentUser})</p>
-                  <span className={`inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-md w-max ${
-                    mobileHeaderStyle === 'angkor'
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
-                      : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  }`}>
-                    <Cloud className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
-                    {cloudSyncStatus === 'synced' ? t('cloudSaved') : t('syncError')}
-                  </span>
-                </div>
+                <p className={`text-[9px] leading-none mt-1 ${
+                  mobileHeaderStyle === 'angkor' ? 'text-amber-200/80 font-bold' : 'opacity-70'
+                }`}>{t('accountLabel')} {userDisplayName} ({currentUser})</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -6104,6 +5969,66 @@ export default function App() {
                 </div>
               )}
 
+              {/* Cloud Firestore Status & Avatar Frame Manager Banner */}
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-slate-200 shadow-sm mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-black text-lg shrink-0">
+                    ☁️
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-sky-300 flex items-center gap-2">
+                      <span>{language === 'kh' ? 'របៀបដំណើរការ Cloud Firestore ផ្ទាល់ (Pure Cloud Sync)' : 'Pure Cloud Firestore Mode'}</span>
+                      <span className="bg-emerald-500/20 text-emerald-300 text-[9px] px-2 py-0.5 rounded-full border border-emerald-500/30 font-bold">
+                        {language === 'kh' ? 'មិនទាមទារ Local Storage ឡើយ' : 'No Local Storage Required'}
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-slate-400 font-bold mt-0.5 leading-tight">
+                      {language === 'kh' 
+                        ? 'រាល់ទិន្នន័យកូនបំណុល និងការកត់ត្រាទាំងអស់ត្រូវបានធ្វើការ Synchronize ផ្ទាល់នៅលើ Cloud 100% ដោយមិនចំណាយ Storage លើ Browser ឬ Mobile ឡើយ។' 
+                        : 'All borrower records and transactions sync 100% directly with Cloud Firestore without relying on browser local storage.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
+                  <button
+                    onClick={() => {
+                      const nextVal = !hideBorrowerAvatarFrames;
+                      setHideBorrowerAvatarFrames(nextVal);
+                      safeStorage.setItem('luypay_hide_borrower_avatar_frames', String(nextVal));
+                      showToast(
+                        language === 'kh' 
+                          ? (nextVal ? 'បានលាក់ស៊ុម Avatar លើផ្ទាំងកូនបំណុលរួចរាល់ (ទិន្នន័យកូនបំណុលរក្សាទុក ១០០%)' : 'បានបង្ហាញស៊ុម Avatar លើផ្ទាំងកូនបំណុលវិញ') 
+                          : (nextVal ? 'Hidden Avatar frames on debtor cards (Data 100% safe)' : 'Shown Avatar frames on debtor cards'), 
+                        'info'
+                      );
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer border flex items-center gap-1.5 ${
+                      hideBorrowerAvatarFrames
+                        ? 'bg-amber-500 text-slate-950 border-amber-400 font-extrabold shadow-sm'
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                    }`}
+                    title={language === 'kh' ? 'បិទ/បើក ការបង្ហាញស៊ុម Avatar លើផ្ទាំងកូនបំណុល' : 'Toggle Avatar Frames on Debtor Cards'}
+                  >
+                    <span>🖼️</span>
+                    <span>
+                      {hideBorrowerAvatarFrames
+                        ? (language === 'kh' ? 'បានលាក់ស៊ុម Avatar រួចហើយ' : 'Avatar Frames Hidden')
+                        : (language === 'kh' ? 'លាក់ស៊ុម Avatar លើផ្ទាំង' : 'Hide Avatar Frames')}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={handleRemoveAllBorrowerAvatarFrames}
+                    className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-black text-xs rounded-xl border border-rose-500/30 transition cursor-pointer flex items-center gap-1.5"
+                    title={language === 'kh' ? 'លុបស៊ុម Avatar ចេញពីកូនបំណុលទាំងអស់ (ទិន្នន័យកូនបំណុលរក្សាទុកដដែល)' : 'Remove Avatar frame from all debtors'}
+                  >
+                    <span>🗑️</span>
+                    <span>{language === 'kh' ? 'លុបស៊ុម Avatar ទាំងអស់' : 'Remove All Frames'}</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Borrowers Grid View */}
               {filteredBorrowers.length === 0 ? (
                 <div id="no-data-display" className={`border border-dashed rounded-2xl py-16 text-center space-y-3 shadow-sm ${currentThemeConfig.cardClass}`}>
@@ -6139,6 +6064,7 @@ export default function App() {
                       buttonStyle={buttonStyle}
                       appTheme={appTheme}
                       isDark={isDark}
+                      hideAvatarFrame={hideBorrowerAvatarFrames}
                     />
                   ))}
                 </div>

@@ -18,6 +18,7 @@ interface BorrowerCardProps {
   buttonStyle?: ButtonStyleType;
   appTheme?: AppThemeType;
   isDark?: boolean;
+  hideAvatarFrame?: boolean;
 }
 
 export default function BorrowerCard({ 
@@ -29,7 +30,8 @@ export default function BorrowerCard({
   onToggleSelect, 
   buttonStyle = 'kbach',
   appTheme = 'slate',
-  isDark = false
+  isDark = false,
+  hideAvatarFrame = false
 }: BorrowerCardProps) {
   // 10-second ticker to keep cards status up to date in real-time
   const [tick, setTick] = useState<number>(0);
@@ -258,7 +260,7 @@ export default function BorrowerCard({
             <AvatarWithFrame
               photoUrl={borrower.profilePhoto}
               name={borrower.name}
-              frameId={borrower.avatarFrame}
+              frameId={hideAvatarFrame ? 'none' : borrower.avatarFrame}
               size="sm"
               className="shrink-0"
               hasWarning={!!borrower.interestOnlyExtension}

@@ -15,8 +15,7 @@ export const safeStorage = {
   getItem(key: string): string | null {
     if (isLocalStorageAvailable) {
       try {
-        const val = window.localStorage.getItem(key);
-        if (val !== null) return val;
+        return window.localStorage.getItem(key);
       } catch (e) {
         // Fallback to memory
       }
@@ -24,41 +23,28 @@ export const safeStorage = {
     return memoryStorage[key] !== undefined ? memoryStorage[key] : null;
   },
 
-  async getItemAsync(key: string): Promise<string | null> {
-    const syncVal = this.getItem(key);
-    if (syncVal) return syncVal;
-    try {
-      const idbVal = await largeMediaStorage.get(key);
-      if (idbVal) {
-        memoryStorage[key] = idbVal;
-        return idbVal;
-      }
-    } catch (err) {}
-    return null;
-  },
-
   setItem(key: string, value: string): void {
-    const strVal = String(value);
-    memoryStorage[key] = strVal;
-
     if (isLocalStorageAvailable) {
       try {
-        window.localStorage.setItem(key, strVal);
+        window.localStorage.setItem(key, value);
+        return;
       } catch (e) {
-        // Fallback to memory & IDB on quota or restriction
+        // Fallback to memory
       }
     }
-    largeMediaStorage.save(key, strVal).catch(() => {});
+    memoryStorage[key] = String(value);
   },
 
   removeItem(key: string): void {
-    delete memoryStorage[key];
     if (isLocalStorageAvailable) {
       try {
         window.localStorage.removeItem(key);
-      } catch (e) {}
+        return;
+      } catch (e) {
+        // Fallback to memory
+      }
     }
-    largeMediaStorage.remove(key).catch(() => {});
+    delete memoryStorage[key];
   },
 
   clear(): void {

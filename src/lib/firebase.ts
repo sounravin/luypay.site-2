@@ -1,21 +1,33 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { initializeFirestore, getFirestore } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, memoryLocalCache } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase app
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore using specific database ID if configured
-let db;
+// Initialize Firestore using pure Cloud execution with memoryLocalCache (No persistent browser IndexedDB/LocalStorage quota required)
+let db: ReturnType<typeof getFirestore>;
 try {
   const customDbId = firebaseConfig.firestoreDatabaseId;
+  const dbOptions = {
+    localCache: memoryLocalCache()
+  };
   if (customDbId && customDbId !== '(default)') {
-    db = getFirestore(app, customDbId);
+    db = initializeFirestore(app, dbOptions, customDbId);
   } else {
-    db = getFirestore(app);
+    db = initializeFirestore(app, dbOptions);
   }
 } catch (e) {
-  db = getFirestore(app);
+  try {
+    const customDbId = firebaseConfig.firestoreDatabaseId;
+    if (customDbId && customDbId !== '(default)') {
+      db = getFirestore(app, customDbId);
+    } else {
+      db = getFirestore(app);
+    }
+  } catch (err) {
+    db = getFirestore(app);
+  }
 }
 
 export { app, db };
