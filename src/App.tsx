@@ -1538,35 +1538,45 @@ export default function App() {
 
       // If Firestore is empty
       if (fbBorrowers.length === 0) {
-        if (currentUser === 'sounravin') {
-          // Default admin user Soun Ravin can migrate local storage data to Firestore
-          const stored = safeStorage.getItem(userStorageKey);
-          let localData: Borrower[] = [];
-          if (stored) {
-            try {
-              localData = JSON.parse(stored);
-            } catch (e) {}
-          }
-          if (localData.length === 0) {
-            localData = SEED_BORROWERS;
-          }
+        // Try to migrate local storage data to Firestore (for any user who might have worked offline)
+        const stored = safeStorage.getItem(userStorageKey);
+        let localData: Borrower[] = [];
+        if (stored) {
+          try {
+            localData = JSON.parse(stored);
+          } catch (e) {}
+        }
+        
+        if (localData.length === 0 && currentUser === 'sounravin') {
+          localData = SEED_BORROWERS;
+        }
 
-          // Upload local data to Firestore as initial seed
+        if (localData.length > 0) {
+          // Upload local data to Firestore as initial seed / migration
           try {
             const { updatedList } = runAutoCheckInForBorrowers(localData);
             const batch = writeBatch(db);
-            updatedList.forEach((b) => {
-              const docRef = doc(db, 'borrowers', b.id);
-              batch.set(docRef, { ...b, userId: currentUser });
-            });
-            await batch.commit();
+            
+            // Chunking local data for batch commits
+            const CHUNK_SIZE = 400;
+            for (let i = 0; i < updatedList.length; i += CHUNK_SIZE) {
+              const chunk = updatedList.slice(i, i + CHUNK_SIZE);
+              chunk.forEach((b) => {
+                const docRef = doc(db, 'borrowers', b.id);
+                batch.set(docRef, { ...b, userId: currentUser || 'guest' });
+              });
+              await batch.commit();
+            }
+            
             setCloudSyncStatus('synced');
+            setBorrowers(updatedList);
           } catch (err) {
             console.error('Error migrating to Firestore:', err);
             setCloudSyncStatus('error');
+            // Show the local data anyway so they can see their offline data
+            setBorrowers(localData);
           }
         } else {
-          // Any other dynamic/registered user starts with 0 borrowers (completely clean slate)
           setBorrowers([]);
           safeStorage.setItem(userStorageKey, JSON.stringify([]));
           setCloudSyncStatus('synced');
@@ -2179,7 +2189,7 @@ export default function App() {
           const batch = writeBatch(db);
           chunk.forEach((b) => {
             const docRef = doc(db, 'borrowers', b.id);
-            const docData = sanitizeForFirestore({ ...b, userId: currentUser });
+            const docData = sanitizeForFirestore({ ...b, userId: currentUser || 'guest' });
             batch.set(docRef, docData);
           });
           await batch.commit();
