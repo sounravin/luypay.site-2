@@ -1,27 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /borrowers/{borrowerId} {
-      allow read: if true;
-      allow create, update: if request.resource.data.userId != null;
-      allow delete: if true;
-    }
-    match /members/{memberId} {
-      allow read, write: if true;
-    }
-    match /member_emails/{emailId} {
-      allow read, write: if true;
-    }
-    match /subscription_requests/{requestId} {
-      allow read, write: if true;
-    }
-    match /loan_applications/{applicationId} {
-      allow read, write: if true;
-    }
-    match /settings/{settingsId} {
-      allow read, write: if true;
-    }
-    match /sponsor_video_chunks/{chunkId} {
+    match /{document=**} {
       allow read, write: if true;
     }
   }
