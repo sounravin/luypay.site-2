@@ -1506,6 +1506,34 @@ export default function App() {
   // Cloud Sync Status
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('offline');
 
+  // Real-time synchronization across browser tabs/windows (for both Mobile and Computer views)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!e.key) return;
+      const userStorageKey = getUserLocalStorageKey(currentUser);
+      
+      if (e.key === userStorageKey && e.newValue) {
+        try {
+          const updatedList = JSON.parse(e.newValue);
+          setBorrowers(updatedList);
+        } catch (err) {
+          console.warn('Browser storage sync error:', err);
+        }
+      } else if (e.key === `luypay_shareholders_${currentUser}` && e.newValue) {
+        try {
+          setShareholders(JSON.parse(e.newValue));
+        } catch (err) {}
+      } else if (e.key === 'luypay_theme' && e.newValue) {
+        setTheme(e.newValue as 'light' | 'dark');
+      } else if (e.key === 'luypay_app_theme' && e.newValue) {
+        setAppTheme(e.newValue as AppThemeType);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [currentUser]);
+
   // Load and sync with Firestore if logged in or viewing partner portal, otherwise load from localStorage
   useEffect(() => {
     if (!isLoggedIn && !partnerParam) {
@@ -5366,9 +5394,19 @@ export default function App() {
                     </a>
                   </div>
                 </div>
-                <p className={`text-[9px] leading-none mt-1 ${
-                  mobileHeaderStyle === 'angkor' ? 'text-amber-200/80 font-bold' : 'opacity-70'
-                }`}>{t('accountLabel')} {userDisplayName} ({currentUser})</p>
+                <div className="flex flex-col gap-1 mt-1">
+                  <p className={`text-[9px] leading-none ${
+                    mobileHeaderStyle === 'angkor' ? 'text-amber-200/80 font-bold' : 'opacity-70'
+                  }`}>{t('accountLabel')} {userDisplayName} ({currentUser})</p>
+                  <span className={`inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-md w-max ${
+                    mobileHeaderStyle === 'angkor'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
+                      : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  }`}>
+                    <Cloud className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                    {cloudSyncStatus === 'synced' ? t('cloudSaved') : t('syncError')}
+                  </span>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
