@@ -94,6 +94,8 @@ export default function ShareholderDashboard({
 
   // iOS PWA Add to Home Screen Modal state
   const [showIosInstallModal, setShowIosInstallModal] = useState<boolean>(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
+  const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
   const [copiedLinkToast, setCopiedLinkToast] = useState<boolean>(false);
 
   const handleCopyPortalLink = () => {
@@ -447,9 +449,39 @@ export default function ShareholderDashboard({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {/* Notification Bell Button */}
+          <button
+            onClick={() => {
+              setShowNotificationsModal(true);
+              setUnreadNotificationsCount(0);
+              playNotificationChime();
+            }}
+            className="p-2.5 rounded-xl border bg-slate-800/80 text-slate-200 border-slate-700 hover:bg-slate-700 hover:text-white transition relative cursor-pointer flex items-center justify-center shadow-md"
+            title={language === 'kh' ? 'ការជូនដំណឹង (Notifications)' : 'Notifications'}
+          >
+            <span className="text-base">🔔</span>
+            {notificationList.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white font-black text-[10px] rounded-full flex items-center justify-center shadow-md animate-pulse">
+                {notificationList.length}
+              </span>
+            )}
+          </button>
+
+          {/* Settings / Change Password Button */}
+          <button
+            onClick={() => {
+              setShowSettingsModal(true);
+              setPasswordMsg(null);
+            }}
+            className="p-2.5 rounded-xl border bg-slate-800/80 text-slate-200 border-slate-700 hover:bg-slate-700 hover:text-white transition cursor-pointer flex items-center justify-center shadow-md"
+            title={language === 'kh' ? 'កំណត់ពាក្យសម្ងាត់ (Settings)' : 'Settings'}
+          >
+            <span className="text-base">⚙️</span>
+          </button>
+
           <button
             onClick={handleLogout}
-            className="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold transition cursor-pointer"
+            className="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1"
           >
             🚪 <span className="hidden sm:inline">{language === 'kh' ? 'ចាកចេញ' : 'Log Out'}</span>
           </button>
@@ -915,6 +947,189 @@ export default function ShareholderDashboard({
                 {language === 'kh' ? 'យល់ព្រម (Done)' : 'Got it!'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notifications Modal */}
+      {showNotificationsModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                <span>🔔</span> {language === 'kh' ? 'របាយការណ៍ជូនដំណឹង live' : 'Live Notifications'}
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={playNotificationChime}
+                  className="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1"
+                >
+                  <span>🔊</span> <span className="hidden sm:inline">{language === 'kh' ? 'សាកល្បងសំឡេង' : 'Test Sound'}</span>
+                </button>
+                <button
+                  onClick={() => setShowNotificationsModal(false)}
+                  className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-sm cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto flex-1 space-y-2.5 pr-1">
+              {notificationList.length === 0 ? (
+                <div className="p-8 bg-slate-950 border border-dashed border-slate-800 rounded-2xl text-center space-y-2">
+                  <span className="text-3xl block">🔔</span>
+                  <p className="text-xs font-black text-slate-400">
+                    {language === 'kh' ? 'មិនទាន់មានការជូនដំណឹងនៅឡើយទេ' : 'No notifications yet.'}
+                  </p>
+                </div>
+              ) : (
+                notificationList.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      if (item.borrowerId) {
+                        handleNotificationClick(item.borrowerId);
+                        setShowNotificationsModal(false);
+                      }
+                    }}
+                    className={`p-3.5 bg-slate-950 border border-slate-800/80 rounded-2xl flex items-start gap-3 shadow-md transition ${
+                      item.borrowerId ? 'hover:border-emerald-500/60 hover:bg-slate-800/80 cursor-pointer group' : ''
+                    }`}
+                  >
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 ${
+                      item.type === 'payment' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                    }`}>
+                      {item.type === 'payment' ? '💰' : '🎉'}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black text-white group-hover:text-emerald-400 transition flex items-center gap-1.5">
+                          <span>{item.title}</span>
+                          {item.borrowerId && (
+                            <span className="text-[10px] px-1.5 py-0.2 bg-emerald-500/10 text-emerald-300 rounded font-bold">
+                              👁️ {language === 'kh' ? 'មើលគណនី' : 'View Account'}
+                            </span>
+                          )}
+                        </h4>
+                        <span className="text-[10px] font-bold text-slate-500 font-mono">{item.time}</span>
+                      </div>
+                      <p className="text-xs font-bold text-slate-300 leading-relaxed">{item.body}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-slate-800 text-right">
+              <button
+                onClick={() => setShowNotificationsModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition cursor-pointer"
+              >
+                {language === 'kh' ? 'បិទ' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal (Change Password) */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-base">
+                  ⚙️
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white">
+                    {language === 'kh' ? 'កំណត់ពាក្យសម្ងាត់ និងគណនី' : 'Account & Password Settings'}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    {language === 'kh' ? 'ផ្លាស់ប្ដូរពាក្យសម្ងាត់សម្រាប់ចូលប្រើប្រាស់គណនីភាគហ៊ុន' : 'Change password for your partner account'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSettingsModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleChangePassword} className="space-y-3.5 pt-1">
+              {passwordMsg && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-black text-center border ${
+                    passwordMsg.type === 'success'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                  }`}
+                >
+                  {passwordMsg.text}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                  {language === 'kh' ? 'ពាក្យសម្ងាត់បច្ចុប្បន្ន (Current Password)' : 'Current Password'}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={currentPasswordInput}
+                  onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                  {language === 'kh' ? 'ពាក្យសម្ងាត់ថ្មី (New Password)' : 'New Password'}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={newPasswordInput}
+                  onChange={(e) => setNewPasswordInput(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                  {language === 'kh' ? 'បញ្ជាក់ពាក្យសម្ងាត់ថ្មី (Confirm New Password)' : 'Confirm New Password'}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPasswordInput}
+                  onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSettingsModal(false)}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition cursor-pointer"
+                >
+                  {language === 'kh' ? 'បិទ' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl transition shadow-lg shadow-emerald-500/20 cursor-pointer text-xs"
+                >
+                  💾 {language === 'kh' ? 'រក្សាទុកពាក្យសម្ងាត់' : 'Save Password'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
