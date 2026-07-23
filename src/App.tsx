@@ -1536,128 +1536,172 @@ export default function App() {
 
   // Load and sync with Firestore if logged in or viewing partner portal, otherwise load from localStorage
   useEffect(() => {
-    if (!isLoggedIn && !partnerParam) {
-      setCloudSyncStatus('offline');
-      const stored = safeStorage.getItem(getUserLocalStorageKey(null));
-      let currentBorrowers: Borrower[] = [];
-      if (stored) {
-        try {
-          currentBorrowers = JSON.parse(stored);
-        } catch (err) {
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (!isLoggedIn && !partnerParam) {
+        setCloudSyncStatus('offline');
+        const key = getUserLocalStorageKey(null);
+        let stored = safeStorage.getItem(key);
+        if (!stored) {
+          stored = await safeStorage.getItemAsync(key);
+        }
+
+        let currentBorrowers: Borrower[] = [];
+        if (stored) {
+          try {
+            currentBorrowers = JSON.parse(stored);
+          } catch (err) {
+            currentBorrowers = SEED_BORROWERS;
+          }
+        } else {
           currentBorrowers = SEED_BORROWERS;
         }
-      } else {
-        currentBorrowers = SEED_BORROWERS;
-      }
 
-      const { updatedList, hasChanges } = runAutoCheckInForBorrowers(currentBorrowers);
-      if (hasChanges) {
-        setBorrowers(updatedList);
-        safeStorage.setItem(getUserLocalStorageKey(null), JSON.stringify(updatedList));
-      } else {
-        setBorrowers(currentBorrowers);
-        if (!stored) {
-          safeStorage.setItem(getUserLocalStorageKey(null), JSON.stringify(SEED_BORROWERS));
+        const { updatedList, hasChanges } = runAutoCheckInForBorrowers(currentBorrowers);
+        if (isMounted) {
+          if (hasChanges) {
+            setBorrowers(updatedList);
+            safeStorage.setItem(key, JSON.stringify(updatedList));
+          } else {
+            setBorrowers(currentBorrowers);
+            if (!stored) {
+              safeStorage.setItem(key, JSON.stringify(SEED_BORROWERS));
+            }
+          }
         }
+        return;
       }
-      return;
-    }
 
-    // Cloud Firestore Mode
-    setCloudSyncStatus('syncing');
-    const q = (isLoggedIn && currentUser)
-      ? query(collection(db, 'borrowers'), where('userId', '==', currentUser))
-      : query(collection(db, 'borrowers'));
-    
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const fbBorrowers: Borrower[] = [];
-      snapshot.forEach((docSnap) => {
-        fbBorrowers.push({ id: docSnap.id, ...docSnap.data() } as Borrower);
-      });
+      // Cloud Firestore Mode
+      setCloudSyncStatus('syncing');
+      const q = (isLoggedIn && currentUser)
+        ? query(collection(db, 'borrowers'), where('userId', '==', currentUser))
+        : query(collection(db, 'borrowers'));
+      
+      const unsubscribe = onSnapshot(q, async (snapshot) => {
+        if (!isMounted) return;
+        const fbBorrowers: Borrower[] = [];
+        snapshot.forEach((docSnap) => {
+          fbBorrowers.push({ id: docSnap.id, ...docSnap.data() } as Borrower);
+        });
 
-      // Sort descending by id
-      fbBorrowers.sort((a, b) => b.id.localeCompare(a.id));
+        // Sort descending by id
+        fbBorrowers.sort((a, b) => b.id.localeCompare(a.id));
 
-      const userStorageKey = getUserLocalStorageKey(currentUser);
+        const userStorageKey = getUserLocalStorageKey(currentUser);
+        let stored = safeStorage.getItem(userStorageKey);
+        if (!stored) {
+          stored = await safeStorage.getItemAsync(userStorageKey);
+        }
 
-      // If Firestore is empty
-      if (fbBorrowers.length === 0) {
-        // Try to migrate local storage data to Firestore (for any user who might have worked offline)
-        const stored = safeStorage.getItem(userStorageKey);
         let localData: Borrower[] = [];
         if (stored) {
           try {
             localData = JSON.parse(stored);
           } catch (e) {}
         }
-        
-        if (localData.length === 0 && currentUser === 'sounravin') {
-          localData = SEED_BORROWERS;
-        }
 
-        if (localData.length > 0) {
-          // Upload local data to Firestore as initial seed / migration
-          try {
-            const { updatedList } = runAutoCheckInForBorrowers(localData);
-            
-            // Chunking local data for batch commits
-            const CHUNK_SIZE = 400;
-            for (let i = 0; i < updatedList.length; i += CHUNK_SIZE) {
-              const batch = writeBatch(db);
-              const chunk = updatedList.slice(i, i + CHUNK_SIZE);
-              chunk.forEach((b) => {
-                const docRef = doc(db, 'borrowers', b.id);
-                const docData = sanitizeForFirestore({ ...b, userId: currentUser || 'guest' });
-                batch.set(docRef, docData);
-              });
-              await batch.commit();
+        // If Firestore is empty
+        if (fbBorrowers.length === 0) {
+          if (localData.length === 0 && currentUser === 'sounravin') {
+            localData = SEED_BORROWERS;
+          }
+
+          if (localData.length > 0) {
+            // Upload local data to Firestore as initial seed / migration
+            try {
+              const { updatedList } = runAutoCheckInForBorrowers(localData);
+              
+              // Chunking local data for batch commits
+              const CHUNK_SIZE = 400;
+              for (let i = 0; i < updatedList.length; i += CHUNK_SIZE) {
+                const batch = writeBatch(db);
+                const chunk = updatedList.slice(i, i + CHUNK_SIZE);
+                chunk.forEach((b) => {
+                  const docRef = doc(db, 'borrowers', b.id);
+                  const docData = sanitizeForFirestore({ ...b, userId: currentUser || 'guest' });
+                  batch.set(docRef, docData);
+                });
+                await batch.commit();
+              }
+              
+              setCloudSyncStatus('synced');
+              setBorrowers(updatedList);
+            } catch (err) {
+              console.error('Error migrating to Firestore:', err);
+              setCloudSyncStatus('error');
+              // Show the local data anyway so they can see their offline/imported data
+              setBorrowers(localData);
             }
-            
+          } else {
+            setBorrowers([]);
+            safeStorage.setItem(userStorageKey, JSON.stringify([]));
             setCloudSyncStatus('synced');
-            setBorrowers(updatedList);
-          } catch (err) {
-            console.error('Error migrating to Firestore:', err);
-            setCloudSyncStatus('error');
-            // Show the local data anyway so they can see their offline data
-            setBorrowers(localData);
           }
         } else {
-          setBorrowers([]);
-          safeStorage.setItem(userStorageKey, JSON.stringify([]));
-          setCloudSyncStatus('synced');
+          // Merge local data (especially recently imported data) with Firestore data to prevent wiping imported items
+          let combined = [...fbBorrowers];
+          if (localData.length > 0) {
+            const fbIds = new Set(fbBorrowers.map((b) => b.id));
+            let mergedNew = false;
+            localData.forEach((lb) => {
+              if (!fbIds.has(lb.id)) {
+                combined.push(lb);
+                mergedNew = true;
+              }
+            });
+            if (mergedNew) {
+              combined.sort((a, b) => b.id.localeCompare(a.id));
+            }
+          }
+
+          const { updatedList, hasChanges } = runAutoCheckInForBorrowers(combined);
+          if (hasChanges) {
+            saveBorrowers(updatedList);
+          } else {
+            setBorrowers(updatedList);
+            safeStorage.setItem(userStorageKey, JSON.stringify(updatedList));
+            setCloudSyncStatus('synced');
+          }
         }
-      } else {
-        const { updatedList, hasChanges } = runAutoCheckInForBorrowers(fbBorrowers);
-        if (hasChanges) {
-          saveBorrowers(updatedList);
-        } else {
-          setBorrowers(fbBorrowers);
-          safeStorage.setItem(userStorageKey, JSON.stringify(fbBorrowers));
-          setCloudSyncStatus('synced');
+      }, async (error) => {
+        if (!isMounted) return;
+        console.warn('Unable to load realtime database updates from cloud storage (falling back to offline local storage):', error.message || error);
+        setCloudSyncStatus('error');
+        
+        // Fallback to local storage or IndexedDB on Firestore errors (like quota exceeded)
+        const userStorageKey = getUserLocalStorageKey(currentUser);
+        let stored = safeStorage.getItem(userStorageKey);
+        if (!stored) {
+          stored = await safeStorage.getItemAsync(userStorageKey);
         }
-      }
-    }, (error) => {
-      console.warn('Unable to load realtime database updates from cloud storage (falling back to offline local storage):', error.message || error);
-      setCloudSyncStatus('error');
-      
-      // Fallback to local storage on Firestore errors (like quota exceeded)
-      const userStorageKey = getUserLocalStorageKey(currentUser);
-      const stored = safeStorage.getItem(userStorageKey);
-      if (stored) {
-        try {
-          const localData = JSON.parse(stored);
-          const { updatedList } = runAutoCheckInForBorrowers(localData);
-          setBorrowers(updatedList);
-        } catch (e: any) {
-          console.warn('Unable to parse local storage fallback data:', e.message || e);
+
+        if (stored) {
+          try {
+            const localData = JSON.parse(stored);
+            const { updatedList } = runAutoCheckInForBorrowers(localData);
+            setBorrowers(updatedList);
+          } catch (e: any) {
+            console.warn('Unable to parse local storage fallback data:', e.message || e);
+          }
+        } else if (currentUser === 'sounravin') {
+          setBorrowers(SEED_BORROWERS);
         }
-      } else if (currentUser === 'sounravin') {
-        // Fallback to seed data for default user if no local storage exists
-        setBorrowers(SEED_BORROWERS);
-      }
+      });
+
+      return unsubscribe;
+    };
+
+    let unsubFn: (() => void) | undefined;
+    loadData().then((unsub) => {
+      unsubFn = unsub;
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      if (unsubFn) unsubFn();
+    };
   }, [isLoggedIn, currentUser]);
 
   // Real-time synchronization for admin dashboard and user profile
@@ -2745,7 +2789,7 @@ export default function App() {
     if (!files || files.length === 0) return;
 
     const fileReader = new FileReader();
-    fileReader.onload = (event) => {
+    fileReader.onload = async (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (Array.isArray(parsed)) {
@@ -2756,6 +2800,7 @@ export default function App() {
             return;
           }
 
+          let finalImportList: Borrower[] = [];
           if (confirm('តើអ្នកចង់នាំចូល និងបញ្ចូលជាមួយទិន្នន័យចាស់ដែលមានស្រាប់មែនទេ? (ចុច បោះបង់ ដើម្បីជំនួសទាំងស្រុង)')) {
             // merge data by appending and removing duplicates by ID
             const existingIds = new Set(borrowers.map(b => b.id));
@@ -2765,12 +2810,24 @@ export default function App() {
                 merged.push(item);
               }
             });
-            saveBorrowers(merged);
-            showToast('បាននាំចូល និងបញ្ចូលទិន្នន័យដោយជោគជ័យ!');
+            finalImportList = merged;
           } else {
-            saveBorrowers(parsed);
-            showToast('បានជំនួសទិន្នន័យចាស់ និងនាំចូលទិន្នន័យថ្មីទាំងស្រុង!');
+            finalImportList = parsed;
           }
+
+          const sanitized = finalImportList.map((b) => sanitizeForFirestore(b));
+          const userStorageKey = getUserLocalStorageKey(currentUser);
+          const jsonStr = JSON.stringify(sanitized);
+
+          // Force immediate synchronous state + dual local storage & IndexedDB write
+          setBorrowers(sanitized);
+          safeStorage.setItem(userStorageKey, jsonStr);
+          await largeMediaStorage.save(userStorageKey, jsonStr).catch(() => {});
+
+          // Save to Cloud Firestore
+          await saveBorrowers(sanitized);
+
+          showToast('បាននាំចូល និងរក្សាទុកទិន្នន័យក្នុងប្រព័ន្ធដោយជោគជ័យ (Saved to Mobile & Cloud Storage)!');
         } else {
           alert('ឯកសារត្រូវតែជាបញ្ជីទិន្នន័យ (Array)!');
         }
