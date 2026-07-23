@@ -19,6 +19,7 @@ interface BorrowerCardProps {
   appTheme?: AppThemeType;
   isDark?: boolean;
   hideAvatarFrame?: boolean;
+  layoutLayer?: 'default' | 'compact' | 'detailed';
 }
 
 export default function BorrowerCard({ 
@@ -31,7 +32,8 @@ export default function BorrowerCard({
   buttonStyle = 'kbach',
   appTheme = 'slate',
   isDark = false,
-  hideAvatarFrame = false
+  hideAvatarFrame = false,
+  layoutLayer = 'default'
 }: BorrowerCardProps) {
   // 10-second ticker to keep cards status up to date in real-time
   const [tick, setTick] = useState<number>(0);
@@ -193,11 +195,14 @@ export default function BorrowerCard({
                 ? 'border-emerald-500/25 dark:border-emerald-500/20 hover:border-emerald-400 shadow-xs'
                 : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-xs');
 
+  const paddingClass = layoutLayer === 'compact' ? 'p-3' : 'p-5';
+  const spaceClass = layoutLayer === 'compact' ? 'space-y-2' : 'space-y-4';
+
   return (
     <div
       id={`borrower-card-${borrower.id}`}
       onClick={() => onSelect(borrower)}
-      className={`${cardBgClass} border rounded-2xl p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4 relative overflow-hidden ${cardBorderClass}`}
+      className={`${cardBgClass} border rounded-2xl ${paddingClass} transition-all duration-200 cursor-pointer flex flex-col justify-between ${spaceClass} relative overflow-hidden ${cardBorderClass}`}
     >
       {buttonStyle === 'kbach' && (
         <>
@@ -353,72 +358,97 @@ export default function BorrowerCard({
         )}
       </div>
 
-      {/* Progress Section */}
-      <div className="space-y-1.5">
-        <div className={`flex justify-between items-end text-xs font-semibold ${themeConfig.textMuted}`}>
-          <span>{t('progressLabel')}</span>
-          <span className={isCompleted ? 'text-emerald-600 dark:text-emerald-400 font-bold' : (
-            appTheme === 'angkor' ? 'text-amber-600 dark:text-[#dfb035] font-bold' :
-            appTheme === 'apsara' ? 'text-purple-600 dark:text-[#b48bf5] font-bold' :
-            appTheme === 'emerald' ? 'text-emerald-600 dark:text-[#6ee7b7] font-bold' :
-            'text-blue-600 dark:text-blue-400 font-bold'
-          )}>
-            {progressPercent}%
-          </span>
-        </div>
-        <div className={`w-full h-2 rounded-full overflow-hidden ${
-          appTheme === 'angkor'
-            ? 'bg-amber-100/50 dark:bg-amber-950/45'
-            : appTheme === 'apsara'
-              ? 'bg-purple-100/50 dark:bg-purple-950/45'
-              : appTheme === 'emerald'
-                ? 'bg-emerald-100/50 dark:bg-emerald-950/45'
-                : 'bg-slate-100 dark:bg-slate-800'
-        }`}>
-          <div
-            className={`h-full rounded-full transition-all duration-300 ${
-              isCompleted
-                ? 'bg-emerald-500'
-                : appTheme === 'angkor'
-                  ? 'bg-gradient-to-r from-[#b37e1b] to-[#dfb035]'
-                  : appTheme === 'apsara'
-                    ? 'bg-gradient-to-r from-[#5b21b6] to-[#7c3aed]'
-                    : appTheme === 'emerald'
-                      ? 'bg-gradient-to-r from-[#047857] to-[#059669]'
-                      : 'bg-gradient-to-r from-blue-600 to-indigo-600'
-            }`}
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
+      {layoutLayer !== 'compact' && (
+        <>
+          {/* Progress Section */}
+          <div className="space-y-1.5">
+            <div className={`flex justify-between items-end text-xs font-semibold ${themeConfig.textMuted}`}>
+              <span>{t('progressLabel')}</span>
+              <span className={isCompleted ? 'text-emerald-600 dark:text-emerald-400 font-bold' : (
+                appTheme === 'angkor' ? 'text-amber-600 dark:text-[#dfb035] font-bold' :
+                appTheme === 'apsara' ? 'text-purple-600 dark:text-[#b48bf5] font-bold' :
+                appTheme === 'emerald' ? 'text-emerald-600 dark:text-[#6ee7b7] font-bold' :
+                'text-blue-600 dark:text-blue-400 font-bold'
+              )}>
+                {progressPercent}%
+              </span>
+            </div>
+            <div className={`w-full h-2 rounded-full overflow-hidden ${
+              appTheme === 'angkor'
+                ? 'bg-amber-100/50 dark:bg-amber-950/45'
+                : appTheme === 'apsara'
+                  ? 'bg-purple-100/50 dark:bg-purple-950/45'
+                  : appTheme === 'emerald'
+                    ? 'bg-emerald-100/50 dark:bg-emerald-950/45'
+                    : 'bg-slate-100 dark:bg-slate-800'
+            }`}>
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  isCompleted
+                    ? 'bg-emerald-500'
+                    : appTheme === 'angkor'
+                      ? 'bg-gradient-to-r from-[#b37e1b] to-[#dfb035]'
+                      : appTheme === 'apsara'
+                        ? 'bg-gradient-to-r from-[#5b21b6] to-[#7c3aed]'
+                        : appTheme === 'emerald'
+                          ? 'bg-gradient-to-r from-[#047857] to-[#059669]'
+                          : 'bg-gradient-to-r from-blue-600 to-indigo-600'
+                }`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
 
-      {/* Money Statistics Row */}
-      <div className={`grid grid-cols-2 gap-3 py-1 rounded-xl p-3 text-xs ${
-        appTheme === 'angkor'
-          ? 'bg-amber-50/60 dark:bg-[#120c04]/60 border border-amber-200/20 dark:border-[#dfb035]/15'
-          : appTheme === 'apsara'
-            ? 'bg-purple-50/60 dark:bg-[#0c071d]/60 border border-purple-200/20 dark:border-purple-500/15'
-            : appTheme === 'emerald'
-              ? 'bg-emerald-50/60 dark:bg-[#02140c]/60 border border-emerald-200/20 dark:border-emerald-500/15'
-              : 'bg-slate-50/80 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800/80'
-      }`}>
-        <div>
-          <span className={`block mb-0.5 font-medium ${themeConfig.textMuted} opacity-85`}>{t('paidAmountLabel')}</span>
-          <span className={`font-bold ${themeConfig.textTitle}`}>
-            {formatMoney(totalPaid, borrower.currency)}
-          </span>
-        </div>
-        <div>
-          <span className={`block mb-0.5 font-medium ${themeConfig.textMuted} opacity-85`}>{t('remainingAmountLabel')}</span>
-          <span className={`font-bold ${
-            isCompleted 
-              ? 'text-slate-400/60 dark:text-slate-500/60' 
-              : 'text-orange-600 dark:text-orange-400'
+          {/* Money Statistics Row */}
+          <div className={`grid grid-cols-2 gap-3 py-1 rounded-xl p-3 text-xs ${
+            appTheme === 'angkor'
+              ? 'bg-amber-50/60 dark:bg-[#120c04]/60 border border-amber-200/20 dark:border-[#dfb035]/15'
+              : appTheme === 'apsara'
+                ? 'bg-purple-50/60 dark:bg-[#0c071d]/60 border border-purple-200/20 dark:border-purple-500/15'
+                : appTheme === 'emerald'
+                  ? 'bg-emerald-50/60 dark:bg-[#02140c]/60 border border-emerald-200/20 dark:border-emerald-500/15'
+                  : 'bg-slate-50/80 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800/80'
           }`}>
-            {formatMoney(remaining, borrower.currency)}
-          </span>
+            <div>
+              <span className={`block mb-0.5 font-medium ${themeConfig.textMuted} opacity-85`}>{t('paidAmountLabel')}</span>
+              <span className={`font-bold ${themeConfig.textTitle}`}>
+                {formatMoney(totalPaid, borrower.currency)}
+              </span>
+            </div>
+            <div>
+              <span className={`block mb-0.5 font-medium ${themeConfig.textMuted} opacity-85`}>{t('remainingAmountLabel')}</span>
+              <span className={`font-bold ${
+                isCompleted 
+                  ? 'text-slate-400/60 dark:text-slate-500/60' 
+                  : 'text-orange-600 dark:text-orange-400'
+              }`}>
+                {formatMoney(remaining, borrower.currency)}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
+
+      {layoutLayer === 'detailed' && (
+        <div className={`flex flex-col gap-1.5 py-1 px-3 rounded-xl border-dashed border ${
+            appTheme === 'angkor'
+              ? 'bg-amber-50/30 dark:bg-[#120c04]/30 border-amber-200/40 dark:border-[#dfb035]/20'
+              : appTheme === 'apsara'
+                ? 'bg-purple-50/30 dark:bg-[#0c071d]/30 border-purple-200/40 dark:border-purple-500/20'
+                : appTheme === 'emerald'
+                  ? 'bg-emerald-50/30 dark:bg-[#02140c]/30 border-emerald-200/40 dark:border-emerald-500/20'
+                  : 'bg-slate-50/40 dark:bg-slate-950/30 border-slate-200 dark:border-slate-800/80'
+          }`}>
+          <div className="flex justify-between items-center text-[10px]">
+            <span className={`${themeConfig.textMuted}`}>{language === 'kh' ? 'ប្រាក់ដើម:' : 'Principal:'}</span>
+            <span className={`font-bold ${themeConfig.textTitle}`}>{formatMoney(borrower.loanAmount, borrower.currency)}</span>
+          </div>
+          <div className="flex justify-between items-center text-[10px]">
+            <span className={`${themeConfig.textMuted}`}>{language === 'kh' ? 'ការប្រាក់:' : 'Interest:'}</span>
+            <span className={`font-bold text-amber-600 dark:text-amber-400`}>{formatMoney(borrower.totalToPay - borrower.loanAmount, borrower.currency)}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Footer Info & Quick Action */}
       <div className={`flex items-center justify-between text-xs border-t pt-3 ${themeConfig.borderClass}`}>

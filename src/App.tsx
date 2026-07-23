@@ -318,6 +318,11 @@ export default function App() {
     sponsorMediaType: 'image'
   });
 
+  // Real-time Layout Configuration from Firestore settings/layout_config
+  const [layoutConfig, setLayoutConfig] = useState<any>({
+    cardLayer: 'default'
+  });
+
   const [sponsorVideoData, setSponsorVideoData] = useState<string | null>(null);
 
   useEffect(() => {
@@ -609,10 +614,19 @@ export default function App() {
       console.warn('Unable to subscribe to settings/sponsor_config in real-time (using default offline values):', err.message || err);
     });
 
+    const unsubscribeLayout = onSnapshot(doc(db, 'settings', 'layout_config'), (docSnap) => {
+      if (docSnap.exists()) {
+        setLayoutConfig(docSnap.data());
+      }
+    }, (err) => {
+      console.warn('Unable to subscribe to settings/layout_config in real-time (using default offline values):', err.message || err);
+    });
+
     return () => {
       unsubscribeQR();
       unsubscribeLogo();
       unsubscribeSponsor();
+      unsubscribeLayout();
     };
   }, []);
 
@@ -2195,15 +2209,41 @@ export default function App() {
   // Save to local storage and sync to Firestore if logged in
   const saveBorrowers = async (newList: Borrower[]) => {
     const sanitizedList = newList.map((b) => sanitizeForFirestore(b));
+    
+    // Calculate diff to only upload changed items to Cloud Firestore (Saves quota)
+    const changedBorrowers: Borrower[] = [];
+    const deletedBorrowers: Borrower[] = [];
+    
+    const oldMap = new Map(borrowers.map(b => [b.id, b]));
+    const newMap = new Map(sanitizedList.map(b => [b.id, b]));
+
+    sanitizedList.forEach(newB => {
+      const oldB = oldMap.get(newB.id);
+      if (!oldB || JSON.stringify(oldB) !== JSON.stringify(newB)) {
+        changedBorrowers.push(newB);
+      }
+    });
+
+    borrowers.forEach(oldB => {
+      if (!newMap.has(oldB.id)) {
+        deletedBorrowers.push(oldB);
+      }
+    });
+
     setBorrowers(sanitizedList);
     safeStorage.setItem(getUserLocalStorageKey(currentUser), JSON.stringify(sanitizedList));
     
     if (isLoggedIn) {
+      if (changedBorrowers.length === 0 && deletedBorrowers.length === 0) {
+        return; // Nothing to sync
+      }
+      
       setCloudSyncStatus('syncing');
       try {
         const CHUNK_SIZE = 400;
-        for (let i = 0; i < sanitizedList.length; i += CHUNK_SIZE) {
-          const chunk = sanitizedList.slice(i, i + CHUNK_SIZE);
+        // Process changed borrowers
+        for (let i = 0; i < changedBorrowers.length; i += CHUNK_SIZE) {
+          const chunk = changedBorrowers.slice(i, i + CHUNK_SIZE);
           const batch = writeBatch(db);
           chunk.forEach((b) => {
             const docRef = doc(db, 'borrowers', b.id);
@@ -2212,6 +2252,18 @@ export default function App() {
           });
           await batch.commit();
         }
+        
+        // Process deleted borrowers (if any)
+        for (let i = 0; i < deletedBorrowers.length; i += CHUNK_SIZE) {
+          const chunk = deletedBorrowers.slice(i, i + CHUNK_SIZE);
+          const batch = writeBatch(db);
+          chunk.forEach((b) => {
+            const docRef = doc(db, 'borrowers', b.id);
+            batch.delete(docRef);
+          });
+          await batch.commit();
+        }
+
         setCloudSyncStatus('synced');
       } catch (err) {
         console.error('Error syncing list to Firestore:', err);
@@ -4503,6 +4555,8 @@ export default function App() {
                             buttonStyle={buttonStyle}
                             appTheme={appTheme}
                             isDark={isDark}
+                            hideAvatarFrame={hideBorrowerAvatarFrames}
+                            layoutLayer={layoutConfig.cardLayer || 'default'}
                           />
                         ))}
                       </div>
@@ -6065,6 +6119,7 @@ export default function App() {
                       appTheme={appTheme}
                       isDark={isDark}
                       hideAvatarFrame={hideBorrowerAvatarFrames}
+                      layoutLayer={layoutConfig.cardLayer || 'default'}
                     />
                   ))}
                 </div>

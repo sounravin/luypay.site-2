@@ -143,6 +143,10 @@ export interface QRConfig {
   bankColor: string;
 }
 
+export interface LayoutConfig {
+  cardLayer: 'default' | 'compact' | 'detailed';
+}
+
 export interface LoanApplication {
   id: string;
   name: string;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserX, UserCheck, ShieldAlert, Check, X, Search, Calendar, Award, Trash2, Edit2, Lock, Plus, RefreshCw, QrCode, Upload, Image, Settings, AlertCircle, Camera } from 'lucide-react';
+import { Users, UserX, UserCheck, ShieldAlert, Check, X, Search, Calendar, Award, Trash2, Edit2, Lock, Plus, RefreshCw, QrCode, Upload, Image, Settings, AlertCircle, Camera, Layout } from 'lucide-react';
 import { doc, setDoc, deleteDoc, getDoc, writeBatch, collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Member, SubscriptionRequest } from '../types';
@@ -22,7 +22,7 @@ export default function AdminMembersDashboard({
   language,
   onOpenAvatarFrameModal
 }: AdminMembersDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'requests' | 'directory' | 'qr_settings' | 'logo_settings' | 'sponsor_settings' | 'portal_settings'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'directory' | 'qr_settings' | 'logo_settings' | 'sponsor_settings' | 'portal_settings' | 'layout_settings'>('requests');
   const [searchQuery, setSearchQuery] = useState('');
   const [showResellerInfo, setShowResellerInfo] = useState(false);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
@@ -74,6 +74,10 @@ export default function AdminMembersDashboard({
   const [portalSponsorEnabled, setPortalSponsorEnabled] = useState(true);
   const [isPortalSaving, setIsPortalSaving] = useState(false);
 
+  // Layout states
+  const [layoutCardLayer, setLayoutCardLayer] = useState<'default' | 'compact' | 'detailed'>('default');
+  const [isLayoutSaving, setIsLayoutSaving] = useState(false);
+
   // Fetch current configurations
   useEffect(() => {
     const loadSystemConfigs = async () => {
@@ -89,6 +93,13 @@ export default function AdminMembersDashboard({
           setLogoTextColor(data.logoTextColor || '#FFFFFF');
           setLogoImageUrl(data.logoImageUrl || '');
           setSystemName(data.systemName || '');
+        }
+
+        // Load Layout Config
+        const layoutDocRef = doc(db, 'settings', 'layout_config');
+        const layoutSnap = await getDoc(layoutDocRef);
+        if (layoutSnap.exists()) {
+          setLayoutCardLayer(layoutSnap.data().cardLayer || 'default');
         }
 
         // Load Sponsor Config
@@ -162,6 +173,23 @@ export default function AdminMembersDashboard({
     };
     loadSystemConfigs();
   }, []);
+
+  // Save Layout configuration to Firestore
+  const handleSaveLayoutConfig = async () => {
+    setIsLayoutSaving(true);
+    try {
+      const docRef = doc(db, 'settings', 'layout_config');
+      await setDoc(docRef, {
+        cardLayer: layoutCardLayer
+      }, { merge: true });
+      showToast(language === 'kh' ? 'បានរក្សាទុកទម្រង់បង្ហាញជោគជ័យ!' : 'Layout configuration saved successfully!', 'success');
+    } catch (err) {
+      console.error('Error saving layout config:', err);
+      alert(language === 'kh' ? 'មានបញ្ហាក្នុងការរក្សាទុក! សូមព្យាយាមម្តងទៀត។' : 'Failed to save! Please try again.');
+    } finally {
+      setIsLayoutSaving(false);
+    }
+  };
 
   // Save Logo configuration to Firestore
   const handleSaveLogoConfig = async () => {
@@ -933,6 +961,18 @@ export default function AdminMembersDashboard({
                     >
                       <Settings className="w-4 h-4 text-rose-500 shrink-0" />
                       <span>{language === 'kh' ? 'ការកំណត់ Link កូនបំណុល' : 'Borrower Link Settings'}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab('layout_settings');
+                        setIsSettingsMenuOpen(false);
+                      }}
+                      className={`w-full px-4 py-2.5 text-left text-xs font-bold transition flex items-center gap-2 hover:bg-slate-50 ${
+                        activeTab === 'layout_settings' ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-600'
+                      }`}
+                    >
+                      <Layout className="w-4 h-4 text-indigo-500 shrink-0" />
+                      <span>{language === 'kh' ? 'ការកំណត់ទម្រង់បង្ហាញ (Layers)' : 'Layout Settings'}</span>
                     </button>
                   </div>
                 </>
@@ -2425,6 +2465,129 @@ export default function AdminMembersDashboard({
                   </div>
                 </div>
 
+              </div>
+            </div>
+          )}
+          {/* TAB 7: Layout Settings */}
+          {activeTab === 'layout_settings' && (
+            <div className="space-y-8 animate-in fade-in duration-200 text-left">
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                    <Layout className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold text-slate-900">
+                      {language === 'kh' ? 'ការកំណត់ទម្រង់បង្ហាញ (Layers)' : 'Layout Settings'}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-bold mt-0.5">
+                      {language === 'kh' ? 'ផ្លាស់ប្តូររបៀបបង្ហាញទិន្នន័យនៅលើផ្ទាំងកូនបំណុលរបស់អ្នក' : 'Change how borrower data is displayed on cards'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-8 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Default Layer */}
+                    <div 
+                      onClick={() => setLayoutCardLayer('default')}
+                      className={`relative overflow-hidden cursor-pointer rounded-2xl border-2 transition-all duration-200 ${
+                        layoutCardLayer === 'default' ? 'border-indigo-500 shadow-md ring-4 ring-indigo-500/10' : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="bg-slate-100 p-4 h-24 flex items-center justify-center opacity-70">
+                        {/* Abstract representation of default */}
+                        <div className="w-full space-y-2">
+                          <div className="flex justify-between">
+                            <div className="w-8 h-8 rounded-full bg-slate-300"></div>
+                            <div className="w-16 h-4 rounded-md bg-slate-300"></div>
+                          </div>
+                          <div className="w-3/4 h-3 rounded-md bg-slate-300"></div>
+                        </div>
+                      </div>
+                      <div className="p-3 border-t border-slate-100 bg-white flex items-center justify-between">
+                        <span className={`text-xs font-black ${layoutCardLayer === 'default' ? 'text-indigo-600' : 'text-slate-700'}`}>
+                          {language === 'kh' ? 'ទម្រង់ដើម (Default Layer)' : 'Default Layer'}
+                        </span>
+                        {layoutCardLayer === 'default' && <Check className="w-4 h-4 text-indigo-600" />}
+                      </div>
+                    </div>
+
+                    {/* Compact Layer */}
+                    <div 
+                      onClick={() => setLayoutCardLayer('compact')}
+                      className={`relative overflow-hidden cursor-pointer rounded-2xl border-2 transition-all duration-200 ${
+                        layoutCardLayer === 'compact' ? 'border-indigo-500 shadow-md ring-4 ring-indigo-500/10' : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="bg-slate-100 p-4 h-24 flex flex-col justify-center space-y-1 opacity-70">
+                        {/* Abstract representation of compact */}
+                        <div className="w-full flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-slate-300"></div>
+                          <div className="w-16 h-3 rounded-md bg-slate-300"></div>
+                          <div className="w-10 h-3 rounded-md bg-slate-300 ml-auto"></div>
+                        </div>
+                        <div className="w-full flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-slate-300"></div>
+                          <div className="w-20 h-3 rounded-md bg-slate-300"></div>
+                          <div className="w-8 h-3 rounded-md bg-slate-300 ml-auto"></div>
+                        </div>
+                      </div>
+                      <div className="p-3 border-t border-slate-100 bg-white flex items-center justify-between">
+                        <span className={`text-xs font-black ${layoutCardLayer === 'compact' ? 'text-indigo-600' : 'text-slate-700'}`}>
+                          {language === 'kh' ? 'ទម្រង់សង្ខេប (Compact)' : 'Compact Layer'}
+                        </span>
+                        {layoutCardLayer === 'compact' && <Check className="w-4 h-4 text-indigo-600" />}
+                      </div>
+                    </div>
+
+                    {/* Detailed Layer */}
+                    <div 
+                      onClick={() => setLayoutCardLayer('detailed')}
+                      className={`relative overflow-hidden cursor-pointer rounded-2xl border-2 transition-all duration-200 ${
+                        layoutCardLayer === 'detailed' ? 'border-indigo-500 shadow-md ring-4 ring-indigo-500/10' : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="bg-slate-100 p-3 h-24 flex flex-col justify-between opacity-70">
+                        {/* Abstract representation of detailed */}
+                        <div className="flex justify-between items-start">
+                          <div className="w-8 h-8 rounded-full bg-slate-300"></div>
+                          <div className="w-20 h-8 rounded-md bg-slate-300"></div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div className="w-full h-3 rounded-sm bg-slate-300"></div>
+                          <div className="w-full h-3 rounded-sm bg-slate-300"></div>
+                        </div>
+                      </div>
+                      <div className="p-3 border-t border-slate-100 bg-white flex items-center justify-between">
+                        <span className={`text-xs font-black ${layoutCardLayer === 'detailed' ? 'text-indigo-600' : 'text-slate-700'}`}>
+                          {language === 'kh' ? 'ទម្រង់លម្អិត (Detailed)' : 'Detailed Layer'}
+                        </span>
+                        {layoutCardLayer === 'detailed' && <Check className="w-4 h-4 text-indigo-600" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-slate-100 flex justify-end">
+                    <button
+                      onClick={handleSaveLayoutConfig}
+                      disabled={isLayoutSaving}
+                      className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-indigo-400 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-600/15 transition flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {isLayoutSaving ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>{language === 'kh' ? 'កំពុងរក្សាទុក...' : 'Saving...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>{language === 'kh' ? 'រក្សាទុកទម្រង់បង្ហាញ' : 'Save Layout Config'}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
