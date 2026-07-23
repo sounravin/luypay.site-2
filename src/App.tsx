@@ -131,7 +131,10 @@ export default function App() {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
 
   // Secure Auth State
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => safeStorage.getItem('luypay_logged_in') === 'true');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    const saved = safeStorage.getItem('luypay_logged_in');
+    return saved !== 'false';
+  });
   const [currentUser, setCurrentUser] = useState<string>(() => safeStorage.getItem('luypay_current_user') || 'sounravin');
   const [userDisplayName, setUserDisplayName] = useState<string>(() => safeStorage.getItem('luypay_user_display_name') || 'Soun Ravin');
   const [userAuthType, setUserAuthType] = useState<'credentials' | 'google' | 'facebook'>(() => (safeStorage.getItem('luypay_auth_type') as any) || 'credentials');
@@ -1534,50 +1537,14 @@ export default function App() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [currentUser]);
 
-  // Load and sync with Firestore if logged in or viewing partner portal, otherwise load from localStorage
+  // Load and sync with Firestore in real-time
   useEffect(() => {
     let isMounted = true;
 
     const loadData = async () => {
-      if (!isLoggedIn && !partnerParam) {
-        setCloudSyncStatus('offline');
-        const key = getUserLocalStorageKey(null);
-        let stored = safeStorage.getItem(key);
-        if (!stored) {
-          stored = await safeStorage.getItemAsync(key);
-        }
-
-        let currentBorrowers: Borrower[] = [];
-        if (stored) {
-          try {
-            currentBorrowers = JSON.parse(stored);
-          } catch (err) {
-            currentBorrowers = SEED_BORROWERS;
-          }
-        } else {
-          currentBorrowers = SEED_BORROWERS;
-        }
-
-        const { updatedList, hasChanges } = runAutoCheckInForBorrowers(currentBorrowers);
-        if (isMounted) {
-          if (hasChanges) {
-            setBorrowers(updatedList);
-            safeStorage.setItem(key, JSON.stringify(updatedList));
-          } else {
-            setBorrowers(currentBorrowers);
-            if (!stored) {
-              safeStorage.setItem(key, JSON.stringify(SEED_BORROWERS));
-            }
-          }
-        }
-        return;
-      }
-
       // Cloud Firestore Mode
       setCloudSyncStatus('syncing');
-      const q = (isLoggedIn && currentUser)
-        ? query(collection(db, 'borrowers'), where('userId', '==', currentUser))
-        : query(collection(db, 'borrowers'));
+      const q = query(collection(db, 'borrowers'));
       
       const unsubscribe = onSnapshot(q, async (snapshot) => {
         if (!isMounted) return;
@@ -2247,31 +2214,31 @@ export default function App() {
     }, 800);
   };
 
-  // Save to local storage and sync to Firestore if logged in
+  // Save to local storage and sync to Cloud Firestore
   const saveBorrowers = async (newList: Borrower[]) => {
     const sanitizedList = newList.map((b) => sanitizeForFirestore(b));
     setBorrowers(sanitizedList);
-    safeStorage.setItem(getUserLocalStorageKey(currentUser), JSON.stringify(sanitizedList));
+    const userStorageKey = getUserLocalStorageKey(currentUser);
+    safeStorage.setItem(userStorageKey, JSON.stringify(sanitizedList));
+    largeMediaStorage.save(userStorageKey, JSON.stringify(sanitizedList)).catch(() => {});
     
-    if (isLoggedIn) {
-      setCloudSyncStatus('syncing');
-      try {
-        const CHUNK_SIZE = 400;
-        for (let i = 0; i < sanitizedList.length; i += CHUNK_SIZE) {
-          const chunk = sanitizedList.slice(i, i + CHUNK_SIZE);
-          const batch = writeBatch(db);
-          chunk.forEach((b) => {
-            const docRef = doc(db, 'borrowers', b.id);
-            const docData = sanitizeForFirestore({ ...b, userId: currentUser || 'guest' });
-            batch.set(docRef, docData);
-          });
-          await batch.commit();
-        }
-        setCloudSyncStatus('synced');
-      } catch (err) {
-        console.error('Error syncing list to Firestore:', err);
-        setCloudSyncStatus('error');
+    setCloudSyncStatus('syncing');
+    try {
+      const CHUNK_SIZE = 400;
+      for (let i = 0; i < sanitizedList.length; i += CHUNK_SIZE) {
+        const chunk = sanitizedList.slice(i, i + CHUNK_SIZE);
+        const batch = writeBatch(db);
+        chunk.forEach((b) => {
+          const docRef = doc(db, 'borrowers', b.id);
+          const docData = sanitizeForFirestore({ ...b, userId: currentUser || 'sounravin' });
+          batch.set(docRef, docData);
+        });
+        await batch.commit();
       }
+      setCloudSyncStatus('synced');
+    } catch (err) {
+      console.error('Error syncing list to Firestore:', err);
+      setCloudSyncStatus('error');
     }
   };
 
@@ -2672,17 +2639,17 @@ export default function App() {
   const handleDeleteBorrower = async (borrowerId: string) => {
     const newList = borrowers.filter((b) => b.id !== borrowerId);
     setBorrowers(newList);
-    safeStorage.setItem(getUserLocalStorageKey(currentUser), JSON.stringify(newList));
+    const userKey = getUserLocalStorageKey(currentUser);
+    safeStorage.setItem(userKey, JSON.stringify(newList));
+    largeMediaStorage.save(userKey, JSON.stringify(newList)).catch(() => {});
     
-    if (isLoggedIn) {
-      setCloudSyncStatus('syncing');
-      try {
-        await deleteDoc(doc(db, 'borrowers', borrowerId));
-        setCloudSyncStatus('synced');
-      } catch (err) {
-        console.error('Error deleting from Firestore:', err);
-        setCloudSyncStatus('error');
-      }
+    setCloudSyncStatus('syncing');
+    try {
+      await deleteDoc(doc(db, 'borrowers', borrowerId));
+      setCloudSyncStatus('synced');
+    } catch (err) {
+      console.error('Error deleting from Firestore:', err);
+      setCloudSyncStatus('error');
     }
     setSelectedBorrowerId(null);
     showToast('បានលុបព័ត៌មានអ្នកខ្ចីរួចរាល់ហើយ!', 'info');
@@ -2875,15 +2842,13 @@ export default function App() {
           finalImportList = Array.from(existingMap.values());
         } else {
           // Replace all: remove old documents from Firestore that are not in the new import list
-          if (isLoggedIn) {
-            const importedIds = new Set(normalizedList.map(b => b.id));
-            const toDelete = borrowers.filter(b => !importedIds.has(b.id));
-            for (const oldB of toDelete) {
-              try {
-                await deleteDoc(doc(db, 'borrowers', oldB.id));
-              } catch (err) {
-                console.warn('Unable to delete old doc from firestore during import replace:', err);
-              }
+          const importedIds = new Set(normalizedList.map(b => b.id));
+          const toDelete = borrowers.filter(b => !importedIds.has(b.id));
+          for (const oldB of toDelete) {
+            try {
+              await deleteDoc(doc(db, 'borrowers', oldB.id));
+            } catch (err) {
+              console.warn('Unable to delete old doc from firestore during import replace:', err);
             }
           }
           finalImportList = normalizedList;
