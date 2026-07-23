@@ -19,7 +19,7 @@ import BorrowerApplyForm from './components/BorrowerApplyForm';
 import LoanApplicationTracker from './components/LoanApplicationTracker';
 import LoanApplicationsControlPanel from './components/LoanApplicationsControlPanel';
 import { LoanApplication } from './types';
-import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText, X } from 'lucide-react';
+import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText, X, Layout } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDoc, getDocs } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import { safeStorage, largeMediaStorage } from './lib/safeStorage';
@@ -319,9 +319,35 @@ export default function App() {
   });
 
   // Real-time Layout Configuration from Firestore settings/layout_config
-  const [layoutConfig, setLayoutConfig] = useState<any>({
-    cardLayer: 'default'
+  const [layoutConfig, setLayoutConfig] = useState<any>(() => {
+    const saved = safeStorage.getItem('luypay_layout_config');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.warn('Failed to parse saved layout config:', e);
+      }
+    }
+    return { cardLayer: 'default' };
   });
+
+  const handleQuickChangeLayoutLayer = async (newLayer: 'default' | 'compact' | 'detailed') => {
+    const updated = { ...layoutConfig, cardLayer: newLayer };
+    setLayoutConfig(updated);
+    safeStorage.setItem('luypay_layout_config', JSON.stringify(updated));
+    playClickSound();
+    showToast(
+      language === 'kh' 
+        ? `បានប្តូរទម្រង់បង្ហាញទៅជា៖ ${newLayer === 'compact' ? 'ទម្រង់សង្ខេប (Compact)' : newLayer === 'detailed' ? 'ទម្រង់លម្អិត (Detailed)' : 'ទម្រង់ដើម (Default)'}` 
+        : `Switched layout to: ${newLayer}`,
+      'success'
+    );
+    try {
+      await setDoc(doc(db, 'settings', 'layout_config'), { cardLayer: newLayer }, { merge: true });
+    } catch (e) {
+      console.warn('Firestore update for layout_config skipped/failed:', e);
+    }
+  };
 
   const [sponsorVideoData, setSponsorVideoData] = useState<string | null>(null);
 
@@ -616,17 +642,27 @@ export default function App() {
 
     const unsubscribeLayout = onSnapshot(doc(db, 'settings', 'layout_config'), (docSnap) => {
       if (docSnap.exists()) {
-        setLayoutConfig(docSnap.data());
+        const data = docSnap.data();
+        setLayoutConfig(data);
+        safeStorage.setItem('luypay_layout_config', JSON.stringify(data));
       }
     }, (err) => {
       console.warn('Unable to subscribe to settings/layout_config in real-time (using default offline values):', err.message || err);
     });
+
+    const handleLayoutUpdated = (e: any) => {
+      if (e.detail && e.detail.cardLayer) {
+        setLayoutConfig({ cardLayer: e.detail.cardLayer });
+      }
+    };
+    window.addEventListener('layout_config_updated', handleLayoutUpdated);
 
     return () => {
       unsubscribeQR();
       unsubscribeLogo();
       unsubscribeSponsor();
       unsubscribeLayout();
+      window.removeEventListener('layout_config_updated', handleLayoutUpdated);
     };
   }, []);
 
@@ -4474,12 +4510,50 @@ export default function App() {
                     {/* List Heading & Standing Filters */}
                     <div className="flex flex-col gap-2.5">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-[12px] font-black uppercase tracking-wider text-slate-800 dark:text-white flex items-center gap-1.5">
-                          👤 {language === 'kh' ? 'បញ្ជីកូនបំណុល' : 'Borrower Ledger'}
-                          <span className="bg-slate-100 dark:bg-slate-900 text-slate-500 text-[9.5px] font-black px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-800">
-                            {filteredBorrowers.length} {language === 'kh' ? 'នាក់' : 'Debtors'}
-                          </span>
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-[12px] font-black uppercase tracking-wider text-slate-800 dark:text-white flex items-center gap-1.5">
+                            👤 {language === 'kh' ? 'បញ្ជីកូនបំណុល' : 'Borrower Ledger'}
+                            <span className="bg-slate-100 dark:bg-slate-900 text-slate-500 text-[9.5px] font-black px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-800">
+                              {filteredBorrowers.length} {language === 'kh' ? 'នាក់' : 'Debtors'}
+                            </span>
+                          </h3>
+                          {/* Mobile Layout Switcher */}
+                          <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-800 gap-0.5 ml-auto">
+                            <button
+                              onClick={() => handleQuickChangeLayoutLayer('default')}
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-black transition cursor-pointer ${
+                                (layoutConfig.cardLayer || 'default') === 'default'
+                                  ? 'bg-indigo-600 text-white shadow-xs'
+                                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                              }`}
+                              title={language === 'kh' ? 'ទម្រង់ដើម (Default)' : 'Default Layer'}
+                            >
+                              📄 {language === 'kh' ? 'ដើម' : 'Def'}
+                            </button>
+                            <button
+                              onClick={() => handleQuickChangeLayoutLayer('compact')}
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-black transition cursor-pointer ${
+                                layoutConfig.cardLayer === 'compact'
+                                  ? 'bg-indigo-600 text-white shadow-xs'
+                                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                              }`}
+                              title={language === 'kh' ? 'ទម្រង់សង្ខេប (Compact)' : 'Compact Layer'}
+                            >
+                              📐 {language === 'kh' ? 'សង្ខេប' : 'Cmp'}
+                            </button>
+                            <button
+                              onClick={() => handleQuickChangeLayoutLayer('detailed')}
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-black transition cursor-pointer ${
+                                layoutConfig.cardLayer === 'detailed'
+                                  ? 'bg-indigo-600 text-white shadow-xs'
+                                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                              }`}
+                              title={language === 'kh' ? 'ទម្រង់លម្អិត (Detailed)' : 'Detailed Layer'}
+                            >
+                              📊 {language === 'kh' ? 'លម្អិត' : 'Det'}
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Standing Sub-filters (Horizontal scroll grid) */}
@@ -6044,7 +6118,51 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
+                <div className="flex items-center gap-2 shrink-0 self-end md:self-auto flex-wrap">
+                  {/* Quick Layout Layer Switcher */}
+                  <div className="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-700/80 gap-1">
+                    <span className="text-[10px] font-bold text-slate-400 px-1.5 flex items-center gap-1">
+                      <Layout className="w-3 h-3 text-indigo-400" />
+                      <span>{language === 'kh' ? 'ទម្រង់:' : 'Layer:'}</span>
+                    </span>
+                    <button
+                      onClick={() => handleQuickChangeLayoutLayer('default')}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition cursor-pointer flex items-center gap-1 ${
+                        (layoutConfig.cardLayer || 'default') === 'default'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                      }`}
+                      title={language === 'kh' ? 'ទម្រង់ដើម (Default Layer)' : 'Default Layer'}
+                    >
+                      <span>📄</span>
+                      <span>{language === 'kh' ? 'ដើម' : 'Default'}</span>
+                    </button>
+                    <button
+                      onClick={() => handleQuickChangeLayoutLayer('compact')}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition cursor-pointer flex items-center gap-1 ${
+                        layoutConfig.cardLayer === 'compact'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                      }`}
+                      title={language === 'kh' ? 'ទម្រង់សង្ខេប (Compact Layer)' : 'Compact Layer'}
+                    >
+                      <span>📐</span>
+                      <span>{language === 'kh' ? 'សង្ខេប' : 'Compact'}</span>
+                    </button>
+                    <button
+                      onClick={() => handleQuickChangeLayoutLayer('detailed')}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition cursor-pointer flex items-center gap-1 ${
+                        layoutConfig.cardLayer === 'detailed'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                      }`}
+                      title={language === 'kh' ? 'ទម្រង់លម្អិត (Detailed Layer)' : 'Detailed Layer'}
+                    >
+                      <span>📊</span>
+                      <span>{language === 'kh' ? 'លម្អិត' : 'Detailed'}</span>
+                    </button>
+                  </div>
+
                   <button
                     onClick={() => {
                       const nextVal = !hideBorrowerAvatarFrames;

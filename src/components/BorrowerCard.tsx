@@ -441,11 +441,11 @@ export default function BorrowerCard({
           }`}>
           <div className="flex justify-between items-center text-[10px]">
             <span className={`${themeConfig.textMuted}`}>{language === 'kh' ? 'ប្រាក់ដើម:' : 'Principal:'}</span>
-            <span className={`font-bold ${themeConfig.textTitle}`}>{formatMoney(borrower.loanAmount, borrower.currency)}</span>
+            <span className={`font-bold ${themeConfig.textTitle}`}>{formatMoney(borrower.principal, borrower.currency)}</span>
           </div>
           <div className="flex justify-between items-center text-[10px]">
             <span className={`${themeConfig.textMuted}`}>{language === 'kh' ? 'ការប្រាក់:' : 'Interest:'}</span>
-            <span className={`font-bold text-amber-600 dark:text-amber-400`}>{formatMoney(borrower.totalToPay - borrower.loanAmount, borrower.currency)}</span>
+            <span className={`font-bold text-amber-600 dark:text-amber-400`}>{formatMoney(Math.max(0, borrower.totalToPay - borrower.principal), borrower.currency)}</span>
           </div>
         </div>
       )}

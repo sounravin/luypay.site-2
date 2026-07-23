@@ -96,10 +96,19 @@ export default function AdminMembersDashboard({
         }
 
         // Load Layout Config
+        const savedLayoutLocal = safeStorage.getItem('luypay_layout_config');
+        if (savedLayoutLocal) {
+          try {
+            const parsed = JSON.parse(savedLayoutLocal);
+            if (parsed.cardLayer) setLayoutCardLayer(parsed.cardLayer);
+          } catch (e) {}
+        }
         const layoutDocRef = doc(db, 'settings', 'layout_config');
         const layoutSnap = await getDoc(layoutDocRef);
         if (layoutSnap.exists()) {
-          setLayoutCardLayer(layoutSnap.data().cardLayer || 'default');
+          const cloudLayer = layoutSnap.data().cardLayer || 'default';
+          setLayoutCardLayer(cloudLayer);
+          safeStorage.setItem('luypay_layout_config', JSON.stringify({ cardLayer: cloudLayer }));
         }
 
         // Load Sponsor Config
@@ -177,6 +186,10 @@ export default function AdminMembersDashboard({
   // Save Layout configuration to Firestore
   const handleSaveLayoutConfig = async () => {
     setIsLayoutSaving(true);
+    // Save locally first for instant reaction
+    safeStorage.setItem('luypay_layout_config', JSON.stringify({ cardLayer: layoutCardLayer }));
+    window.dispatchEvent(new CustomEvent('layout_config_updated', { detail: { cardLayer: layoutCardLayer } }));
+
     try {
       const docRef = doc(db, 'settings', 'layout_config');
       await setDoc(docRef, {
@@ -185,7 +198,7 @@ export default function AdminMembersDashboard({
       showToast(language === 'kh' ? 'បានរក្សាទុកទម្រង់បង្ហាញជោគជ័យ!' : 'Layout configuration saved successfully!', 'success');
     } catch (err) {
       console.error('Error saving layout config:', err);
-      alert(language === 'kh' ? 'មានបញ្ហាក្នុងការរក្សាទុក! សូមព្យាយាមម្តងទៀត។' : 'Failed to save! Please try again.');
+      showToast(language === 'kh' ? 'បានរក្សាទុកក្នុងម៉ាស៊ីន (Offline)' : 'Saved locally (Offline mode)', 'info');
     } finally {
       setIsLayoutSaving(false);
     }
@@ -896,12 +909,12 @@ export default function AdminMembersDashboard({
               <button
                 onClick={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)}
                 className={`px-4 py-2 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
-                  ['qr_settings', 'logo_settings', 'sponsor_settings', 'portal_settings'].includes(activeTab)
+                  ['qr_settings', 'logo_settings', 'sponsor_settings', 'portal_settings', 'layout_settings'].includes(activeTab)
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-slate-500 hover:text-slate-900 bg-slate-200/40'
                 }`}
               >
-                <Settings className={`w-4 h-4 ${['qr_settings', 'logo_settings', 'sponsor_settings', 'portal_settings'].includes(activeTab) ? 'text-white' : 'text-blue-500'} ${isSettingsMenuOpen ? 'rotate-45' : ''} transition-transform duration-200`} />
+                <Settings className={`w-4 h-4 ${['qr_settings', 'logo_settings', 'sponsor_settings', 'portal_settings', 'layout_settings'].includes(activeTab) ? 'text-white' : 'text-blue-500'} ${isSettingsMenuOpen ? 'rotate-45' : ''} transition-transform duration-200`} />
                 <span>
                   {language === 'kh' ? 'ការកំណត់ប្រព័ន្ធ ⚙' : 'System Settings ⚙'}
                 </span>
