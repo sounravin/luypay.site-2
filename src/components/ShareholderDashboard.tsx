@@ -78,7 +78,7 @@ export default function ShareholderDashboard({
   const [loginError, setLoginError] = useState('');
 
   // Mobile App active tab
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'borrowers' | 'notifications' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'borrowers'>('dashboard');
 
   // Change Password state
   const [currentPasswordInput, setCurrentPasswordInput] = useState('');
@@ -447,60 +447,6 @@ export default function ShareholderDashboard({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
-          {/* Notification Bell Button */}
-          <button
-            onClick={() => {
-              setActiveTab('notifications');
-              setUnreadNotificationsCount(0);
-              playNotificationChime();
-            }}
-            className={`p-2.5 rounded-xl border transition relative cursor-pointer ${
-              activeTab === 'notifications'
-                ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
-                : 'bg-slate-800/80 text-slate-200 border-slate-700 hover:bg-slate-700'
-            }`}
-            title={language === 'kh' ? 'ការជូនដំណឹង' : 'Notifications'}
-          >
-            <span className="text-base">🔔</span>
-            {notificationList.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white font-black text-[10px] rounded-full flex items-center justify-center shadow-md animate-pulse">
-                {notificationList.length}
-              </span>
-            )}
-          </button>
-
-          {/* Add to Home Screen Button (iOS PWA) */}
-          <button
-            onClick={() => setShowIosInstallModal(true)}
-            className="px-3 py-2 bg-gradient-to-r from-sky-500/20 to-blue-500/20 hover:from-sky-500/30 hover:to-blue-500/30 text-sky-300 border border-sky-400/30 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow-md shadow-sky-500/10"
-            title={language === 'kh' ? 'បន្ថែមទៅអេក្រង់ដើម iPhone' : 'Add to Home Screen (iOS)'}
-          >
-            <span>📲</span>
-            <span className="hidden md:inline">{language === 'kh' ? 'បន្ថែមលើ iPhone' : 'Add to iPhone'}</span>
-          </button>
-
-          {/* Settings / Change Password Button */}
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`p-2.5 rounded-xl border transition cursor-pointer ${
-              activeTab === 'settings'
-                ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold'
-                : 'bg-slate-800/80 text-slate-200 border-slate-700 hover:bg-slate-700'
-            }`}
-            title={language === 'kh' ? 'កំណត់ពាក្យសម្ងាត់' : 'Settings'}
-          >
-            <span className="text-base">⚙️</span>
-          </button>
-
-          {onBackToMain && (
-            <button
-              onClick={onBackToMain}
-              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition cursor-pointer"
-            >
-              🏠 <span className="hidden sm:inline">{language === 'kh' ? 'កម្មវិធីដើម' : 'Main App'}</span>
-            </button>
-          )}
-
           <button
             onClick={handleLogout}
             className="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold transition cursor-pointer"
@@ -511,7 +457,7 @@ export default function ShareholderDashboard({
       </div>
 
       {/* Mobile App View Navigation Tabs */}
-      <div className="grid grid-cols-4 gap-1.5 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl shadow-lg">
+      <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl shadow-lg">
         <button
           onClick={() => setActiveTab('dashboard')}
           className={`py-2.5 px-2 rounded-xl text-xs font-black transition flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
@@ -536,35 +482,6 @@ export default function ShareholderDashboard({
           <span className="text-[11px] sm:text-xs">
             {language === 'kh' ? `កូនបំណុល (${linkedBorrowers.length})` : `Borrowers (${linkedBorrowers.length})`}
           </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('notifications')}
-          className={`py-2.5 px-2 rounded-xl text-xs font-black transition flex flex-col sm:flex-row items-center justify-center gap-1 relative cursor-pointer ${
-            activeTab === 'notifications'
-              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-          }`}
-        >
-          <span className="text-base">🔔</span>
-          <span className="text-[11px] sm:text-xs">{language === 'kh' ? 'ជូនដំណឹង' : 'Alerts'}</span>
-          {notificationList.length > 0 && (
-            <span className="px-1.5 py-0.2 bg-rose-500 text-white font-black text-[9px] rounded-full">
-              {notificationList.length}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`py-2.5 px-2 rounded-xl text-xs font-black transition flex flex-col sm:flex-row items-center justify-center gap-1 cursor-pointer ${
-            activeTab === 'settings'
-              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-          }`}
-        >
-          <span className="text-base">⚙️</span>
-          <span className="text-[11px] sm:text-xs">{language === 'kh' ? 'កំណត់' : 'Settings'}</span>
         </button>
       </div>
 
@@ -920,154 +837,6 @@ export default function ShareholderDashboard({
               })}
             </div>
           )}
-        </div>
-      )}
-
-      {/* TAB 3: NOTIFICATIONS & ALERTS */}
-      {activeTab === 'notifications' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between bg-slate-900 p-4 rounded-2xl border border-slate-800">
-            <div>
-              <h3 className="text-sm font-black text-white flex items-center gap-2">
-                <span>🔔</span> {language === 'kh' ? 'របាយការណ៍ជូនដំណឹង live' : 'Live Notifications'}
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {language === 'kh' ? 'ជូនដំណឹងស្វ័យប្រវត្តិនៅពេលមានកូនបំណុលថ្មី ឬមានការបង់ប្រាក់' : 'Auto alerts when new borrowers are created or payments recorded'}
-              </p>
-            </div>
-
-            <button
-              onClick={playNotificationChime}
-              className="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5"
-            >
-              <span>🔊</span> {language === 'kh' ? 'សាកល្បងសំឡេង' : 'Test Sound'}
-            </button>
-          </div>
-
-          {notificationList.length === 0 ? (
-            <div className="p-10 bg-slate-900 border border-dashed border-slate-800 rounded-3xl text-center space-y-2">
-              <span className="text-4xl block">🔔</span>
-              <p className="text-sm font-black text-slate-400">
-                {language === 'kh' ? 'មិនទាន់មានការជូនដំណឹងនៅឡើយទេ' : 'No notifications yet.'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {notificationList.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => handleNotificationClick(item.borrowerId)}
-                  className={`p-4 bg-slate-900 border border-slate-800 rounded-2xl flex items-start gap-3.5 shadow-md transition ${
-                    item.borrowerId ? 'hover:border-emerald-500/60 hover:bg-slate-800/80 cursor-pointer group' : ''
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${
-                    item.type === 'payment' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  }`}>
-                    {item.type === 'payment' ? '💰' : '🎉'}
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-black text-white group-hover:text-emerald-400 transition flex items-center gap-1.5">
-                        <span>{item.title}</span>
-                        {item.borrowerId && (
-                          <span className="text-[10px] px-1.5 py-0.2 bg-emerald-500/10 text-emerald-300 rounded font-bold">
-                            👁️ {language === 'kh' ? 'មើលព័ត៌មាន' : 'View'}
-                          </span>
-                        )}
-                      </h4>
-                      <span className="text-[10px] font-bold text-slate-500 font-mono">{item.time}</span>
-                    </div>
-                    <p className="text-xs font-bold text-slate-300 leading-relaxed">{item.body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 4: SETTINGS & CHANGE PASSWORD */}
-      {activeTab === 'settings' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl space-y-4 shadow-xl">
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-xl">
-                ⚙️
-              </div>
-              <div>
-                <h3 className="text-base font-black text-white">
-                  {language === 'kh' ? 'កំណត់ពាក្យសម្ងាត់ និងគណនី' : 'Account & Password Settings'}
-                </h3>
-                <p className="text-xs text-slate-400">
-                  {language === 'kh' ? 'ផ្លាស់ប្ដូរពាក្យសម្ងាត់សម្រាប់ចូលប្រើប្រាស់គណនីភាគហ៊ុនរបស់អ្នក' : 'Change password for your partner portal account'}
-                </p>
-              </div>
-            </div>
-
-            <form onSubmit={handleChangePassword} className="space-y-4 max-w-md pt-2">
-              {passwordMsg && (
-                <div
-                  className={`p-3.5 rounded-2xl text-xs font-black text-center border ${
-                    passwordMsg.type === 'success'
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                      : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                  }`}
-                >
-                  {passwordMsg.text}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">
-                  {language === 'kh' ? 'ពាក្យសម្ងាត់បច្ចុប្បន្ន (Current Password)' : 'Current Password'}
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={currentPasswordInput}
-                  onChange={(e) => setCurrentPasswordInput(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-bold text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">
-                  {language === 'kh' ? 'ពាក្យសម្ងាត់ថ្មី (New Password)' : 'New Password'}
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={newPasswordInput}
-                  onChange={(e) => setNewPasswordInput(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-bold text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">
-                  {language === 'kh' ? 'បញ្ជាក់ពាក្យសម្ងាត់ថ្មី (Confirm New Password)' : 'Confirm New Password'}
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={confirmPasswordInput}
-                  onChange={(e) => setConfirmPasswordInput(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-2xl text-sm font-bold text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-2xl transition shadow-lg shadow-emerald-500/20 cursor-pointer text-sm"
-              >
-                💾 {language === 'kh' ? 'រក្សាទុកពាក្យសម្ងាត់ថ្មី (Save New Password)' : 'Save New Password'}
-              </button>
-            </form>
-          </div>
         </div>
       )}
 
