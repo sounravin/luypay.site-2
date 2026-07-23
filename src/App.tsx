@@ -37,6 +37,22 @@ const getUserLocalStorageKey = (user: string | null) => {
   return `luypay_ledger_borrowers_${user}`;
 };
 
+// Helper to sanitize objects for Firestore (removes undefined values)
+export const sanitizeForFirestore = (obj: any): any => {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+  if (typeof obj === 'object' && !(obj instanceof Date)) {
+    const clean: Record<string, any> = {};
+    for (const [key, val] of Object.entries(obj)) {
+      if (val !== undefined) {
+        clean[key] = sanitizeForFirestore(val);
+      }
+    }
+    return clean;
+  }
+  return obj;
+};
+
 // Realistic Khmer seed data
 const SEED_BORROWERS: Borrower[] = [
   {
@@ -1555,15 +1571,16 @@ export default function App() {
           // Upload local data to Firestore as initial seed / migration
           try {
             const { updatedList } = runAutoCheckInForBorrowers(localData);
-            const batch = writeBatch(db);
             
             // Chunking local data for batch commits
             const CHUNK_SIZE = 400;
             for (let i = 0; i < updatedList.length; i += CHUNK_SIZE) {
+              const batch = writeBatch(db);
               const chunk = updatedList.slice(i, i + CHUNK_SIZE);
               chunk.forEach((b) => {
                 const docRef = doc(db, 'borrowers', b.id);
-                batch.set(docRef, { ...b, userId: currentUser || 'guest' });
+                const docData = sanitizeForFirestore({ ...b, userId: currentUser || 'guest' });
+                batch.set(docRef, docData);
               });
               await batch.commit();
             }
@@ -2156,22 +2173,6 @@ export default function App() {
     setTimeout(() => {
       window.location.reload();
     }, 800);
-  };
-
-  // Helper to sanitize objects for Firestore (removes undefined values)
-  const sanitizeForFirestore = (obj: any): any => {
-    if (obj === null || obj === undefined) return null;
-    if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
-    if (typeof obj === 'object' && !(obj instanceof Date)) {
-      const clean: Record<string, any> = {};
-      for (const [key, val] of Object.entries(obj)) {
-        if (val !== undefined) {
-          clean[key] = sanitizeForFirestore(val);
-        }
-      }
-      return clean;
-    }
-    return obj;
   };
 
   // Save to local storage and sync to Firestore if logged in
@@ -3024,17 +3025,7 @@ export default function App() {
                 transition={{ duration: 0.5 }}
                 className="cursor-pointer"
               >
-                <KhmerAvatarFrame
-                  frameId={avatarFrameId}
-                  sizeClass="w-16 h-16"
-                  onClick={() => {
-                    playClickSound();
-                    setIsAvatarFrameModalOpen(true);
-                  }}
-                  title="ចុចដើម្បីប្ដូរស៊ុម Khmer Avatar"
-                >
-                  {renderSystemLogo("w-16 h-16 shadow-lg shadow-blue-500/10")}
-                </KhmerAvatarFrame>
+                {renderSystemLogo("w-16 h-16 shadow-lg shadow-blue-500/10")}
               </motion.div>
               <div>
                 <h1 className="text-white text-xl font-black tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
@@ -4832,17 +4823,7 @@ export default function App() {
         {/* Logo / Header */}
         <div className="flex items-center justify-between mb-8 px-2">
           <div className="flex items-center gap-3">
-            <KhmerAvatarFrame
-              frameId={avatarFrameId}
-              sizeClass="w-10 h-10"
-              onClick={() => {
-                playClickSound();
-                setIsAvatarFrameModalOpen(true);
-              }}
-              title="ចុចដើម្បីប្ដូរស៊ុម Khmer Avatar"
-            >
-              {renderSystemLogo("w-10 h-10")}
-            </KhmerAvatarFrame>
+            {renderSystemLogo("w-10 h-10")}
             <div>
               <h1 className="text-white text-sm font-extrabold tracking-tight">{logoConfig?.systemName || t('appName')}</h1>
               <p className="text-[10px] text-slate-500 font-semibold tracking-wide">{t('appSubtitle')}</p>
@@ -5323,26 +5304,26 @@ export default function App() {
 
           <div className="flex items-center justify-between w-full relative z-30">
             <div className="flex items-center gap-2.5 border-transparent">
-              <KhmerAvatarFrame
-                frameId={avatarFrameId}
-                sizeClass="w-11 h-11"
-                onClick={() => {
-                  playClickSound();
-                  setIsAvatarFrameModalOpen(true);
-                }}
-                title="ចុចដើម្បីប្ដូរស៊ុម Khmer Avatar"
-              >
-                {memberProfile?.photoURL ? (
+              {memberProfile?.photoURL ? (
+                <KhmerAvatarFrame
+                  frameId={avatarFrameId}
+                  sizeClass="w-11 h-11"
+                  onClick={() => {
+                    playClickSound();
+                    setIsAvatarFrameModalOpen(true);
+                  }}
+                  title="ចុចដើម្បីប្ដូរស៊ុម Khmer Avatar"
+                >
                   <img
                     src={memberProfile.photoURL}
                     alt={userDisplayName}
                     className="w-11 h-11 rounded-full object-cover shrink-0"
                     referrerPolicy="no-referrer"
                   />
-                ) : (
-                  renderSystemLogo("w-11 h-11 shrink-0")
-                )}
-              </KhmerAvatarFrame>
+                </KhmerAvatarFrame>
+              ) : (
+                renderSystemLogo("w-11 h-11 shrink-0")
+              )}
               <div>
                 <div className="flex flex-col gap-1">
                   <p className={`text-sm font-black leading-tight ${
