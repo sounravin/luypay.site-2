@@ -4434,6 +4434,8 @@ export default function App() {
                         </button>
                       </div>
                       <AdminMembersDashboard
+        appTheme={appTheme}
+        totalBorrowers={borrowers.length}
                         members={members}
                         subRequests={subRequests}
                         getSubscriptionStatusInfo={getSubscriptionStatusInfo}
@@ -4627,7 +4629,6 @@ export default function App() {
                             isSelected={selectedBorrowerIds.includes(b.id)}
                             onToggleSelect={handleToggleSelectBorrower}
                             buttonStyle={buttonStyle}
-                            appTheme={appTheme}
                             isDark={isDark}
                             hideAvatarFrame={hideBorrowerAvatarFrames}
                             layoutLayer={layoutConfig.cardLayer || 'default'}
@@ -5800,6 +5801,8 @@ export default function App() {
           if (activeSection === 'admin_dashboard' && currentUser === 'sounravin') {
             return (
               <AdminMembersDashboard
+        appTheme={appTheme}
+        totalBorrowers={borrowers.length}
                 members={members}
                 subRequests={subRequests}
                 getSubscriptionStatusInfo={getSubscriptionStatusInfo}
@@ -5851,6 +5854,7 @@ export default function App() {
             <>
               {/* Header Component with stats and notifications */}
               <Header
+        appTheme={appTheme}
                 stats={stats}
                 onAddNewClick={() => setIsAddModalOpen(true)}
                 onBackupClick={handleExportBackup}
@@ -5859,7 +5863,6 @@ export default function App() {
                 onBulkAutoCheck={handleBulkAutoCheck}
                 borrowers={borrowers}
                 onSelectBorrower={setSelectedBorrowerId}
-                appTheme={appTheme}
                 buttonStyle={buttonStyle}
                 onOpenShareholders={handleOpenShareholders}
               />
@@ -6234,7 +6237,6 @@ export default function App() {
                       isSelected={selectedBorrowerIds.includes(b.id)}
                       onToggleSelect={handleToggleSelectBorrower}
                       buttonStyle={buttonStyle}
-                      appTheme={appTheme}
                       isDark={isDark}
                       hideAvatarFrame={hideBorrowerAvatarFrames}
                       layoutLayer={layoutConfig.cardLayer || 'default'}

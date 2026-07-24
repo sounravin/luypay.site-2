@@ -1,0 +1,48 @@
+#!/bin/bash
+awk '
+/      {\/\* Admin Dashboard Header \*\// {
+    print "      {/* System Quota / Token Limit Indicator */}"
+    print "      <div className=\"grid grid-cols-1 md:grid-cols-2 gap-5\">"
+    print "        <div className={`p-4 rounded-2xl flex flex-col gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden`}>"
+    print "          {appTheme === \"angkor\" && <div className=\"absolute inset-0 bg-[#dfb035]/5 pointer-events-none\" />}"
+    print "          <div className=\"flex items-center justify-between z-10\">"
+    print "            <div className=\"flex items-center gap-2\">"
+    print "              <div className=\"p-1.5 bg-blue-500/10 text-blue-500 rounded-lg\">"
+    print "                <svg className=\"w-4 h-4\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4\" /></svg>"
+    print "              </div>"
+    print "              <span className={`text-[10px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100`}>"
+    print "                {language === \"kh\" ? \"កូតាទិន្នន័យ (Database Quota)\" : \"Database Quota\"}"
+    print "              </span>"
+    print "            </div>"
+    print "            <span className=\"text-[10px] font-bold text-slate-500\">{totalBorrowers} / 10,000</span>"
+    print "          </div>"
+    print "          <div className=\"w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 relative overflow-hidden z-10\">"
+    print "            <div className=\"bg-blue-500 h-1.5 rounded-full transition-all duration-500\" style={{ width: `${Math.max(1, (totalBorrowers / 10000) * 100)}%` }}></div>"
+    print "          </div>"
+    print "          <p className=\"text-[9px] text-slate-400 z-10\">{language === \"kh\" ? \"ស្ថិតក្នុងកម្រិតសុវត្ថិភាព អាចប្រើប្រាស់បានយូរអង្វែង (Safe tier)\" : \"Healthy limits, good for long term use.\"}</p>"
+    print "        </div>"
+    print ""
+    print "        <div className={`p-4 rounded-2xl flex flex-col gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden`}>"
+    print "          {appTheme === \"apsara\" && <div className=\"absolute inset-0 bg-purple-500/5 pointer-events-none\" />}"
+    print "          <div className=\"flex items-center justify-between z-10\">"
+    print "            <div className=\"flex items-center gap-2\">"
+    print "              <div className=\"p-1.5 bg-emerald-500/10 text-emerald-500 rounded-lg\">"
+    print "                <svg className=\"w-4 h-4\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path strokeLinecap=\"round\" strokeLinejoin=\"round\" strokeWidth={2} d=\"M13 10V3L4 14h7v7l9-11h-7z\" /></svg>"
+    print "              </div>"
+    print "              <span className={`text-[10px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100`}>"
+    print "                {language === \"kh\" ? \"ល្បឿនប្រព័ន្ធ (Token Limit)\" : \"Token / System Limit\"}"
+    print "              </span>"
+    print "            </div>"
+    print "            <span className=\"text-[10px] font-bold text-emerald-500\">{language === \"kh\" ? \"ធម្មតា (Normal)\" : \"Stable\"}</span>"
+    print "          </div>"
+    print "          <div className=\"w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 relative overflow-hidden z-10\">"
+    print "            <div className=\"bg-emerald-500 h-1.5 rounded-full transition-all duration-500 animate-pulse\" style={{ width: \"15%\" }}></div>"
+    print "          </div>"
+    print "          <p className=\"text-[9px] text-slate-400 z-10\">{language === \"kh\" ? \"ប្រព័ន្ធត្រូវបានរៀបចំ Code Splitting ដើម្បីទប់ទល់ការគាំង\" : \"System utilizes code splitting to prevent crashing limits.\"}</p>"
+    print "        </div>"
+    print "      </div>"
+    print $0
+    next
+}
+{ print }
+' src/components/AdminMembersDashboard.tsx > tmp_adm.tsx && mv tmp_adm.tsx src/components/AdminMembersDashboard.tsx

@@ -503,7 +503,6 @@ export default function Header({
         </div>
       </motion.div>
 
-      {/* Grid statistics cards matching Sleek Interface theme */}
       <div id="stats-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Card 1: Active Borrowers */}
         <motion.div 
