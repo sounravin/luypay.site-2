@@ -24,7 +24,7 @@ export default function LoanApplicationsControlPanel({
   const { language } = useLanguage();
   const [applications, setApplications] = useState<LoanApplication[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
   // Modal previews
@@ -34,10 +34,7 @@ export default function LoanApplicationsControlPanel({
 
   useEffect(() => {
     setLoading(true);
-    const q = query(
-      collection(db, 'loan_applications'),
-      where('lenderId', '==', currentUser)
-    );
+    const q = collection(db, 'loan_applications');
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const list: LoanApplication[] = [];
@@ -45,11 +42,11 @@ export default function LoanApplicationsControlPanel({
         list.push({ id: doc.id, ...doc.data() } as LoanApplication);
       });
       // Sort by newest first
-      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      list.sort((a, b) => (new Date(b.createdAt || 0).getTime() || 0) - (new Date(a.createdAt || 0).getTime() || 0));
       setApplications(list);
       setLoading(false);
     }, (error) => {
-      console.warn("Unable to subscribe to loan applications:", error.message || error);
+      console.error(error);
       setLoading(false);
     });
 
@@ -190,15 +187,29 @@ export default function LoanApplicationsControlPanel({
     }
   };
 
-  const filteredApps = applications.filter((app) => {
+  // 1. User specific applications list (case-insensitive lenderId check, admin sees all)
+  const userApplications = applications.filter((app) => {
+    if (app.lenderId && currentUser) {
+      const appLender = app.lenderId.trim().toLowerCase();
+      const currentLender = currentUser.trim().toLowerCase();
+      if (currentLender !== 'sounravin' && appLender !== currentLender) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  // 2. Filtered applications based on tab & search
+  const filteredApps = userApplications.filter((app) => {
     // Tab filter
-    if (activeTab !== 'all' && app.status !== activeTab) return false;
+    const appStatus = app.status || 'pending';
+    if (activeTab !== 'all' && appStatus !== activeTab) return false;
     
     // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchName = app.name.toLowerCase().includes(q);
-      const matchPhone = app.phone.includes(q);
+      const matchName = (app.name || '').toLowerCase().includes(q);
+      const matchPhone = (app.phone || '').includes(q);
       return matchName || matchPhone;
     }
     return true;
@@ -283,7 +294,7 @@ export default function LoanApplicationsControlPanel({
         {/* Tabs Row */}
         <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800/80 gap-1 w-full md:w-auto overflow-x-auto shrink-0">
           {(['pending', 'approved', 'rejected', 'all'] as const).map((tab) => {
-            const count = applications.filter(a => tab === 'all' ? true : a.status === tab).length;
+            const count = userApplications.filter(a => tab === 'all' ? true : (a.status || 'pending') === tab).length;
             const tabName = {
               pending: language === 'kh' ? '⏳ រង់ចាំពិនិត្យ' : 'Pending',
               approved: language === 'kh' ? '✅ បានអនុម័ត' : 'Approved',
@@ -487,14 +498,14 @@ export default function LoanApplicationsControlPanel({
                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
                         📄 {language === 'kh' ? 'អត្តសញ្ញាណប័ណ្ណ' : 'National ID Card'}
                       </span>
-                      <div className="relative h-24 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 group">
-                        <img src={app.idCardPhoto} alt="ID Card" className="w-full h-full object-cover" />
+                      <div className="relative h-28 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 group">
+                        <img src={app.idCardPhoto} alt="ID Card" className="w-full h-full object-contain p-0.5" />
                         <button
-                          onClick={() => setSelectedPhoto({ title: `${app.name} - ID Card`, src: app.idCardPhoto })}
-                          className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs font-extrabold text-slate-100 gap-1 cursor-pointer"
+                          onClick={() => setSelectedPhoto({ title: `${app.name} - ${language === 'kh' ? 'អត្តសញ្ញាណប័ណ្ណ' : 'ID Card'}`, src: app.idCardPhoto })}
+                          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs font-extrabold text-slate-100 gap-1 cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          {language === 'kh' ? 'មើលធំ' : 'View'}
+                          {language === 'kh' ? 'មើលរូបធំច្បាស់' : 'View HD'}
                         </button>
                       </div>
                     </div>

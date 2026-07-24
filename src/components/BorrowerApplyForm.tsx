@@ -3,7 +3,7 @@ import { db } from '../lib/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import { useLanguage } from '../i18n';
 import { motion, AnimatePresence } from 'motion/react';
-import { Upload, Camera, CheckCircle, AlertCircle, Phone, User, DollarSign, RefreshCw, ChevronLeft } from 'lucide-react';
+import { Upload, Camera, CheckCircle, AlertCircle, Phone, User, DollarSign, RefreshCw, ChevronLeft, Eye, X, ZoomIn } from 'lucide-react';
 
 interface BorrowerApplyFormProps {
   lenderId: string;
@@ -23,6 +23,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
   
   const [idCardPhoto, setIdCardPhoto] = useState<string>('');
   const [selfiePhoto, setSelfiePhoto] = useState<string>('');
+  const [previewModalImage, setPreviewModalImage] = useState<{ title: string; src: string } | null>(null);
   
   const [useCameraForSelfie, setUseCameraForSelfie] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
@@ -92,7 +93,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
     }
   };
 
-  // Helper to compress images selected from file system
+  // Helper to process high quality image uploads with optimal HD resolution for ID card clarity
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'id' | 'selfie') => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -104,18 +105,18 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
       img.src = event.target?.result as string;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_SIZE = 300; // Keep image dimensions small for faster uploads & compliance
+        // ID Card needs high resolution (1600px max) so all Khmer text and numbers stay crisp and clear
+        // Selfie face photo uses 800px max
+        const MAX_SIZE = type === 'id' ? 1600 : 800;
         let width = img.width;
         let height = img.height;
 
-        if (width > height) {
-          if (width > MAX_SIZE) {
-            height *= MAX_SIZE / width;
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          if (width > height) {
+            height = Math.round(height * (MAX_SIZE / width));
             width = MAX_SIZE;
-          }
-        } else {
-          if (height > MAX_SIZE) {
-            width *= MAX_SIZE / height;
+          } else {
+            width = Math.round(width * (MAX_SIZE / height));
             height = MAX_SIZE;
           }
         }
@@ -123,8 +124,15 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // Compress to 60% quality
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+        }
+        
+        // High JPEG quality (0.90 for ID cards, 0.85 for selfie)
+        const quality = type === 'id' ? 0.90 : 0.85;
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
         
         if (type === 'id') {
           setIdCardPhoto(dataUrl);
@@ -347,27 +355,6 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                 $
               </span>
             </div>
-            
-            {/* Quick Template Options for Amount */}
-            <div className="pt-1 flex flex-wrap gap-1.5">
-              {[50, 150, 200, 250, 300, 350, 400, 450, 500].map((amt) => {
-                const isSelected = amountRequested === amt.toString();
-                return (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setAmountRequested(amt.toString())}
-                    className={`px-2.5 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
-                      isSelected
-                        ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-xs shadow-emerald-500/20 scale-105'
-                        : 'bg-slate-950 text-emerald-400 border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-950/30'
-                    }`}
-                  >
-                    ${amt}
-                  </button>
-                );
-              })}
-            </div>
           </div>
 
           {/* Loan Duration in Days */}
@@ -447,31 +434,46 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
 
           {/* ID Card Upload Card */}
           <div className="space-y-2">
-            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider">
-              {language === 'kh' ? 'រូបអត្តសញ្ញាណប័ណ្ណ (ID Card Photo)' : 'National ID Card Photo'} <span className="text-rose-500">*</span>
-            </label>
-            <div className="relative border-2 border-dashed border-slate-800 hover:border-blue-500/40 rounded-2xl bg-slate-950 p-4 transition text-center flex flex-col items-center justify-center space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider">
+                {language === 'kh' ? 'រូបអត្តសញ្ញាណប័ណ្ណ (ID Card Photo)' : 'National ID Card Photo'} <span className="text-rose-500">*</span>
+              </label>
+              <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                {language === 'kh' ? 'គុណភាពច្បាស់ HD' : 'HD Clarity'}
+              </span>
+            </div>
+            <div className="relative border-2 border-dashed border-slate-800 hover:border-blue-500/40 rounded-2xl bg-slate-950 p-3 transition text-center flex flex-col items-center justify-center space-y-2">
               {idCardPhoto ? (
-                <div className="relative w-full h-32 rounded-xl overflow-hidden group">
-                  <img src={idCardPhoto} alt="National ID Card" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setIdCardPhoto('')}
-                    className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs font-bold text-rose-400 cursor-pointer"
-                  >
-                    {language === 'kh' ? '🗑️ លុប ដើម្បីបង្ហោះឡើងវិញ' : '🗑️ Remove and Redo'}
-                  </button>
+                <div className="relative w-full h-48 sm:h-56 bg-slate-900 rounded-xl overflow-hidden group border border-slate-800 flex items-center justify-center">
+                  <img src={idCardPhoto} alt="National ID Card" className="w-full h-full object-contain p-1" />
+                  <div className="absolute inset-0 bg-slate-950/75 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2 p-2">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewModalImage({ title: language === 'kh' ? 'រូបថតអត្តសញ្ញាណប័ណ្ណ (HD)' : 'ID Card Photo (HD)', src: idCardPhoto })}
+                      className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95"
+                    >
+                      <Eye className="w-4 h-4" />
+                      {language === 'kh' ? 'មើលរូបធំច្បាស់' : 'View HD Image'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIdCardPhoto('')}
+                      className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95"
+                    >
+                      {language === 'kh' ? 'លុបដើម្បីបង្ហោះថ្មី' : 'Remove & Redo'}
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <label className="w-full py-4 cursor-pointer flex flex-col items-center justify-center gap-2">
-                  <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full flex items-center justify-center shadow-inner">
-                    <Upload className="w-5 h-5" />
+                <label className="w-full py-6 cursor-pointer flex flex-col items-center justify-center gap-2">
+                  <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center shadow-inner">
+                    <Upload className="w-6 h-6" />
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-slate-300">
+                    <p className="text-xs font-bold text-slate-200">
                       {language === 'kh' ? 'បង្ហោះ ឬថតរូបអត្តសញ្ញាណប័ណ្ណ' : 'Upload or snap ID card'}
                     </p>
-                    <p className="text-[10px] text-slate-500 font-medium">PNG, JPG up to 10MB</p>
+                    <p className="text-[10px] text-slate-400 font-medium">PNG, JPG (រក្សាទុករូបភាពច្បាស់ HD រហូតដល់ 10MB)</p>
                   </div>
                   <input
                     type="file"
@@ -603,6 +605,41 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
           </button>
         )}
       </div>
+
+      {/* HD Image Preview Modal */}
+      <AnimatePresence>
+        {previewModalImage && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="max-w-3xl w-full bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl space-y-0"
+            >
+              <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+                <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-emerald-400" />
+                  {previewModalImage.title}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setPreviewModalImage(null)}
+                  className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-3 bg-black flex items-center justify-center min-h-[300px] max-h-[75vh] overflow-auto">
+                <img
+                  src={previewModalImage.src}
+                  alt={previewModalImage.title}
+                  className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-lg"
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

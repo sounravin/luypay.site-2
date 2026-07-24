@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CurrencyType, FrequencyType, Shareholder } from '../types';
+import { CurrencyType, FrequencyType } from '../types';
 import { getTodayDateString } from '../utils';
 import { X, Info, Camera, User, Image } from 'lucide-react';
 import { useLanguage } from '../i18n';
@@ -27,11 +27,6 @@ interface AddBorrowerModalProps {
     dueTime?: string;
     profilePhoto?: string;
     coverPhoto?: string;
-    shareholderId?: string;
-    shareholderName?: string;
-    shareholderSharePercent?: number;
-    shareholderCalculationType?: 'daily_usd' | 'percent';
-    shareholderDailyUSD?: number;
   }) => void;
   prefilledData?: {
     name?: string;
@@ -41,10 +36,9 @@ interface AddBorrowerModalProps {
     notes?: string;
     loanDuration?: number;
   } | null;
-  shareholders?: Shareholder[];
 }
 
-export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledData, shareholders = [] }: AddBorrowerModalProps) {
+export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledData }: AddBorrowerModalProps) {
   const { t, language } = useLanguage();
   const [name, setName] = useState('');
 
@@ -64,12 +58,9 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
   const [dueTime, setDueTime] = useState('17:00');
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [coverPhoto, setCoverPhoto] = useState<string>('');
-  const [selectedShareholderId, setSelectedShareholderId] = useState<string>('');
-  const [shareholderDailyUSD, setShareholderDailyUSD] = useState<string>('1.00');
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedShareholderId('');
       if (prefilledData) {
         setName(prefilledData.name || '');
         setPhone(prefilledData.phone || '');
@@ -189,26 +180,6 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
       ? ['4', '5', '10', '20', '50']
       : ['10000', '20000', '50000', '100000', '200000'];
 
-  // Auto calculate half of daily interest for shareholder partner (50/50 split of daily interest)
-  const calcAutoPartnerDailyProfit = (shId?: string) => {
-    const targetShId = shId || selectedShareholderId;
-    const sh = shareholders?.find((s) => s.id === targetShId);
-    if (!sh) return '1.00';
-
-    const pVal = parseFloat(principal) || 0;
-    const tVal = parseFloat(totalToPay) || 0;
-    const dVal = parseInt(duration) || 1;
-    const totInterest = paymentMode === 'interest-only' ? tVal : Math.max(0, tVal - pVal);
-    const totalDailyInterest = dVal > 0 ? totInterest / dVal : 0;
-
-    if (totalDailyInterest > 0) {
-      // 50% split of daily interest (e.g. $4 daily interest -> $2 for partner, $2 for main lender)
-      const partnerHalf = totalDailyInterest / 2;
-      return partnerHalf % 1 === 0 ? partnerHalf.toFixed(0) : partnerHalf.toFixed(2);
-    }
-    return (sh.dailyProfitUSD ?? 1.0).toString();
-  };
-
   // Helper values for calculations & visual breakdown
   const pValNum = parseFloat(principal) || 0;
   const iValNum = parseFloat(interestValue) || 0;
@@ -303,7 +274,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
     if (isNaN(dVal) || dVal <= 0) return alert('សូមបញ្ជាក់ចំនួនដងបង់ប្រាក់ឲ្យបានត្រឹមត្រូវ!');
     if (isNaN(iVal) || iVal <= 0) return alert('សូមបញ្ជាក់ប្រាក់ត្រូវបង់ក្នុងមួយវគ្គឲ្យបានត្រឹមត្រូវ!');
 
-    const matchedShareholder = shareholders?.find((s) => s.id === selectedShareholderId);
+
 
     onSave({
       name: name.trim(),
@@ -325,11 +296,6 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
       dueTime,
       profilePhoto,
       coverPhoto,
-      shareholderId: matchedShareholder ? matchedShareholder.id : undefined,
-      shareholderName: matchedShareholder ? matchedShareholder.name : undefined,
-      shareholderSharePercent: matchedShareholder ? matchedShareholder.sharePercent : undefined,
-      shareholderCalculationType: matchedShareholder ? (matchedShareholder.calculationType || 'daily_usd') : undefined,
-      shareholderDailyUSD: matchedShareholder ? (parseFloat(shareholderDailyUSD) || matchedShareholder.dailyProfitUSD || 1.0) : undefined,
     });
 
     // Reset fields
@@ -976,136 +942,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
             </button>
           </div>
 
-          {/* Shareholder Partner Selection */}
-          <div className="bg-emerald-50 dark:bg-emerald-950/20 p-3.5 rounded-2xl border border-emerald-200 dark:border-emerald-800/40 space-y-2.5">
-            <label className="block text-xs font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-              <span>🤝</span> {language === 'kh' ? 'ភ្ជាប់ជាមួយដៃគូភាគហ៊ុន (Shareholder Partner)' : 'Link to Shareholder Partner'}
-            </label>
-            <select
-              value={selectedShareholderId}
-              onChange={(e) => {
-                const shId = e.target.value;
-                setSelectedShareholderId(shId);
-                if (shId) {
-                  setShareholderDailyUSD(calcAutoPartnerDailyProfit(shId));
-                }
-              }}
-              className="w-full px-3.5 py-2.5 text-sm bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition font-bold text-slate-800 dark:text-slate-100"
-            >
-              <option value="">{language === 'kh' ? '🚫 គ្មាន (លុយផ្ទាល់ខ្លួន)' : 'None (Self Capital)'}</option>
-              {(shareholders || []).map((s) => (
-                <option key={s.id} value={s.id}>
-                  🤝 {s.name} (ដើម ${s.capitalUSD.toLocaleString()} | {s.calculationType === 'percent' ? `ភាគលាភ ${s.sharePercent}%` : `ចំណេញ $${(s.dailyProfitUSD ?? 1.0).toFixed(2)}/ថ្ងៃ`})
-                </option>
-              ))}
-            </select>
 
-            {selectedShareholderId && (
-              <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800/40 space-y-2 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between">
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300">
-                    {language === 'kh' ? 'ផលចំណេញប្រចាំថ្ងៃសម្រាប់ដៃគូ ($ USD / ថ្ងៃ)' : 'Partner Daily Profit ($ USD / Day)'}
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShareholderDailyUSD(calcAutoPartnerDailyProfit())}
-                    className="text-[10px] font-black px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition cursor-pointer flex items-center gap-1 shadow-xs"
-                    title="គណនា 50% នៃការប្រាក់ប្រចាំថ្ងៃស្វ័យប្រវត្តិ"
-                  >
-                    <span>⚡</span> {language === 'kh' ? 'ចែកស្មើ 50/50' : 'Auto 50/50 Split'}
-                  </button>
-                </div>
-
-                {/* Quick Selection Rate Presets */}
-                <div className="flex flex-wrap gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setShareholderDailyUSD('1.00')}
-                    className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition cursor-pointer ${
-                      shareholderDailyUSD === '1.00'
-                        ? 'bg-emerald-600 text-white border-emerald-500 font-black'
-                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
-                    }`}
-                  >
-                    $1.00 / ថ្ងៃ
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShareholderDailyUSD('2.00')}
-                    className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition cursor-pointer ${
-                      shareholderDailyUSD === '2.00'
-                        ? 'bg-emerald-600 text-white border-emerald-500 font-black'
-                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
-                    }`}
-                  >
-                    $2.00 / ថ្ងៃ
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShareholderDailyUSD('4.00')}
-                    className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition cursor-pointer ${
-                      shareholderDailyUSD === '4.00'
-                        ? 'bg-emerald-600 text-white border-emerald-500 font-black'
-                        : 'bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/30'
-                    }`}
-                  >
-                    ⚡ $4.00 / ថ្ងៃ ($100 ខ្ចី)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShareholderDailyUSD('8.00')}
-                    className={`px-2 py-0.5 text-[10px] font-bold rounded-lg border transition cursor-pointer ${
-                      shareholderDailyUSD === '8.00'
-                        ? 'bg-emerald-600 text-white border-emerald-500 font-black'
-                        : 'bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/30'
-                    }`}
-                  >
-                    ⚡ $8.00 / ថ្ងៃ ($200 ខ្ចី)
-                  </button>
-                </div>
-
-                <div className="relative">
-                  <span className="absolute left-3.5 top-2 text-xs font-mono font-bold text-slate-400">$</span>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    value={shareholderDailyUSD}
-                    onChange={(e) => setShareholderDailyUSD(e.target.value)}
-                    placeholder="1.00"
-                    className="w-full pl-7 pr-3.5 py-2 text-xs bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-800 rounded-xl font-mono font-black text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                {/* Capital Deduction Preview */}
-                {(() => {
-                  const sh = shareholders.find((s) => s.id === selectedShareholderId);
-                  const pAmt = parseFloat(principal) || 0;
-                  if (!sh) return null;
-                  return (
-                    <div className="p-2.5 bg-emerald-100/50 dark:bg-emerald-900/30 rounded-xl border border-emerald-200 dark:border-emerald-800/60 text-[10px] space-y-1 text-emerald-900 dark:text-emerald-200">
-                      <p className="font-black flex items-center justify-between">
-                        <span>💰 ស្ថានភាពដើមទុនភាគហ៊ុន ({sh.name})៖</span>
-                        <span className="font-mono">${sh.capitalUSD.toLocaleString()} USD</span>
-                      </p>
-                      <div className="flex items-center justify-between font-bold text-slate-600 dark:text-slate-300 pt-0.5 border-t border-emerald-200 dark:border-emerald-800/40">
-                        <span>📤 ដកបង្កើតកម្ចីនេះ៖ -${pAmt.toLocaleString()}</span>
-                        <span className="text-emerald-700 dark:text-emerald-400 font-black font-mono">
-                          ➔ នៅសល់៖ ${Math.max(0, sh.capitalUSD - pAmt).toLocaleString()} USD
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold leading-relaxed">
-                  {language === 'kh'
-                    ? `💡 រាល់ពេលកូនបំណុលបង់ប្រាក់ ដៃគូភាគហ៊ុននឹងទទួលបានផលចំណេញ $${(parseFloat(shareholderDailyUSD) || 0).toFixed(2)}/ថ្ងៃ សម្រាប់កម្ចីនេះ។`
-                    : `💡 Partner receives $${(parseFloat(shareholderDailyUSD) || 0).toFixed(2)} profit per daily payment installment.`}
-                </p>
-              </div>
-            )}
-          </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">

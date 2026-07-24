@@ -1999,46 +1999,7 @@ export default function BorrowerDetail({
                             )}
                           </div>
 
-                          {/* 50/50 Partner Interest Split Box */}
-                          {isLinkedToShareholder && (
-                            <div className="p-3 bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-indigo-500/10 border border-emerald-500/30 rounded-xl space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                                  <span>🤝</span>
-                                  <span>{language === 'kh' ? 'ការបែងចែកចំណូលការប្រាក់ 2 នាក់ (50/50 Split)' : '2-Way Interest Revenue Split'}</span>
-                                </span>
-                                <span className="px-2 py-0.5 bg-emerald-500 text-slate-950 font-black rounded-md text-[10px]">
-                                  {borrower.shareholderName || 'ដៃគូភាគហ៊ុន'}
-                                </span>
-                              </div>
 
-                              <div className="grid grid-cols-2 gap-2 text-xs font-bold">
-                                <div className="p-2 bg-white/90 dark:bg-slate-900/90 rounded-lg border border-blue-500/20 text-slate-800 dark:text-slate-200">
-                                  <span className="text-[10px] uppercase font-black text-blue-600 dark:text-blue-400 block">
-                                    👑 {language === 'kh' ? 'ម្ចាស់ដើម (My Share)' : 'My Account (Main Lender)'}
-                                  </span>
-                                  <div className="text-sm font-black font-mono text-blue-600 dark:text-blue-400 mt-0.5">
-                                    ${ownerDailyShare.toFixed(2)} <span className="text-[10px] font-normal text-slate-500">/{language === 'kh' ? 'ថ្ងៃ' : 'day'}</span>
-                                  </div>
-                                  <div className="text-[10px] text-slate-500 font-semibold">
-                                    {language === 'kh' ? `សរុប៖ $${(ownerDailyShare * (borrower.duration || 1)).toFixed(2)}` : `Total: $${(ownerDailyShare * (borrower.duration || 1)).toFixed(2)}`}
-                                  </div>
-                                </div>
-
-                                <div className="p-2 bg-white/90 dark:bg-slate-900/90 rounded-lg border border-emerald-500/20 text-slate-800 dark:text-slate-200">
-                                  <span className="text-[10px] uppercase font-black text-emerald-600 dark:text-emerald-400 block">
-                                    🤝 {language === 'kh' ? 'ដៃគូភាគហ៊ុន' : 'Shareholder Partner'}
-                                  </span>
-                                  <div className="text-sm font-black font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
-                                    ${partnerDailyShare.toFixed(2)} <span className="text-[10px] font-normal text-slate-500">/{language === 'kh' ? 'ថ្ងៃ' : 'day'}</span>
-                                  </div>
-                                  <div className="text-[10px] text-slate-500 font-semibold">
-                                    {language === 'kh' ? `សរុប៖ $${(partnerDailyShare * (borrower.duration || 1)).toFixed(2)}` : `Total: $${(partnerDailyShare * (borrower.duration || 1)).toFixed(2)}`}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
 
                           {/* Installment Boxes grid */}
                           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-6 gap-3 pt-2 overflow-y-auto max-h-[300px] md:max-h-[380px] p-2 border border-slate-200/80 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/40">
@@ -2183,7 +2144,6 @@ export default function BorrowerDetail({
                     </div>
 
                     {/* Bottom row: Payment History Logs */}
-                    {/* Borrower Payment History Logs (Hidden for shareholder partner read-only accounts) */}
                     {!isReadOnlyShareholder && (
                       <div className="p-5 border border-slate-200 bg-slate-50/50 rounded-2xl overflow-y-auto max-h-[260px] shadow-sm">
                         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
@@ -2250,66 +2210,7 @@ export default function BorrowerDetail({
                       </div>
                     )}
 
-                    {/* Partner Revenue History for this Loan */}
-                    {((isReadOnlyShareholder && (shareholders?.length ?? 0) > 0) || borrower.shareholderId || borrower.shareholderName) && (
-                      <div className="p-5 border border-emerald-500/20 bg-emerald-500/5 rounded-2xl space-y-3 shadow-xs">
-                        <h3 className="text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center justify-between">
-                          <span className="flex items-center gap-1.5">
-                            <span>💵</span>
-                            <span>{language === 'kh' ? 'ប្រវត្តិទទួលបានប្រាក់ចំណូលភាគហ៊ុនលើកម្ចីនេះ' : 'Partner Revenue History for this Loan'}</span>
-                          </span>
-                          <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-xl border border-emerald-500/20">
-                            {language === 'kh' ? 'ចំណេញភាគហ៊ុនសរុប៖ ' : 'Total Partner Profit: '}
-                            +${payments.reduce((sum, p) => {
-                              const activeShareholder = (shareholders || []).find(s => s.id === borrower.shareholderId) || (shareholders || [])[0];
-                              const split = calculatePaymentInterestSplit(borrower, p, activeShareholder);
-                              return sum + split.partnerShare;
-                            }, 0).toFixed(2)} USD
-                          </span>
-                        </h3>
 
-                        {payments.length === 0 ? (
-                          <div className="text-center py-4 text-slate-400 text-xs font-bold">
-                            {language === 'kh' ? 'មិនទាន់មានប្រវត្តិបង់ប្រាក់សម្រាប់គណនីកូនបំណុលនេះនៅឡើយទេ' : 'No payments logged for this borrower yet.'}
-                          </div>
-                        ) : (
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs border-collapse">
-                              <thead>
-                                <tr className="border-b border-emerald-500/20 text-emerald-800 dark:text-emerald-400 font-bold uppercase text-[10px]">
-                                  <th className="py-2 px-3">{language === 'kh' ? 'ថ្ងៃបង់ប្រាក់' : 'Payment Date'}</th>
-                                  <th className="py-2 px-3 text-right">{language === 'kh' ? 'ប្រាក់បង់សរុប' : 'Total Paid'}</th>
-                                  <th className="py-2 px-3 text-right">{language === 'kh' ? 'ការប្រាក់' : 'Actual Interest'}</th>
-                                  <th className="py-2 px-3 text-right text-emerald-600 dark:text-emerald-400 font-black">
-                                    {language === 'kh' ? 'ប្រាក់ចំណេញភាគហ៊ុន' : 'Partner Share'}
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-emerald-500/10 font-semibold text-slate-700 dark:text-slate-300">
-                                {[...payments].reverse().map((pay) => {
-                                  const activeShareholder = (shareholders || []).find(s => s.id === borrower.shareholderId) || (shareholders || [])[0];
-                                  const split = calculatePaymentInterestSplit(borrower, pay, activeShareholder);
-                                  return (
-                                    <tr key={pay.id} className="hover:bg-emerald-500/10 transition">
-                                      <td className="py-2.5 px-3 font-mono">{formatKhmerDate(pay.date)}</td>
-                                      <td className="py-2.5 px-3 text-right font-mono text-slate-800 dark:text-slate-200">
-                                        {formatMoney(pay.amount, borrower.currency)}
-                                      </td>
-                                      <td className="py-2.5 px-3 text-right font-mono text-amber-600 dark:text-amber-400">
-                                        ${split.actualInterest.toFixed(2)}
-                                      </td>
-                                      <td className="py-2.5 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400 font-black">
-                                        +${split.partnerShare.toFixed(2)} USD
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 ) : detailTab === 'statement' ? (
                   <div className="space-y-6">

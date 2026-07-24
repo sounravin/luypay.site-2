@@ -1,16 +1,16 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { initializeFirestore, getFirestore, memoryLocalCache } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase app
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore using pure Cloud execution with memoryLocalCache (No persistent browser IndexedDB/LocalStorage quota required)
+// Initialize Firestore with persistentLocalCache to avoid hitting daily read quotas on every refresh
 let db: ReturnType<typeof getFirestore>;
 try {
   const customDbId = firebaseConfig.firestoreDatabaseId;
   const dbOptions = {
-    localCache: memoryLocalCache()
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
   };
   if (customDbId && customDbId !== '(default)') {
     db = initializeFirestore(app, dbOptions, customDbId);
@@ -20,10 +20,11 @@ try {
 } catch (e) {
   try {
     const customDbId = firebaseConfig.firestoreDatabaseId;
+    const dbOptions = { localCache: memoryLocalCache() };
     if (customDbId && customDbId !== '(default)') {
-      db = getFirestore(app, customDbId);
+      db = initializeFirestore(app, dbOptions, customDbId);
     } else {
-      db = getFirestore(app);
+      db = initializeFirestore(app, dbOptions);
     }
   } catch (err) {
     db = getFirestore(app);
@@ -31,3 +32,4 @@ try {
 }
 
 export { app, db };
+

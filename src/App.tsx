@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest, Shareholder } from './types';
+import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest } from './types';
 import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound, backfillShortIds, formatMoney } from './utils';
 import Header from './components/Header';
 import BorrowerCard from './components/BorrowerCard';
 import BorrowerDetail from './components/BorrowerDetail';
 import AddBorrowerModal from './components/AddBorrowerModal';
 import BorrowerPortal from './components/BorrowerPortal';
-import ShareholderManagementModal from './components/ShareholderManagementModal';
-import ShareholderDashboard from './components/ShareholderDashboard';
-import { calculateShareholderStats } from './utils/shareholderUtils';
 import AdminMembersDashboard from './components/AdminMembersDashboard';
 import PricingPanel from './components/PricingPanel';
 import NotificationBell, { playNotificationSound } from './components/NotificationBell';
@@ -158,51 +155,9 @@ export default function App() {
   });
   const [applyLenderId, setApplyLenderId] = useState<string>(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('lender') || 'sounravin';
+    return (params.get('lender') || 'sounravin').toLowerCase();
   });
 
-  // Shareholders state
-  const [partnerParam, setPartnerParam] = useState<string | null>(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('partner');
-  });
-  const [isShareholdersModalOpen, setIsShareholdersModalOpen] = useState(false);
-  const [isShareholderLockModalOpen, setIsShareholderLockModalOpen] = useState(false);
-  const [shareholders, setShareholders] = useState<Shareholder[]>(() => {
-    const savedLocal = safeStorage.getItem(`luypay_shareholders_${currentUser}`);
-    if (savedLocal) {
-      try {
-        const parsed = JSON.parse(savedLocal);
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {
-        console.error('Error parsing shareholders:', e);
-      }
-    }
-    if (currentUser === 'sounravin') {
-      const savedGlobal = safeStorage.getItem('luypay_shareholders_global');
-      if (savedGlobal) {
-        try {
-          const parsed = JSON.parse(savedGlobal);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        } catch (e) {}
-      }
-      return [
-        {
-          id: 'sh_default',
-          name: 'ដៃគូវិនិយោគ A',
-          username: 'admin',
-          password: 'admin',
-          capitalUSD: 500,
-          sharePercent: 50,
-          phone: '012 345 678',
-          createdAt: new Date().toISOString(),
-          notes: 'ដើមទុន 500$ បែងចែកប្រាក់ការ 50% ស្វ័យប្រវត្ត',
-        },
-      ];
-    }
-    // Member user account starts empty [] so they must create their own shareholders
-    return [];
-  });
   const [members, setMembers] = useState<Member[]>([]);
   const [subRequests, setSubRequests] = useState<SubscriptionRequest[]>([]);
   const [memberProfile, setMemberProfile] = useState<Member | null>(null);
@@ -224,18 +179,6 @@ export default function App() {
     return safeStorage.getItem(`luypay_avatar_frame_${currentUser}`) || 'kbach_gold';
   });
   const [isAvatarFrameModalOpen, setIsAvatarFrameModalOpen] = useState<boolean>(false);
-
-  // Check if member has access to Shareholder Management Add-on ($10)
-  const canAccessShareholders = currentUser === 'sounravin' || memberProfile?.hasShareholderModule === true;
-
-  const handleOpenShareholders = () => {
-    if (canAccessShareholders) {
-      setIsShareholdersModalOpen(true);
-    } else {
-      setIsShareholderLockModalOpen(true);
-    }
-    playClickSound();
-  };
 
   const handleBlockScreenImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -328,7 +271,7 @@ export default function App() {
         console.warn('Failed to parse saved layout config:', e);
       }
     }
-    return { cardLayer: 'default' };
+    return { cardLayer: 'default', mobileLayoutMode: 'app_menu' };
   });
 
   const handleQuickChangeLayoutLayer = async (newLayer: 'default' | 'compact' | 'detailed') => {
@@ -643,16 +586,17 @@ export default function App() {
     const unsubscribeLayout = onSnapshot(doc(db, 'settings', 'layout_config'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setLayoutConfig(data);
-        safeStorage.setItem('luypay_layout_config', JSON.stringify(data));
+        const merged = { cardLayer: 'default', mobileLayoutMode: 'app_menu', ...data };
+        setLayoutConfig(merged);
+        safeStorage.setItem('luypay_layout_config', JSON.stringify(merged));
       }
     }, (err) => {
       console.warn('Unable to subscribe to settings/layout_config in real-time (using default offline values):', err.message || err);
     });
 
     const handleLayoutUpdated = (e: any) => {
-      if (e.detail && e.detail.cardLayer) {
-        setLayoutConfig({ cardLayer: e.detail.cardLayer });
+      if (e.detail) {
+        setLayoutConfig((prev: any) => ({ ...prev, ...e.detail }));
       }
     };
     window.addEventListener('layout_config_updated', handleLayoutUpdated);
@@ -666,58 +610,7 @@ export default function App() {
     };
   }, []);
 
-  // Sync shareholders isolated per active user account (admin vs member isolation)
-  useEffect(() => {
-    if (!currentUser) return;
 
-    // Load local storage first for instant render
-    const savedLocal = safeStorage.getItem(`luypay_shareholders_${currentUser}`);
-    if (savedLocal) {
-      try {
-        const parsed = JSON.parse(savedLocal);
-        if (Array.isArray(parsed)) {
-          setShareholders(parsed);
-        }
-      } catch (e) {
-        console.error('Error parsing user shareholders:', e);
-      }
-    } else {
-      if (currentUser === 'sounravin') {
-        const savedGlobal = safeStorage.getItem('luypay_shareholders_global');
-        if (savedGlobal) {
-          try {
-            const parsed = JSON.parse(savedGlobal);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setShareholders(parsed);
-            }
-          } catch (e) {}
-        }
-      } else {
-        setShareholders([]);
-      }
-    }
-
-    // Subscribe to user-specific Firestore document
-    const docPath = currentUser === 'sounravin' ? 'shareholders_config' : `shareholders_${currentUser}`;
-    const unsubscribe = onSnapshot(doc(db, 'settings', docPath), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (Array.isArray(data.list)) {
-          setShareholders(data.list);
-          safeStorage.setItem(`luypay_shareholders_${currentUser}`, JSON.stringify(data.list));
-        }
-      } else {
-        if (currentUser !== 'sounravin') {
-          setShareholders([]);
-          safeStorage.setItem(`luypay_shareholders_${currentUser}`, JSON.stringify([]));
-        }
-      }
-    }, (err) => {
-      console.warn(`Unable to subscribe to settings/${docPath}:`, err.message || err);
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
 
   // Real-time listener & persistent storage sync for Khmer Avatar Frame per user
   useEffect(() => {
@@ -1152,7 +1045,7 @@ export default function App() {
           allowedPassword = adminSettings.data().adminPassword;
         }
       } catch (err) {
-        console.error('Error fetching admin config:', err);
+        console.warn('Unable to fetch admin config (using default fallback):', err);
       }
       
       if (passwordInput === allowedPassword) {
@@ -1573,9 +1466,9 @@ export default function App() {
   // Cloud Sync Status
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('offline');
 
-  // Load and sync with Firestore if logged in or viewing partner portal, otherwise load from localStorage
+  // Load and sync with Firestore if logged in, otherwise load from localStorage
   useEffect(() => {
-    if (!isLoggedIn && !partnerParam) {
+    if (!isLoggedIn) {
       setCloudSyncStatus('offline');
       const stored = safeStorage.getItem(getUserLocalStorageKey(null));
       let currentBorrowers: Borrower[] = [];
@@ -2308,79 +2201,7 @@ export default function App() {
     }
   };
 
-  const handleSaveShareholders = (updated: Shareholder[]) => {
-    setShareholders(updated);
-    safeStorage.setItem(`luypay_shareholders_${currentUser}`, JSON.stringify(updated));
-    if (currentUser === 'sounravin') {
-      safeStorage.setItem('luypay_shareholders_global', JSON.stringify(updated));
-    }
 
-    // Also update all borrowers linked to any renamed/updated shareholder
-    const updatedBorrowers = borrowers.map((b) => {
-      const matchedSh = updated.find(
-        (s) => s.id === b.shareholderId || (b.shareholderName && b.shareholderName.trim().toLowerCase() === s.name.trim().toLowerCase())
-      );
-      if (matchedSh) {
-        return {
-          ...b,
-          shareholderId: matchedSh.id,
-          shareholderName: matchedSh.name,
-          shareholderSharePercent: matchedSh.sharePercent,
-        };
-      }
-      return b;
-    });
-
-    if (JSON.stringify(updatedBorrowers) !== JSON.stringify(borrowers)) {
-      setBorrowers(updatedBorrowers);
-      saveBorrowers(updatedBorrowers);
-    }
-
-    try {
-      if (currentUser === 'sounravin') {
-        setDoc(doc(db, 'settings', 'shareholders_config'), { list: updated });
-      }
-      if (currentUser) {
-        setDoc(doc(db, 'settings', `shareholders_${currentUser}`), { list: updated });
-      }
-    } catch (e) {
-      console.error('Error syncing shareholders to firestore:', e);
-    }
-  };
-
-  const handleClearShareholderData = (shareholderId: string) => {
-    const targetSh = shareholders.find((s) => s.id === shareholderId);
-    const targetName = targetSh ? targetSh.name.trim().toLowerCase() : '';
-
-    // Unlink all borrowers associated with this shareholder
-    const updatedBorrowers = borrowers.map((b) => {
-      const isLinked =
-        b.shareholderId === shareholderId ||
-        (b.shareholderName && targetName && b.shareholderName.trim().toLowerCase() === targetName);
-
-      if (isLinked) {
-        const cleaned = { ...b };
-        delete cleaned.shareholderId;
-        delete cleaned.shareholderName;
-        delete cleaned.shareholderSharePercent;
-        delete cleaned.shareholderCalculationType;
-        delete cleaned.shareholderDailyUSD;
-        return cleaned;
-      }
-      return b;
-    });
-
-    // Clear local authentication token for partner portal
-    localStorage.removeItem(`luypay_partner_auth_${shareholderId}`);
-
-    setBorrowers(updatedBorrowers);
-    saveBorrowers(updatedBorrowers);
-    showToast(
-      language === 'kh'
-        ? `បានសម្អាតទិន្នន័យភាគហ៊ុន ${targetSh?.name || ''} រួចរាល់!`
-        : `Cleared data for ${targetSh?.name || ''}`
-    );
-  };
 
   // Automatically backfill any missing short IDs for loaded borrowers
   useEffect(() => {
@@ -2505,11 +2326,15 @@ export default function App() {
 
       // Sum values based on currency
       if (b.currency === 'USD') {
-        pUSD += b.principal;
+        if (!isCompleted) {
+          pUSD += b.principal;
+        }
         eUSD += b.totalToPay;
         cUSD += totalPaid;
       } else {
-        pKHR += b.principal;
+        if (!isCompleted) {
+          pKHR += b.principal;
+        }
         eKHR += b.totalToPay;
         cKHR += totalPaid;
       }
@@ -2944,30 +2769,7 @@ export default function App() {
     );
   }
 
-  // Render Shareholder Partner Portal if partner URL parameter is present
-  if (partnerParam) {
-    const activePartner = shareholders.find((s) => s.id === partnerParam || s.username === partnerParam) || shareholders[0];
-    if (activePartner) {
-      return (
-        <ShareholderDashboard
-          shareholder={activePartner}
-          allShareholders={shareholders}
-          borrowers={borrowers}
-          language={language}
-          onBackToMain={() => {
-            const url = new URL(window.location.href);
-            url.searchParams.delete('partner');
-            window.history.replaceState({}, '', url.toString());
-            setPartnerParam(null);
-          }}
-          onEditBorrower={async (bId, updated) => {
-            const updatedList = borrowers.map(b => b.id === bId ? { ...b, ...updated } : b);
-            await saveBorrowers(updatedList);
-          }}
-        />
-      );
-    }
-  }
+
 
   // Render Loan Application Tracking page if viewing the track link
   if (trackId) {
@@ -4265,18 +4067,7 @@ export default function App() {
                   </span>
                 </button>
 
-                {/* Shareholders / Partners Button */}
-                <button 
-                  onClick={handleOpenShareholders}
-                  className="flex flex-col items-center gap-1.5 text-center cursor-pointer group border-none bg-transparent"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center transition-all shadow-3xs border border-amber-500/20">
-                    <Users className="w-4.5 h-4.5 text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <span className="text-[9px] font-extrabold text-slate-700 dark:text-slate-300 leading-none group-hover:text-amber-600">
-                    {language === 'kh' ? 'ដៃគូភាគហ៊ុន' : 'Shareholders'}
-                  </span>
-                </button>
+
 
                 {/* Admin Button */}
                 <button 
@@ -5217,24 +5008,7 @@ export default function App() {
             {currentUser === 'sounravin' ? 'គ្រប់គ្រងប្រព័ន្ធ' : 'គណនី & សមាជិកភាព'}
           </p>
 
-          {/* Shareholder Partners Button */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleOpenShareholders}
-            className="w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-extrabold rounded-xl transition-all border duration-200 cursor-pointer bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30 hover:border-amber-400 shadow-md shadow-amber-500/10"
-          >
-            <span className="flex items-center gap-2.5">
-              <Users className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>
-                🤝 {language === 'kh' ? 'គ្រប់គ្រង ដៃគូភាគហ៊ុន' : 'Shareholders Management'}
-                {!canAccessShareholders && <span className="ml-1 text-amber-400">🔒</span>}
-              </span>
-            </span>
-            <span className="px-2 py-0.5 text-[9px] rounded-md font-black bg-amber-500/20 text-amber-200 border border-amber-400/30">
-              {canAccessShareholders ? shareholders.length : '$10'}
-            </span>
-          </motion.button>
+
 
           {currentUser === 'sounravin' && (
             <motion.button
@@ -5402,7 +5176,9 @@ export default function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-h-screen p-4 sm:p-6 md:p-8 space-y-6 overflow-y-auto">
+      <main className={`flex-1 min-h-screen p-4 sm:p-6 md:p-8 space-y-6 overflow-y-auto ${
+        layoutConfig?.mobileLayoutMode !== 'original' ? 'pb-24 md:pb-8' : ''
+      }`}>
         {/* Mobile Header profile bar */}
         <div className={`md:hidden flex flex-col p-4 rounded-2xl border shadow-lg gap-4 relative z-50 transition-all duration-300 overflow-visible ${
           mobileHeaderStyle === 'angkor'
@@ -5583,16 +5359,7 @@ export default function App() {
             >
               <span>📝 {language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger Records'}</span>
             </button>
-            <button
-              onClick={handleOpenShareholders}
-              className={`py-2 px-2.5 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1 shrink-0 ${
-                mobileHeaderStyle === 'angkor'
-                  ? 'bg-amber-950/60 text-amber-300 hover:text-amber-100 border border-amber-400/40 shadow-xs'
-                  : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-400/30'
-              }`}
-            >
-              <span>🤝 {language === 'kh' ? 'ដៃគូភាគហ៊ុន' : 'Shareholders'} {!canAccessShareholders && '🔒'}</span>
-            </button>
+
             {currentUser === 'sounravin' ? (
               <button
                 onClick={() => setActiveSection('admin_dashboard')}
@@ -5864,7 +5631,6 @@ export default function App() {
                 borrowers={borrowers}
                 onSelectBorrower={setSelectedBorrowerId}
                 buttonStyle={buttonStyle}
-                onOpenShareholders={handleOpenShareholders}
               />
 
               {/* Special Member Referral & Sync Panel */}
@@ -6261,6 +6027,128 @@ export default function App() {
           );
         })()}
       </main>
+
+      {/* Mobile App Bottom Navigation Bar (Active on mobile view unless 'original' layout is chosen in System Settings) */}
+      {layoutConfig?.mobileLayoutMode !== 'original' && (
+        <nav className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-slate-900/95 border-t border-slate-800/80 backdrop-blur-xl px-2 py-1.5 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center justify-around max-w-md mx-auto relative">
+            {/* Tab 1: Home */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveSection('ledger');
+                setIsSettingsOpen(false);
+                playClickSound();
+              }}
+              className={`flex flex-col items-center gap-0.5 cursor-pointer transition-all py-1 px-3 rounded-2xl relative ${
+                activeSection === 'ledger' && !isSettingsOpen
+                  ? 'text-emerald-400 font-extrabold scale-105'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <BookOpen className="w-5 h-5" />
+              <span className="text-[10px] font-bold tracking-tight">
+                {language === 'kh' ? 'ទំព័រដើម' : 'Home'}
+              </span>
+              {activeSection === 'ledger' && !isSettingsOpen && (
+                <span className="absolute -bottom-1 w-5 h-1 bg-emerald-400 rounded-full shadow-xs shadow-emerald-400/50" />
+              )}
+            </button>
+
+            {/* Tab 2: Applications */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveSection('loan_applications');
+                setIsSettingsOpen(false);
+                playClickSound();
+              }}
+              className={`flex flex-col items-center gap-0.5 cursor-pointer transition-all py-1 px-3 rounded-2xl relative ${
+                activeSection === 'loan_applications' && !isSettingsOpen
+                  ? 'text-emerald-400 font-extrabold scale-105'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <FileText className="w-5 h-5" />
+              <span className="text-[10px] font-bold tracking-tight">
+                {language === 'kh' ? 'សំណើ' : 'Requests'}
+              </span>
+              {subRequests.filter(r => r.status === 'pending').length > 0 && (
+                <span className="absolute -top-1 -right-0.5 bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full shadow-xs shadow-rose-500/50 animate-pulse">
+                  {subRequests.filter(r => r.status === 'pending').length}
+                </span>
+              )}
+              {activeSection === 'loan_applications' && !isSettingsOpen && (
+                <span className="absolute -bottom-1 w-5 h-1 bg-emerald-400 rounded-full shadow-xs shadow-emerald-400/50" />
+              )}
+            </button>
+
+            {/* Tab 3: Center Quick Add Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddModalOpen(true);
+                playClickSound();
+              }}
+              className="flex flex-col items-center cursor-pointer -translate-y-4 group"
+              title={language === 'kh' ? 'បន្ថែមបំណុលថ្មី' : 'Add New Borrower'}
+            >
+              <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-blue-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 border-2 border-slate-900 group-hover:scale-110 group-active:scale-95 transition-all duration-200">
+                <Plus className="w-6 h-6 stroke-[3px]" />
+              </div>
+              <span className="text-[9px] font-black text-emerald-400 mt-0.5">
+                {language === 'kh' ? 'បន្ថែម' : 'Add'}
+              </span>
+            </button>
+
+            {/* Tab 4: Plans */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveSection('pricing');
+                setIsSettingsOpen(false);
+                playClickSound();
+              }}
+              className={`flex flex-col items-center gap-0.5 cursor-pointer transition-all py-1 px-3 rounded-2xl relative ${
+                activeSection === 'pricing' && !isSettingsOpen
+                  ? 'text-emerald-400 font-extrabold scale-105'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Award className="w-5 h-5" />
+              <span className="text-[10px] font-bold tracking-tight">
+                {language === 'kh' ? 'គម្រោង' : 'Plans'}
+              </span>
+              {activeSection === 'pricing' && !isSettingsOpen && (
+                <span className="absolute -bottom-1 w-5 h-1 bg-emerald-400 rounded-full shadow-xs shadow-emerald-400/50" />
+              )}
+            </button>
+
+            {/* Tab 5: Settings / Admin */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveSection('members_admin');
+                setIsSettingsOpen(false);
+                playClickSound();
+              }}
+              className={`flex flex-col items-center gap-0.5 cursor-pointer transition-all py-1 px-3 rounded-2xl relative ${
+                (activeSection === 'members_admin' || isSettingsOpen)
+                  ? 'text-emerald-400 font-extrabold scale-105'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Settings className="w-5 h-5" />
+              <span className="text-[10px] font-bold tracking-tight">
+                {language === 'kh' ? 'ការកំណត់' : 'Settings'}
+              </span>
+              {(activeSection === 'members_admin' || isSettingsOpen) && (
+                <span className="absolute -bottom-1 w-5 h-1 bg-emerald-400 rounded-full shadow-xs shadow-emerald-400/50" />
+              )}
+            </button>
+          </div>
+        </nav>
+      )}
           </>
         )}
 
@@ -6273,91 +6161,7 @@ export default function App() {
         }}
         onSave={handleAddNewBorrower}
         prefilledData={prefilledData}
-        shareholders={shareholders}
       />
-
-      {/* Shareholder Partner Management Modal */}
-      <ShareholderManagementModal
-        isOpen={isShareholdersModalOpen}
-        onClose={() => setIsShareholdersModalOpen(false)}
-        shareholders={shareholders}
-        borrowers={borrowers}
-        language={language}
-        onSaveShareholders={handleSaveShareholders}
-        onClearShareholderData={handleClearShareholderData}
-      />
-
-      {/* Shareholder Module Upgrade Lock Modal ($10 Add-on) */}
-      {isShareholderLockModalOpen && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative">
-            <button
-              onClick={() => setIsShareholderLockModalOpen(false)}
-              className="absolute top-4 right-4 w-9 h-9 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full flex items-center justify-center font-bold text-sm transition"
-            >
-              ✕
-            </button>
-
-            <div className="text-center space-y-2">
-              <div className="w-16 h-16 bg-gradient-to-tr from-amber-500 to-yellow-400 rounded-2xl mx-auto flex items-center justify-center text-3xl shadow-lg shadow-amber-500/20 text-slate-950 font-black">
-                🔒
-              </div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                {language === 'kh' ? 'មុខងារគ្រប់គ្រងដៃគូភាគហ៊ុន (Shareholders)' : 'Shareholders Partner Module'}
-              </h3>
-              <div className="inline-block px-3 py-1 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-400/30 rounded-full text-xs font-black">
-                {language === 'kh' ? 'មុខងារបន្ថែម (Add-on Module) — $10.00' : 'Special Add-on Module — $10.00'}
-              </div>
-            </div>
-
-            <div className="space-y-3 bg-amber-500/5 dark:bg-amber-500/10 p-4 rounded-2xl border border-amber-500/20 text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-bold">
-              <p>
-                {language === 'kh'
-                  ? 'មុខងារគ្រប់គ្រងដៃគូភាគហ៊ុន (Shareholders Partner Management) ជាមុខងារបន្ថែមពិសេសដែលអនុញ្ញាតឱ្យសមាជិក៖'
-                  : 'The Shareholder Partner Module is a premium add-on feature enabling you to:'}
-              </p>
-              <ul className="space-y-1.5 pl-2">
-                <li className="flex items-center gap-2">
-                  <span className="text-amber-500">✔</span>
-                  <span>{language === 'kh' ? 'បង្កើត និងគ្រប់គ្រងដៃគូភាគហ៊ុនបានមិនកំណត់' : 'Create & manage unlimited shareholder partners'}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-amber-500">✔</span>
-                  <span>{language === 'kh' ? 'បែងចែកផលចំណេញប្រចាំថ្ងៃ ឬ 50/50 ស្វ័យប្រវត្តិ' : 'Automate 50/50 or daily rate interest splits'}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-amber-500">✔</span>
-                  <span>{language === 'kh' ? 'ផ្តល់ Portal ផ្ទាល់ខ្លួន និង Add to Home Screen លើ iPhone ឱ្យភាគហ៊ុន' : 'Provide custom Web Portals & iPhone PWA for partners'}</span>
-                </li>
-              </ul>
-              <p className="pt-1 text-emerald-600 dark:text-emerald-400 text-[11px]">
-                {language === 'kh'
-                  ? '💡 នៅពេលទិញ និងត្រូវបានអនុម័ត មុខងារនេះនឹងបង្ហាញនៅជិត "គ្រប់គ្រងប្រព័ន្ធ" ក្នុងគណនីរបស់អ្នកភ្លាមៗ!'
-                  : '💡 Once purchased and approved, this option will unlock permanently next to System Management!'}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2.5 pt-1">
-              <button
-                onClick={() => setIsShareholderLockModalOpen(false)}
-                className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-extrabold rounded-2xl text-xs transition cursor-pointer"
-              >
-                {language === 'kh' ? 'បិទ (Close)' : 'Close'}
-              </button>
-              <button
-                onClick={() => {
-                  setIsShareholderLockModalOpen(false);
-                  setActiveSection('pricing');
-                }}
-                className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black rounded-2xl text-xs transition cursor-pointer shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5"
-              >
-                <span>🛒</span>
-                <span>{language === 'kh' ? 'ទិញមុខងារនេះ $10' : 'Upgrade Add-on $10'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Detail & Card-Checkboard Overlay */}
       <AnimatePresence>

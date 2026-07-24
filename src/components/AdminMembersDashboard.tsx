@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserX, UserCheck, ShieldAlert, Check, X, Search, Calendar, Award, Trash2, Edit2, Lock, Plus, RefreshCw, QrCode, Upload, Image, Settings, AlertCircle, Camera, Layout } from 'lucide-react';
+import { Users, UserX, UserCheck, ShieldAlert, Check, X, Search, Calendar, Award, Trash2, Edit2, Lock, Plus, RefreshCw, QrCode, Upload, Image, Settings, AlertCircle, Camera, Layout, Smartphone, Monitor } from 'lucide-react';
 import { doc, setDoc, deleteDoc, getDoc, writeBatch, collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Member, SubscriptionRequest } from '../types';
@@ -80,6 +80,7 @@ export default function AdminMembersDashboard({
 
   // Layout states
   const [layoutCardLayer, setLayoutCardLayer] = useState<'default' | 'compact' | 'detailed'>('default');
+  const [mobileLayoutMode, setMobileLayoutMode] = useState<'app_menu' | 'original'>('app_menu');
   const [isLayoutSaving, setIsLayoutSaving] = useState(false);
 
   // Fetch current configurations
@@ -105,14 +106,17 @@ export default function AdminMembersDashboard({
           try {
             const parsed = JSON.parse(savedLayoutLocal);
             if (parsed.cardLayer) setLayoutCardLayer(parsed.cardLayer);
+            if (parsed.mobileLayoutMode) setMobileLayoutMode(parsed.mobileLayoutMode);
           } catch (e) {}
         }
         const layoutDocRef = doc(db, 'settings', 'layout_config');
         const layoutSnap = await getDoc(layoutDocRef);
         if (layoutSnap.exists()) {
           const cloudLayer = layoutSnap.data().cardLayer || 'default';
+          const cloudMobileMode = layoutSnap.data().mobileLayoutMode || 'app_menu';
           setLayoutCardLayer(cloudLayer);
-          safeStorage.setItem('luypay_layout_config', JSON.stringify({ cardLayer: cloudLayer }));
+          setMobileLayoutMode(cloudMobileMode);
+          safeStorage.setItem('luypay_layout_config', JSON.stringify({ cardLayer: cloudLayer, mobileLayoutMode: cloudMobileMode }));
         }
 
         // Load Sponsor Config
@@ -181,7 +185,7 @@ export default function AdminMembersDashboard({
           setPortalSponsorEnabled(data.sponsorEnabled !== false);
         }
       } catch (err) {
-        console.error('Error fetching system configurations in admin:', err);
+        console.warn('Unable to fetch system configurations in admin (using local fallback):', err);
       }
     };
     loadSystemConfigs();
@@ -191,13 +195,14 @@ export default function AdminMembersDashboard({
   const handleSaveLayoutConfig = async () => {
     setIsLayoutSaving(true);
     // Save locally first for instant reaction
-    safeStorage.setItem('luypay_layout_config', JSON.stringify({ cardLayer: layoutCardLayer }));
-    window.dispatchEvent(new CustomEvent('layout_config_updated', { detail: { cardLayer: layoutCardLayer } }));
+    safeStorage.setItem('luypay_layout_config', JSON.stringify({ cardLayer: layoutCardLayer, mobileLayoutMode }));
+    window.dispatchEvent(new CustomEvent('layout_config_updated', { detail: { cardLayer: layoutCardLayer, mobileLayoutMode } }));
 
     try {
       const docRef = doc(db, 'settings', 'layout_config');
       await setDoc(docRef, {
-        cardLayer: layoutCardLayer
+        cardLayer: layoutCardLayer,
+        mobileLayoutMode
       }, { merge: true });
       showToast(language === 'kh' ? 'បានរក្សាទុកទម្រង់បង្ហាញជោគជ័យ!' : 'Layout configuration saved successfully!', 'success');
     } catch (err) {
@@ -522,7 +527,7 @@ export default function AdminMembersDashboard({
           setBankColor('#E61A22');
         }
       } catch (err) {
-        console.error('Error fetching qr config in admin:', err);
+        console.warn('Unable to fetch qr config in admin (using local fallback):', err);
       }
     };
     loadQRConfig();
@@ -2621,6 +2626,75 @@ export default function AdminMembersDashboard({
                           {language === 'kh' ? 'ទម្រង់លម្អិត (Detailed)' : 'Detailed Layer'}
                         </span>
                         {layoutCardLayer === 'detailed' && <Check className="w-4 h-4 text-indigo-600" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile View Layout Selector (Mobile App Menu vs Original Layout) */}
+                  <div className="pt-6 border-t border-slate-100">
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                        <Smartphone className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-extrabold text-slate-900">
+                          {language === 'kh' ? 'ទម្រង់ម៉ឺនុយលើទូរស័ព្ទ (Mobile View Layout)' : 'Mobile View Navigation Layout'}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 font-bold mt-0.5">
+                          {language === 'kh' ? 'ជ្រើសរើសចង់ប្រើរបារម៉ឺនុយ Mobile App នៅខាងក្រោម ឬប្តូរមកទម្រង់ដើមវិញ' : 'Choose Mobile App bottom navigation bar or switch back to original layout'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Option 1: Mobile App Menu Layout */}
+                      <div
+                        onClick={() => setMobileLayoutMode('app_menu')}
+                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+                          mobileLayoutMode === 'app_menu'
+                            ? 'border-indigo-600 bg-indigo-50/50 shadow-sm ring-2 ring-indigo-500/10'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2.5 rounded-xl ${mobileLayoutMode === 'app_menu' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                            <Smartphone className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <span className={`block text-xs font-black ${mobileLayoutMode === 'app_menu' ? 'text-indigo-900' : 'text-slate-800'}`}>
+                              {language === 'kh' ? '📱 ទម្រង់ម៉ឺនុយ Mobile App' : 'Mobile App Menu Layout'}
+                            </span>
+                            <span className="block text-[10px] text-slate-500 font-medium">
+                              {language === 'kh' ? 'មានរបារ Navigation ស្អាតនៅខាងក្រោមអេក្រង់ទូរស័ព្ទ' : 'Sleek bottom app navigation bar on mobile'}
+                            </span>
+                          </div>
+                        </div>
+                        {mobileLayoutMode === 'app_menu' && <Check className="w-5 h-5 text-indigo-600 shrink-0" />}
+                      </div>
+
+                      {/* Option 2: Original Layout */}
+                      <div
+                        onClick={() => setMobileLayoutMode('original')}
+                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+                          mobileLayoutMode === 'original'
+                            ? 'border-indigo-600 bg-indigo-50/50 shadow-sm ring-2 ring-indigo-500/10'
+                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2.5 rounded-xl ${mobileLayoutMode === 'original' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                            <Monitor className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <span className={`block text-xs font-black ${mobileLayoutMode === 'original' ? 'text-indigo-900' : 'text-slate-800'}`}>
+                              {language === 'kh' ? '💻 ទម្រង់ដើម (Original Layout)' : 'Original Layout'}
+                            </span>
+                            <span className="block text-[10px] text-slate-500 font-medium">
+                              {language === 'kh' ? 'បង្ហាញទម្រង់ដើមធម្មតា ដោយមិនប្រើរបារម៉ឺនុយខាងក្រោម' : 'Classic view without bottom navigation bar'}
+                            </span>
+                          </div>
+                        </div>
+                        {mobileLayoutMode === 'original' && <Check className="w-5 h-5 text-indigo-600 shrink-0" />}
                       </div>
                     </div>
                   </div>
