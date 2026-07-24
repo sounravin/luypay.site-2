@@ -1,38 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kantumruy+Pro:ital,wght@0,300..700;1,300..700&family=JetBrains+Mono:wght@400;500;700&display=swap');
-@import "tailwindcss";
-
-@theme {
-  --font-sans: "Kantumruy Pro", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-}
-
-html {
-  font-size: 17px;
-}
-
-/* Custom styling to make inputs look polished on focusing */
-input:focus, select:focus, textarea:focus {
-  outline: none;
-}
-
-@keyframes marquee-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-.animate-marquee-smooth {
-  display: inline-flex;
-  white-space: nowrap;
-  animation: marquee-scroll 30s linear infinite;
-}
-
-.animate-marquee-smooth:hover {
-  animation-play-state: paused;
-}
-
-.dark {
-  color-scheme: dark;
-}
+#!/bin/bash
+cat << 'CSS' >> src/index.css
 
 /* ==========================================
    Traditional Khmer Night Theme Backgrounds
@@ -68,3 +35,4 @@ input:focus, select:focus, textarea:focus {
 .dark-glow-amber {
   box-shadow: 0 0 15px 1px rgba(223, 176, 53, 0.25);
 }
+CSS

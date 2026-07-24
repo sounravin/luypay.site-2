@@ -1213,7 +1213,7 @@ export default function AdminMembersDashboard({
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead>
-                      <tr className="border-b border-slate-100 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider bg-slate-50">
+                      <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] text-slate-500 font-extrabold uppercase tracking-wider bg-slate-50 dark:bg-slate-800/50">
                         <th className="py-3 px-4">គណនី / ឈ្មោះ</th>
                         <th className="py-3 px-4">កាលបរិច្ឆេទចុះឈ្មោះ</th>
                         <th className="py-3 px-4">កាលបរិច្ឆេទផុតកំណត់</th>
@@ -1228,7 +1228,7 @@ export default function AdminMembersDashboard({
                         const isBlocked = m.isBlocked === true;
 
                         return (
-                          <tr key={m.username} className="hover:bg-slate-50/50 transition">
+                          <tr key={m.username} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition">
                             <td className="py-3.5 px-4">
                               <div className="text-left">
                                 <p className="font-extrabold text-slate-900">{m.displayName || m.username}</p>
