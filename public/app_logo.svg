@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f8fafc"/>
+    </linearGradient>
+    <linearGradient id="blueRing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="50%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+    <linearGradient id="greenArrow" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#84cc16"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGrad)" filter="url(#dropShadow)" />
+
+  <!-- Outer Ring with Flowing Arrows -->
+  <path d="M 256,26 A 230,230 0 1,1 46,200" fill="none" stroke="url(#blueRing)" stroke-width="28" stroke-linecap="round"/>
+  <path d="M 46,200 L 20,240 L 80,235 Z" fill="#1e3a8a"/>
+
+  <path d="M 120,440 A 210,210 0 0,0 440,300" fill="none" stroke="url(#greenArrow)" stroke-width="22" stroke-linecap="round"/>
+  <path d="M 440,300 L 465,335 L 420,360 Z" fill="#10b981"/>
+
+  <!-- Top Center: Smartphone Frame -->
+  <rect x="196" y="70" width="120" height="170" rx="20" fill="none" stroke="#0284c7" stroke-width="16"/>
+  <line x1="230" y1="85" x2="282" y2="85" stroke="#0284c7" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Smartphone Chart Line Inside -->
+  <path d="M 210,185 L 235,160 L 255,175 L 295,120" fill="none" stroke="#10b981" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <polygon points="295,120 275,120 295,140" fill="#10b981"/>
+
+  <!-- Big Ascending Green Arrow Across Logo -->
+  <path d="M 120,260 Q 210,220 256,180 T 390,95" fill="none" stroke="url(#greenArrow)" stroke-width="32" stroke-linecap="round"/>
+  <polygon points="390,95 335,100 365,150" fill="#10b981"/>
+
+  <!-- Golden Lightning Bolt & Sparkle -->
+  <path d="M 320,175 L 350,125 L 335,175 L 365,175 L 315,240 L 330,190 Z" fill="url(#goldGrad)"/>
+  
+  <!-- Sparkle Star Top Right -->
+  <path d="M 340,80 Q 340,95 355,95 Q 340,95 340,110 Q 340,95 325,95 Q 340,95 340,80 Z" fill="#f59e0b"/>
+
+  <!-- Center Main Title: "លុយឆក់&លុយលឿន" -->
+  <text x="256" y="300" text-anchor="middle" font-family="'Siemreap', 'Kantumruy Pro', 'Khmer OS Battambang', 'Hanuman', sans-serif" font-weight="900" font-size="52" fill="#0f2b5c" letter-spacing="-1">
+    លុយឆក់&amp;លុយលឿន
+  </text>
+
+  <!-- Green Pill Badge: "កម្មវិធីកត់ត្រា" -->
+  <rect x="126" y="325" width="260" height="52" rx="26" fill="url(#greenArrow)"/>
+  <text x="256" y="361" text-anchor="middle" font-family="'Siemreap', 'Kantumruy Pro', 'Khmer OS Battambang', 'Hanuman', sans-serif" font-weight="800" font-size="28" fill="#ffffff">
+    កម្មវិធីកត់ត្រា
+  </text>
+
+  <!-- Bottom Curved Flow Arrows -->
+  <path d="M 140,410 C 200,450 310,450 370,410" fill="none" stroke="url(#blueRing)" stroke-width="12" stroke-linecap="round"/>
+  <polygon points="370,410 350,425 350,395" fill="#0284c7"/>
+</svg>

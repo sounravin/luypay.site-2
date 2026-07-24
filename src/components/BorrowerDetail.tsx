@@ -2214,50 +2214,8 @@ export default function BorrowerDetail({
                   </div>
                 ) : detailTab === 'statement' ? (
                   <div className="space-y-6">
-                    {/* Header describing what this is */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div>
-                        <h3 className="text-sm font-extrabold text-blue-900 flex items-center gap-2">
-                          <span>📄</span>
-                          <span>{language === 'kh' ? 'ផ្ទាំងរបាយការណ៍លិខិតសងប្រាក់អេឡិចត្រូនិច' : 'Electronic Repayment Statement Panel'}</span>
-                        </h3>
-                        <p className="text-xs text-blue-700 font-semibold mt-0.5">
-                          {language === 'kh' 
-                            ? 'ត្រួតពិនិត្យវត្តមាន Online របស់កូនបំណុល និងមើលរបាយការណ៍លិខិតសងប្រាក់អេឡិចត្រូនិចក្នុងពេលជាក់ស្តែង' 
-                            : 'Monitor debtor live activity and view their dynamic electronic repayment statement receipt page.'}
-                        </p>
-                      </div>
-                      
-                      {/* Copy link or view portal */}
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const url = `${window.location.origin}/portal/${borrower.id}`;
-                            navigator.clipboard.writeText(url);
-                            setCopied(true);
-                            setTimeout(() => setCopied(false), 2000);
-                          }}
-                          className="px-3.5 py-2 text-xs font-bold text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs"
-                        >
-                          <Share2 className="w-3.5 h-3.5" />
-                          <span>{copied ? (language === 'kh' ? 'បានចម្លង!' : 'Copied!') : (language === 'kh' ? 'ចម្លងតំណភ្ជាប់' : 'Copy Link')}</span>
-                        </button>
-                        
-                        <a
-                          href={`/portal/${borrower.id}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-3.5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition flex items-center gap-1.5 shadow-xs"
-                        >
-                          <span>🔗</span>
-                          <span>{language === 'kh' ? 'បើកតំណភ្ជាប់' : 'Open Portal'}</span>
-                        </a>
-                      </div>
-                    </div>
-
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                      {/* Column 1 Left: Live Presence, Simulator, Chat Presence (6 cols) */}
+                      {/* Column 1 Left: Live Presence, Simulator (6 cols) */}
                       <div className="lg:col-span-6 space-y-6">
                         {/* Live Presence & Simulator Section */}
                         <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
@@ -2368,36 +2326,6 @@ export default function BorrowerDetail({
                               </button>
                             </div>
                           </div>
-                        </div>
-
-                        {/* Discussion Chat Presence Button */}
-                        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs">
-                          <div className="flex justify-between items-center">
-                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                              <span>💬</span> {language === 'kh' ? 'ប្រអប់ជជែក និងវត្តមានផ្ទាល់' : 'Discussion & Live Chat'}
-                            </h4>
-                            {isOnline && (
-                              <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                                <span>{language === 'kh' ? 'កំពុងអនឡាញ' : 'Online'}</span>
-                              </span>
-                            )}
-                          </div>
-                          
-                          <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                            {language === 'kh'
-                              ? 'បើកផ្ទាំងជជែកផ្ទាល់ ដើម្បីផ្ញើសារ ឬទំនាក់ទំនងជាមួយកូនបំណុលក្នុងពេលជាក់ស្តែង នៅពេលពួកគេកំពុងអនឡាញ។'
-                              : 'Open the live discussion drawer to chat with the debtor in real-time when they are online.'}
-                          </p>
-
-                          <button
-                            type="button"
-                            onClick={() => setIsChatOpen(true)}
-                            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-2 shadow-sm shadow-blue-500/10"
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                            <span>{language === 'kh' ? 'បើកបន្ទប់ជជែកផ្ទាល់ (Open Live Chat)' : 'Open Live Chat Drawer'}</span>
-                          </button>
                         </div>
                       </div>
 

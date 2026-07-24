@@ -245,11 +245,12 @@ export default function App() {
 
   // Real-time Logo Configuration from Firestore settings/logo_config
   const [logoConfig, setLogoConfig] = useState<any>({
-    logoType: 'text',
+    logoType: 'image',
     logoText: '៚',
     logoBgColor: '#2563EB',
     logoTextColor: '#FFFFFF',
-    logoImageUrl: ''
+    logoImageUrl: '/app_logo.svg',
+    systemName: 'ប្រព័ន្ធលុយឆក់'
   });
 
   // Real-time Sponsor Configuration from Firestore settings/sponsor_config
@@ -569,7 +570,12 @@ export default function App() {
 
     const unsubscribeLogo = onSnapshot(doc(db, 'settings', 'logo_config'), (docSnap) => {
       if (docSnap.exists()) {
-        setLogoConfig(docSnap.data());
+        const data = docSnap.data();
+        setLogoConfig({
+          logoType: 'image',
+          logoImageUrl: '/app_logo.svg',
+          ...data
+        });
       }
     }, (err) => {
       console.warn('Unable to subscribe to settings/logo_config in real-time (using default offline values):', err.message || err);
@@ -667,28 +673,17 @@ export default function App() {
   const renderSystemLogo = (sizeClass = "w-10 h-10") => {
     const isLarge = sizeClass.includes("w-16");
     const isSmall = sizeClass.includes("w-8");
+    const isXSmall = sizeClass.includes("w-6");
     
-    if (logoConfig.logoType === 'image' && logoConfig.logoImageUrl) {
-      return (
-        <img
-          src={logoConfig.logoImageUrl}
-          alt="System Logo"
-          className={`${isLarge ? 'w-16 h-16 rounded-2xl' : isSmall ? 'w-8 h-8 rounded-lg' : 'w-10 h-10 rounded-xl'} object-cover shrink-0 shadow-md border border-slate-700/50`}
-          referrerPolicy="no-referrer"
-        />
-      );
-    }
-    
+    const imgSrc = (logoConfig?.logoType === 'image' && logoConfig?.logoImageUrl) ? logoConfig.logoImageUrl : '/app_logo.svg';
+
     return (
-      <div
-        className={`${isLarge ? 'w-16 h-16 rounded-2xl text-3xl' : isSmall ? 'w-8 h-8 rounded-lg text-sm' : 'w-10 h-10 rounded-xl text-xl'} flex items-center justify-center font-black select-none shrink-0 shadow-md`}
-        style={{
-          backgroundColor: logoConfig.logoBgColor || '#2563EB',
-          color: logoConfig.logoTextColor || '#FFFFFF'
-        }}
-      >
-        {logoConfig.logoText || '៚'}
-      </div>
+      <img
+        src={imgSrc}
+        alt="System Logo"
+        className={`${isLarge ? 'w-16 h-16 rounded-2xl' : isSmall ? 'w-8 h-8 rounded-lg' : isXSmall ? 'w-6 h-6 rounded-md' : 'w-10 h-10 rounded-xl'} object-contain bg-white/95 p-0.5 shrink-0 shadow-md border border-slate-700/50`}
+        referrerPolicy="no-referrer"
+      />
     );
   };
 
@@ -5866,108 +5861,87 @@ export default function App() {
                 </div>
               )}
 
-              {/* Cloud Firestore Status & Avatar Frame Manager Banner */}
-              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-slate-200 shadow-sm mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-black text-lg shrink-0">
-                    ☁️
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-sky-300 flex items-center gap-2">
-                      <span>{language === 'kh' ? 'របៀបដំណើរការ Cloud Firestore ផ្ទាល់ (Pure Cloud Sync)' : 'Pure Cloud Firestore Mode'}</span>
-                      <span className="bg-emerald-500/20 text-emerald-300 text-[9px] px-2 py-0.5 rounded-full border border-emerald-500/30 font-bold">
-                        {language === 'kh' ? 'មិនទាមទារ Local Storage ឡើយ' : 'No Local Storage Required'}
-                      </span>
-                    </h4>
-                    <p className="text-[11px] text-slate-400 font-bold mt-0.5 leading-tight">
-                      {language === 'kh' 
-                        ? 'រាល់ទិន្នន័យកូនបំណុល និងការកត់ត្រាទាំងអស់ត្រូវបានធ្វើការ Synchronize ផ្ទាល់នៅលើ Cloud 100% ដោយមិនចំណាយ Storage លើ Browser ឬ Mobile ឡើយ។' 
-                        : 'All borrower records and transactions sync 100% directly with Cloud Firestore without relying on browser local storage.'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 self-end md:self-auto flex-wrap">
-                  {/* Quick Layout Layer Switcher */}
-                  <div className="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-700/80 gap-1">
-                    <span className="text-[10px] font-bold text-slate-400 px-1.5 flex items-center gap-1">
-                      <Layout className="w-3 h-3 text-indigo-400" />
-                      <span>{language === 'kh' ? 'ទម្រង់:' : 'Layer:'}</span>
-                    </span>
-                    <button
-                      onClick={() => handleQuickChangeLayoutLayer('default')}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition cursor-pointer flex items-center gap-1 ${
-                        (layoutConfig.cardLayer || 'default') === 'default'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                      }`}
-                      title={language === 'kh' ? 'ទម្រង់ដើម (Default Layer)' : 'Default Layer'}
-                    >
-                      <span>📄</span>
-                      <span>{language === 'kh' ? 'ដើម' : 'Default'}</span>
-                    </button>
-                    <button
-                      onClick={() => handleQuickChangeLayoutLayer('compact')}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition cursor-pointer flex items-center gap-1 ${
-                        layoutConfig.cardLayer === 'compact'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                      }`}
-                      title={language === 'kh' ? 'ទម្រង់សង្ខេប (Compact Layer)' : 'Compact Layer'}
-                    >
-                      <span>📐</span>
-                      <span>{language === 'kh' ? 'សង្ខេប' : 'Compact'}</span>
-                    </button>
-                    <button
-                      onClick={() => handleQuickChangeLayoutLayer('detailed')}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition cursor-pointer flex items-center gap-1 ${
-                        layoutConfig.cardLayer === 'detailed'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                      }`}
-                      title={language === 'kh' ? 'ទម្រង់លម្អិត (Detailed Layer)' : 'Detailed Layer'}
-                    >
-                      <span>📊</span>
-                      <span>{language === 'kh' ? 'លម្អិត' : 'Detailed'}</span>
-                    </button>
-                  </div>
-
+              {/* Avatar Frame & Layout Quick Controls */}
+              <div className="flex items-center justify-end gap-2 flex-wrap mb-4">
+                {/* Quick Layout Layer Switcher */}
+                <div className="flex items-center bg-slate-900/80 p-1 rounded-xl border border-slate-700/80 gap-1">
+                  <span className="text-[10px] font-bold text-slate-400 px-1.5 flex items-center gap-1">
+                    <Layout className="w-3 h-3 text-indigo-400" />
+                    <span>{language === 'kh' ? 'ទម្រង់:' : 'Layer:'}</span>
+                  </span>
                   <button
-                    onClick={() => {
-                      const nextVal = !hideBorrowerAvatarFrames;
-                      setHideBorrowerAvatarFrames(nextVal);
-                      safeStorage.setItem('luypay_hide_borrower_avatar_frames', String(nextVal));
-                      showToast(
-                        language === 'kh' 
-                          ? (nextVal ? 'បានលាក់ស៊ុម Avatar លើផ្ទាំងកូនបំណុលរួចរាល់ (ទិន្នន័យកូនបំណុលរក្សាទុក ១០០%)' : 'បានបង្ហាញស៊ុម Avatar លើផ្ទាំងកូនបំណុលវិញ') 
-                          : (nextVal ? 'Hidden Avatar frames on debtor cards (Data 100% safe)' : 'Shown Avatar frames on debtor cards'), 
-                        'info'
-                      );
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer border flex items-center gap-1.5 ${
-                      hideBorrowerAvatarFrames
-                        ? 'bg-amber-500 text-slate-950 border-amber-400 font-extrabold shadow-sm'
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                    onClick={() => handleQuickChangeLayoutLayer('default')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition cursor-pointer flex items-center gap-1 ${
+                      (layoutConfig.cardLayer || 'default') === 'default'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800'
                     }`}
-                    title={language === 'kh' ? 'បិទ/បើក ការបង្ហាញស៊ុម Avatar លើផ្ទាំងកូនបំណុល' : 'Toggle Avatar Frames on Debtor Cards'}
+                    title={language === 'kh' ? 'ទម្រង់ដើម (Default Layer)' : 'Default Layer'}
                   >
-                    <span>🖼️</span>
-                    <span>
-                      {hideBorrowerAvatarFrames
-                        ? (language === 'kh' ? 'បានលាក់ស៊ុម Avatar រួចហើយ' : 'Avatar Frames Hidden')
-                        : (language === 'kh' ? 'លាក់ស៊ុម Avatar លើផ្ទាំង' : 'Hide Avatar Frames')}
-                    </span>
+                    <span>📄</span>
+                    <span>{language === 'kh' ? 'ដើម' : 'Default'}</span>
                   </button>
-
                   <button
-                    onClick={handleRemoveAllBorrowerAvatarFrames}
-                    className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-black text-xs rounded-xl border border-rose-500/30 transition cursor-pointer flex items-center gap-1.5"
-                    title={language === 'kh' ? 'លុបស៊ុម Avatar ចេញពីកូនបំណុលទាំងអស់ (ទិន្នន័យកូនបំណុលរក្សាទុកដដែល)' : 'Remove Avatar frame from all debtors'}
+                    onClick={() => handleQuickChangeLayoutLayer('compact')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition cursor-pointer flex items-center gap-1 ${
+                      layoutConfig.cardLayer === 'compact'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                    }`}
+                    title={language === 'kh' ? 'ទម្រង់សង្ខេប (Compact Layer)' : 'Compact Layer'}
                   >
-                    <span>🗑️</span>
-                    <span>{language === 'kh' ? 'លុបស៊ុម Avatar ទាំងអស់' : 'Remove All Frames'}</span>
+                    <span>📐</span>
+                    <span>{language === 'kh' ? 'សង្ខេប' : 'Compact'}</span>
+                  </button>
+                  <button
+                    onClick={() => handleQuickChangeLayoutLayer('detailed')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition cursor-pointer flex items-center gap-1 ${
+                      layoutConfig.cardLayer === 'detailed'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                    }`}
+                    title={language === 'kh' ? 'ទម្រង់លម្អិត (Detailed Layer)' : 'Detailed Layer'}
+                  >
+                    <span>📊</span>
+                    <span>{language === 'kh' ? 'លម្អិត' : 'Detailed'}</span>
                   </button>
                 </div>
+
+                <button
+                  onClick={() => {
+                    const nextVal = !hideBorrowerAvatarFrames;
+                    setHideBorrowerAvatarFrames(nextVal);
+                    safeStorage.setItem('luypay_hide_borrower_avatar_frames', String(nextVal));
+                    showToast(
+                      language === 'kh' 
+                        ? (nextVal ? 'បានលាក់ស៊ុម Avatar លើផ្ទាំងកូនបំណុលរួចរាល់' : 'បានបង្ហាញស៊ុម Avatar លើផ្ទាំងកូនបំណុលវិញ') 
+                        : (nextVal ? 'Hidden Avatar frames on debtor cards' : 'Shown Avatar frames on debtor cards'), 
+                      'info'
+                    );
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer border flex items-center gap-1.5 ${
+                    hideBorrowerAvatarFrames
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 font-extrabold shadow-sm'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                  }`}
+                  title={language === 'kh' ? 'បិទ/បើក ការបង្ហាញស៊ុម Avatar លើផ្ទាំងកូនបំណុល' : 'Toggle Avatar Frames on Debtor Cards'}
+                >
+                  <span>🖼️</span>
+                  <span>
+                    {hideBorrowerAvatarFrames
+                      ? (language === 'kh' ? 'បានលាក់ស៊ុម Avatar រួចហើយ' : 'Avatar Frames Hidden')
+                      : (language === 'kh' ? 'លាក់ស៊ុម Avatar លើផ្ទាំង' : 'Hide Avatar Frames')}
+                  </span>
+                </button>
+
+                <button
+                  onClick={handleRemoveAllBorrowerAvatarFrames}
+                  className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-black text-xs rounded-xl border border-rose-500/30 transition cursor-pointer flex items-center gap-1.5"
+                  title={language === 'kh' ? 'លុបស៊ុម Avatar ចេញពីកូនបំណុលទាំងអស់' : 'Remove Avatar frame from all debtors'}
+                >
+                  <span>🗑️</span>
+                  <span>{language === 'kh' ? 'លុបស៊ុម Avatar ទាំងអស់' : 'Remove All Frames'}</span>
+                </button>
               </div>
 
               {/* Borrowers Grid View */}
