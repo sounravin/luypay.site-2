@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest } from './types';
 import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound, backfillShortIds, formatMoney } from './utils';
 import Header from './components/Header';
@@ -345,7 +345,10 @@ export default function App() {
 
   // Telegram Bot integration for auto payment verification
   const [telegramToken, setTelegramToken] = useState<string>(() => {
-    return safeStorage.getItem('luypay_telegram_token') || '8920488272:AAFyrpT0OG7Z27s9z5P9Wv9Q5RG7Ud094ms';
+    return safeStorage.getItem('luypay_telegram_token') || '8601041249:AAH4dR6MTdji1o2YKm-0wM23sTGiHN1DOzk';
+  });
+  const [telegramChatId, setTelegramChatId] = useState<string>(() => {
+    return safeStorage.getItem('luypay_telegram_chat_id') || '';
   });
   const [telegramPollingEnabled, setTelegramPollingEnabled] = useState<boolean>(() => {
     const saved = safeStorage.getItem('luypay_telegram_polling_enabled');
@@ -363,6 +366,58 @@ export default function App() {
     }
   });
   const [telegramError, setTelegramError] = useState<string | null>(null);
+
+  // Helper to send outgoing notification message to Telegram Bot
+  const sendTelegramNotification = useCallback(async (messageText: string, customChatId?: string) => {
+    const token = telegramToken || '8601041249:AAH4dR6MTdji1o2YKm-0wM23sTGiHN1DOzk';
+    let activeChatId = customChatId || telegramChatId;
+
+    if (!token) return false;
+
+    // If chat ID is missing, attempt to pull latest chat ID from Telegram updates
+    if (!activeChatId) {
+      try {
+        const uRes = await fetch(`https://api.telegram.org/bot${token}/getUpdates?limit=10`);
+        const uData = await uRes.json();
+        if (uData.ok && Array.isArray(uData.result) && uData.result.length > 0) {
+          for (let i = uData.result.length - 1; i >= 0; i--) {
+            const m = uData.result[i].message || uData.result[i].channel_post;
+            if (m && m.chat && m.chat.id) {
+              activeChatId = String(m.chat.id);
+              setTelegramChatId(activeChatId);
+              safeStorage.setItem('luypay_telegram_chat_id', activeChatId);
+              if (isLoggedIn) {
+                setDoc(doc(db, 'settings', 'qr_config'), { telegramChatId: activeChatId }, { merge: true }).catch(() => {});
+              }
+              break;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (!activeChatId) {
+      console.warn('Telegram notification skipped: Chat ID missing.');
+      return false;
+    }
+
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: activeChatId,
+          text: messageText,
+          parse_mode: 'HTML'
+        })
+      });
+      const data = await res.json();
+      return data.ok;
+    } catch (err) {
+      console.warn('Telegram sendMessage failed:', err);
+      return false;
+    }
+  }, [telegramToken, telegramChatId, isLoggedIn]);
 
   // Background polling for Telegram Bot messages
   useEffect(() => {
@@ -411,6 +466,18 @@ export default function App() {
             // Extract text from standard message, channel post, edited message, etc.
             const msgObj = update.message || update.channel_post || update.edited_message;
             if (!msgObj) continue;
+
+            // Save or update active Telegram Chat ID if available
+            if (msgObj.chat && msgObj.chat.id) {
+              const currentChatId = String(msgObj.chat.id);
+              if (!telegramChatId || telegramChatId !== currentChatId) {
+                setTelegramChatId(currentChatId);
+                safeStorage.setItem('luypay_telegram_chat_id', currentChatId);
+                if (isLoggedIn) {
+                  setDoc(doc(db, 'settings', 'qr_config'), { telegramChatId: currentChatId }, { merge: true }).catch(() => {});
+                }
+              }
+            }
 
             const text = msgObj.text || msgObj.caption || '';
             const dateStr = msgObj.date ? new Date(msgObj.date * 1000).toLocaleString() : new Date().toLocaleString();
@@ -483,6 +550,15 @@ export default function App() {
                       });
 
                       showToast(`ទូទាត់ស្វ័យប្រវត្ត $${borrower.installmentAmount} សម្រាប់ ${borrower.name} (${matchedId}) ជោគជ័យ!`, 'success');
+
+                      // Notify Telegram bot
+                      const autoTgNotice = `<b>✅ [ប្រព័ន្ធបានផ្ទៀងផ្ទាត់បង់ប្រាក់ស្វ័យប្រវត្ត - Telegram Sync]</b>\n\n` +
+                        `👤 <b>កូនបំណុល:</b> ${borrower.name} (${matchedId})\n` +
+                        `💵 <b>ប្រាក់បង់:</b> $${borrower.installmentAmount} (វគ្គទី ${nextUnpaidSlot + 1}/${borrower.duration})\n` +
+                        `📅 <b>កាលបរិច្ឆេទ:</b> ${getTodayDateString()}\n` +
+                        `📝 <b>ចំណាំ:</b> Telegram Auto Sync (Update ID: ${update.update_id})\n` +
+                        `✔️ <b>ស្ថានភាព:</b> បានបង់ប្រាក់រួចរាល់`;
+                      sendTelegramNotification(autoTgNotice, msgObj.chat?.id ? String(msgObj.chat.id) : undefined);
                     } else {
                       // Already fully paid
                       updatedLogs.unshift({
@@ -559,6 +635,9 @@ export default function App() {
         setQrConfig(data);
         if (data.telegramToken) {
           setTelegramToken(data.telegramToken);
+        }
+        if (data.telegramChatId) {
+          setTelegramChatId(data.telegramChatId);
         }
         if (data.telegramPollingEnabled !== undefined) {
           setTelegramPollingEnabled(data.telegramPollingEnabled);
@@ -2442,6 +2521,26 @@ export default function App() {
         ? `បានទូទាត់ស្វ័យប្រវត្តិកូនបំណុលទាំង ${count} នាក់រួចរាល់!`
         : `Successfully auto-checked installments for ${count} selected borrowers!`;
       showToast(successMsg, 'success');
+
+      // Send Telegram Notification
+      const checkedDetails: string[] = [];
+      let totalSum = 0;
+      newList.forEach((b) => {
+        if (selectedBorrowerIds.includes(b.id)) {
+          checkedDetails.push(`• <b>${b.name}</b> (${b.shortId || b.id}) - $${b.installmentAmount}`);
+          totalSum += Number(b.installmentAmount || 0);
+        }
+      });
+
+      if (checkedDetails.length > 0) {
+        const bulkTgMsg = `<b>✅ [ការផ្ទៀងផ្ទាត់បង់ប្រាក់ - Checking Finished]</b>\n\n` +
+          `ប្រព័ន្ធបានផ្ទៀងផ្ទាត់ និងកត់ត្រាការបង់ប្រាក់សម្រាប់កូនបំណុលចំនួន <b>${checkedDetails.length}</b> នាក់រួចរាល់៖\n\n` +
+          checkedDetails.join('\n') + `\n\n` +
+          `💰 <b>សរុបប្រាក់បង់:</b> $${totalSum.toFixed(2)}\n` +
+          `📅 <b>កាលបរិច្ឆេទ:</b> ${getTodayDateString()}\n` +
+          `✔️ <b>ស្ថានភាព:</b> បានបង់ប្រាក់រួចរាល់`;
+        sendTelegramNotification(bulkTgMsg);
+      }
     }
   };
 
@@ -2485,6 +2584,14 @@ export default function App() {
 
     saveBorrowers(newList);
     showToast(`បានកត់ត្រាសងរហ័សវគ្គទី ${nextUnpaidSlot + 1} សម្រាប់ "${borrower.name}"!`);
+
+    // Send Telegram Notification
+    const quickTgMsg = `<b>✅ [កត់ត្រាការបង់ប្រាក់កូនបំណុល - Checking Paid]</b>\n\n` +
+      `👤 <b>កូនបំណុល:</b> ${borrower.name} (${borrower.shortId || borrower.id})\n` +
+      `💵 <b>ប្រាក់បង់:</b> $${borrower.installmentAmount} (វគ្គទី ${nextUnpaidSlot + 1}/${borrower.duration})\n` +
+      `📅 <b>កាលបរិច្ឆេទ:</b> ${getTodayDateString()}\n` +
+      `✔️ <b>ស្ថានភាព:</b> បានបង់ប្រាក់រួចរាល់`;
+    sendTelegramNotification(quickTgMsg);
   };
 
   const handleAddPaymentDetail = (borrowerId: string, paymentData: Omit<Payment, 'id'>) => {
@@ -2505,6 +2612,18 @@ export default function App() {
 
     saveBorrowers(newList);
     showToast('បានកត់ត្រាការបង់ប្រាក់ថ្មីដោយជោគជ័យ!');
+
+    // Send Telegram Notification
+    const borrower = borrowers.find(b => b.id === borrowerId);
+    if (borrower) {
+      const detailTgMsg = `<b>✅ [កត់ត្រាការបង់ប្រាក់កូនបំណុល - Payment Checked]</b>\n\n` +
+        `👤 <b>កូនបំណុល:</b> ${borrower.name} (${borrower.shortId || borrower.id})\n` +
+        `💵 <b>ប្រាក់បង់:</b> $${paymentData.amount}\n` +
+        `📅 <b>កាលបរិច្ឆេទ:</b> ${paymentData.date || getTodayDateString()}\n` +
+        `📝 <b>ចំណាំ:</b> ${paymentData.note || 'បង់ប្រាក់'}\n` +
+        `✔️ <b>ស្ថានភាព:</b> បានបង់ប្រាក់រួចរាល់`;
+      sendTelegramNotification(detailTgMsg);
+    }
   };
 
   const handleDeletePayment = (borrowerId: string, paymentId: string) => {
@@ -6482,9 +6601,58 @@ export default function App() {
                           });
                         }
                       }}
-                      placeholder="8920488272:AAFyrp..."
+                      placeholder="8601041249:AAH4dR6MTdji1o2YKm-0wM23sTGiHN1DOzk"
                       className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        {language === 'kh' ? 'លេខ Telegram Chat ID / Group ID' : 'Telegram Chat / Group ID'}
+                      </label>
+                      {telegramChatId && (
+                        <span className="text-[9px] font-bold text-emerald-500 dark:text-emerald-400">
+                          {language === 'kh' ? '✓ បានកំណត់' : '✓ Configured'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={telegramChatId}
+                        onChange={(e) => {
+                          const cid = e.target.value.trim();
+                          setTelegramChatId(cid);
+                          safeStorage.setItem('luypay_telegram_chat_id', cid);
+                          if (isLoggedIn) {
+                            setDoc(doc(db, 'settings', 'qr_config'), { telegramChatId: cid }, { merge: true }).catch(err => {
+                              console.error('Error saving telegramChatId:', err);
+                            });
+                          }
+                        }}
+                        placeholder={language === 'kh' ? 'ឧទាហរណ៍: -100123456789 ឬ ឆាតទៅ Bot ជាមុន' : 'e.g. -100123456789 or send a msg to bot'}
+                        className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const testText = `<b>🤖 [តេស្តប្រព័ន្ធតេឡេក្រាម - LUYPAY Bot]</b>\n\n` +
+                            `ប្រព័ន្ធ LUYPAY បានភ្ជាប់ទៅកាន់ Telegram Bot ដោយជោគជ័យ!\n` +
+                            `នៅពេលប្រព័ន្ធ Checking ឬផ្ទៀងផ្ទាត់ការបង់ប្រាក់កូនបំណុល វានឹងផ្ញើសារប្រាប់ភ្លាមៗ។\n` +
+                            `📅 <b>កាលបរិច្ឆេទ:</b> ${new Date().toLocaleString()}`;
+                          const ok = await sendTelegramNotification(testText);
+                          if (ok) {
+                            showToast(language === 'kh' ? 'បានផ្ញើសារតេស្តទៅ Telegram Bot ជោគជ័យ!' : 'Test message sent to Telegram successfully!', 'success');
+                          } else {
+                            showToast(language === 'kh' ? 'បរាជ័យ! សូមផ្ញើសារ /start ទៅកាន់ Bot ក្នុង Telegram ជាមុនសិន' : 'Failed! Send /start to the bot in Telegram first.', 'error');
+                          }
+                        }}
+                        className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[10px] rounded-xl cursor-pointer whitespace-nowrap transition flex items-center gap-1 shadow-sm"
+                      >
+                        <span>{language === 'kh' ? 'ផ្ញើសារសាកល្បង' : 'Test Notification'}</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between pt-1">
