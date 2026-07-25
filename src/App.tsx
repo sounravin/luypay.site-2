@@ -348,7 +348,7 @@ export default function App() {
     return safeStorage.getItem('luypay_telegram_token') || '8601041249:AAH4dR6MTdji1o2YKm-0wM23sTGiHN1DOzk';
   });
   const [telegramChatId, setTelegramChatId] = useState<string>(() => {
-    return safeStorage.getItem('luypay_telegram_chat_id') || '';
+    return safeStorage.getItem('luypay_telegram_chat_id') || '8601041249';
   });
   const [telegramPollingEnabled, setTelegramPollingEnabled] = useState<boolean>(() => {
     const saved = safeStorage.getItem('luypay_telegram_polling_enabled');
@@ -370,7 +370,7 @@ export default function App() {
   // Helper to send outgoing notification message to Telegram Bot
   const sendTelegramNotification = useCallback(async (messageText: string, customChatId?: string) => {
     const token = telegramToken || '8601041249:AAH4dR6MTdji1o2YKm-0wM23sTGiHN1DOzk';
-    let activeChatId = customChatId || telegramChatId;
+    let activeChatId = customChatId || telegramChatId || '8601041249';
 
     if (!token) return false;
 
