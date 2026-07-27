@@ -24,6 +24,7 @@ import { useLanguage } from './i18n';
 import { motion, AnimatePresence } from 'motion/react';
 import { SignInForm, RegisterForm, ForgotPasswordForm } from './components/AuthForms';
 import PWAInstallBanner from './components/PWAInstallBanner';
+import WelcomeLanding from './components/WelcomeLanding';
 import { THEMES, getButtonStyleClass } from './utils/theme';
 import type { AppThemeType, ButtonStyleType } from './utils/theme';
 
@@ -125,7 +126,7 @@ export default function App() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [filterTab, setFilterTab] = useState<'active' | 'completed' | 'archived' | 'all'>('active');
   const [standingFilter, setStandingFilter] = useState<'all' | 'good' | 'regular' | 'late' | 'dueSoon'>('all');
-  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
 
   // Secure Auth State
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => safeStorage.getItem('luypay_logged_in') === 'true');
@@ -133,8 +134,9 @@ export default function App() {
   const [userDisplayName, setUserDisplayName] = useState<string>(() => safeStorage.getItem('luypay_user_display_name') || 'Soun Ravin');
   const [userAuthType, setUserAuthType] = useState<'credentials' | 'google' | 'facebook'>(() => (safeStorage.getItem('luypay_auth_type') as any) || 'credentials');
   const [isMember, setIsMember] = useState<boolean>(() => safeStorage.getItem('luypay_is_member') === 'true');
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
-  const [activeSection, setActiveSection] = useState<'ledger' | 'admin_dashboard' | 'pricing' | 'loan_applications'>('ledger');
+  const [activeSection, setActiveSection] = useState<'ledger' | 'admin_dashboard' | 'pricing' | 'loan_applications' | 'members_admin'>('ledger');
   const [prefilledData, setPrefilledData] = useState<{
     name?: string;
     phone?: string;
@@ -2931,327 +2933,258 @@ export default function App() {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-[#030712] flex flex-col antialiased font-sans relative overflow-hidden">
-        {/* Animated Background Floating Auroras */}
-        <motion.div
-          animate={{
-            x: [0, 80, -40, 0],
-            y: [0, -60, 40, 0],
-            scale: [1, 1.15, 0.9, 1],
-          }}
-          transition={{
-            duration: 16,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute top-10 left-10 w-80 h-80 rounded-full bg-blue-600/15 blur-3xl pointer-events-none"
-        />
-        <motion.div
-          animate={{
-            x: [0, -70, 60, 0],
-            y: [0, 50, -70, 0],
-            scale: [1, 0.9, 1.1, 1],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-violet-600/10 blur-3xl pointer-events-none"
-        />
-        <motion.div
-          animate={{
-            x: [0, 40, -50, 0],
-            y: [0, -30, 60, 0],
-          }}
-          transition={{
-            duration: 24,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute top-1/2 left-1/4 w-72 h-72 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none"
+      <div className="relative min-h-screen bg-[#030712]">
+        {/* Welcome & Showcase Landing Page */}
+        <WelcomeLanding
+          language={language}
+          setLanguage={setLanguage}
+          onOpenLogin={() => setShowLoginModal(true)}
+          renderSystemLogo={renderSystemLogo}
+          systemName={logoConfig?.systemName || t('appName')}
         />
 
-        {/* Technical Grid Overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-25 pointer-events-none" />
+        {/* Login Modal Overlay */}
+        <AnimatePresence>
+          {showLoginModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl overflow-y-auto">
+              <div className="relative w-full max-w-md my-8">
+                {/* Close Modal Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowLoginModal(false)}
+                  className="absolute -top-3 -right-3 z-30 w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center border border-slate-700 shadow-lg cursor-pointer transition"
+                  title="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
 
-        <div className="flex-1 flex flex-col justify-center items-center p-4 relative z-10">
-          {/* Top-Right Language Switcher */}
-          <div className="absolute top-6 right-6 z-20 flex gap-2">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              type="button"
-              onClick={() => setLanguage('kh')}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
-                language === 'kh'
-                  ? 'bg-blue-600/15 border-blue-500/50 text-blue-400 font-extrabold shadow-blue-500/10'
-                  : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              <span className="text-sm">🇰🇭</span>
-              <span>ខ្មែរ</span>
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              type="button"
-              onClick={() => setLanguage('en')}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
-                language === 'en'
-                  ? 'bg-blue-600/15 border-blue-500/50 text-blue-400 font-extrabold shadow-blue-500/10'
-                  : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              <span className="text-sm">🇺🇸</span>
-              <span>EN</span>
-            </motion.button>
-          </div>
+                {/* Premium Glassmorphic Login Card */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  transition={{ type: "spring", stiffness: 120, damping: 16 }}
+                  className="w-full bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.8)] space-y-5 relative overflow-hidden"
+                >
+                  {/* Top Glowing Trace Bar */}
+                  <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500" />
 
-          {/* Toast Notification inside login */}
-          <AnimatePresence>
-            {notification && (
-              <motion.div
-                initial={{ opacity: 0, y: -20, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.9 }}
-                className="fixed top-6 left-1/2 -translate-x-1/2 z-50 shadow-lg"
-              >
-                <div className="px-5 py-3 rounded-xl flex items-center gap-2 border text-xs font-bold bg-blue-600 text-white border-blue-500 shadow-xl shadow-blue-600/20">
-                  <CheckSquare className="w-4 h-4 text-white shrink-0" />
-                  <span>{notification.message}</span>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  {/* Logo and System Title */}
+                  <div className="flex flex-col items-center text-center space-y-2 pt-1">
+                    <motion.div
+                      whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                      transition={{ duration: 0.5 }}
+                      className="cursor-pointer"
+                    >
+                      {renderSystemLogo("w-14 h-14 shadow-lg shadow-blue-500/10")}
+                    </motion.div>
+                    <div>
+                      <h1 className="text-white text-xl font-black tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+                        {logoConfig?.systemName || t('appName')}
+                      </h1>
+                      <p className="text-[10px] text-blue-400/90 font-extrabold tracking-widest uppercase mt-1">{t('appSubtitle')}</p>
+                    </div>
+                  </div>
 
-          {/* Premium Glassmorphic Login Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{
-              type: "spring",
-              stiffness: 110,
-              damping: 16,
-            }}
-            className="w-full max-w-md bg-slate-900/50 backdrop-blur-2xl border border-slate-800/80 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.6),_0_0_80px_rgba(37,99,235,0.06)] space-y-5 sm:space-y-6 relative overflow-hidden"
-          >
-            {/* Top Glowing Trace Bar */}
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500" />
+                  {/* Animated Inner Forms */}
+                  <AnimatePresence mode="wait">
+                    {loginMode === 'signin' && (
+                      <motion.div
+                        key="signin"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="space-y-5"
+                      >
+                        <div className="bg-slate-950/60 border border-slate-800/80 p-3.5 rounded-2xl space-y-1 text-xs">
+                          <p className="text-blue-400 font-bold flex items-center gap-1.5 mb-1">
+                            <span>🛡️ {language === 'kh' ? 'គណនីការពារទិន្នន័យពីការបាត់បង់' : 'Data Loss Protection Account'}</span>
+                          </p>
+                          <p className="text-slate-400 leading-relaxed font-medium">
+                            {language === 'kh' 
+                              ? 'សូមប្រើប្រាស់គណនីផ្លូវការតែមួយគត់របស់អ្នក ដើម្បីកត់ត្រា និងសមកាលកម្មទិន្នន័យឱ្យមានសុវត្ថិភាពខ្ពស់បំផុត។'
+                              : 'Please use your official account to record and synchronize your data with maximum security.'}
+                          </p>
+                        </div>
 
-            {/* Logo and System Title */}
-            <div className="flex flex-col items-center text-center space-y-3 pt-2">
-              <motion.div
-                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
-                transition={{ duration: 0.5 }}
-                className="cursor-pointer"
-              >
-                {renderSystemLogo("w-16 h-16 shadow-lg shadow-blue-500/10")}
-              </motion.div>
-              <div>
-                <h1 className="text-white text-xl font-black tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-                  {logoConfig?.systemName || t('appName')}
-                </h1>
-                <p className="text-[10px] text-blue-400/90 font-extrabold tracking-widest uppercase mt-1">{t('appSubtitle')}</p>
+                        <SignInForm
+                          onSubmit={handleCredentialsLogin}
+                          loginError={loginError}
+                          setLoginError={setLoginError}
+                          language={language}
+                          t={t}
+                          onForgotPasswordClick={() => {
+                            setLoginMode('forgot_password');
+                            setResetStep('request');
+                            setForgotError('');
+                            setForgotEmail('');
+                          }}
+                        />
+
+                        {/* Switch to Register */}
+                        <div className="border-t border-slate-800/60 pt-3 text-center">
+                          <p className="text-xs text-slate-400">
+                            {t('noAccountText')}{" "}
+                            <button
+                              onClick={() => {
+                                setLoginMode('register');
+                                setRegError('');
+                                setRegUsername('');
+                                setRegEmail('');
+                                setRegPassword('');
+                              }}
+                              className="text-emerald-400 hover:text-emerald-300 font-black hover:underline transition"
+                            >
+                              {t('registerMemberLink')}
+                            </button>
+                          </p>
+                        </div>
+
+                        {/* Divider */}
+                        <div className="flex items-center gap-3">
+                          <div className="h-px bg-slate-800/60 flex-1"></div>
+                          <span className="text-[9px] text-slate-500 font-black uppercase tracking-wider">{t('orSocials')}</span>
+                          <div className="h-px bg-slate-800/60 flex-1"></div>
+                        </div>
+
+                        {/* Social Sign-In Buttons */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            type="button"
+                            onClick={() => {
+                              setAuthModalType('google');
+                              setRegError('');
+                              setShowAuthModal(true);
+                            }}
+                            className="py-2.5 bg-slate-950/60 hover:bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-slate-200 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                          >
+                            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.61c-.29 1.5-1.14 2.78-2.4 3.63v3.02h3.86c2.26-2.08 3.56-5.14 3.56-8.5Z"/>
+                              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3.02c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.32v3.11C3.31 21.88 7.37 24 12 24Z"/>
+                              <path fill="#FBBC05" d="M5.27 14.27a7.2 7.2 0 0 1 0-4.54V6.62H1.32a11.96 11.96 0 0 0 0 10.76l3.95-3.11Z"/>
+                              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.93 1.19 15.24 0 12 0 7.37 0 3.31 2.12 1.32 5.62l3.95 3.11c.95-2.85 3.6-4.98 6.73-4.98Z"/>
+                            </svg>
+                            <span>Google</span>
+                          </motion.button>
+
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            type="button"
+                            onClick={() => {
+                              setAuthModalType('facebook');
+                              setRegError('');
+                              setShowAuthModal(true);
+                            }}
+                            className="py-2.5 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/20 rounded-xl text-xs font-bold text-[#1877F2] transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                          >
+                            <svg className="w-4 h-4 shrink-0 fill-current" viewBox="0 0 24 24">
+                              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                            <span>Facebook</span>
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {loginMode === 'register' && (
+                      <motion.div
+                        key="register"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="space-y-5"
+                      >
+                        <div className="bg-slate-950/60 border border-slate-800/80 p-3.5 rounded-2xl text-xs space-y-1.5">
+                          <p className="text-emerald-400 font-bold flex items-center gap-1.5">
+                            <span>{t('regNoticeTitle')}</span>
+                          </p>
+                          <p className="text-slate-400 leading-relaxed font-medium">
+                            {t('regNoticeDesc')}
+                          </p>
+                        </div>
+
+                        <RegisterForm
+                          onSubmit={handleMemberRegister}
+                          regError={regError}
+                          setRegError={setRegError}
+                          authLoading={authLoading}
+                          language={language}
+                          t={t}
+                          qrConfig={qrConfig}
+                        />
+
+                        <div className="border-t border-slate-800/60 pt-3 text-center">
+                          <button
+                            onClick={() => setLoginMode('signin')}
+                            className="text-xs text-slate-400 hover:text-white hover:underline font-bold inline-flex items-center gap-1.5 transition"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" /> {t('backToLogin')}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {loginMode === 'forgot_password' && (
+                      <motion.div
+                        key="forgot"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="space-y-5"
+                      >
+                        <div className="bg-slate-950/60 border border-slate-800/80 p-3.5 rounded-2xl text-xs space-y-1.5">
+                          <p className="text-blue-400 font-bold flex items-center gap-1.5">
+                            <span>{t('forgotPasswordTitle')}</span>
+                          </p>
+                          <p className="text-slate-400 leading-relaxed font-medium">
+                            {t('forgotPasswordDesc')}
+                          </p>
+                        </div>
+
+                        <ForgotPasswordForm
+                          onRequest={handleForgotPasswordRequest}
+                          onVerify={handleForgotPasswordVerify}
+                          onReset={handleForgotPasswordReset}
+                          resetStep={resetStep}
+                          verificationCode={verificationCode}
+                          forgotEmail={forgotEmail}
+                          forgotError={forgotError}
+                          setForgotError={setForgotError}
+                          authLoading={authLoading}
+                          language={language}
+                          t={t}
+                        />
+
+                        <div className="border-t border-slate-800/60 pt-3 text-center">
+                          <button
+                            onClick={() => {
+                              setLoginMode('signin');
+                              setResetStep('request');
+                              setForgotError('');
+                            }}
+                            className="text-xs text-slate-400 hover:text-white hover:underline font-bold inline-flex items-center gap-1.5 transition"
+                          >
+                            <ArrowLeft className="w-3.5 h-3.5" /> {t('backToLogin')}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <p className="text-center text-[10px] text-slate-500 font-semibold pt-1">
+                    {t('copyright').replace('{year}', String(new Date().getFullYear()))}
+                  </p>
+                </motion.div>
               </div>
             </div>
-
-            {/* Animated Inner Forms */}
-            <AnimatePresence mode="wait">
-              {loginMode === 'signin' && (
-                <motion.div
-                  key="signin"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
-                  className="space-y-6"
-                >
-                  <div className="bg-slate-950/40 border border-slate-800/60 p-4 rounded-2xl space-y-1 text-xs">
-                    <p className="text-blue-400 font-bold flex items-center gap-1.5 mb-1">
-                      <span>🛡️ {language === 'kh' ? 'គណនីការពារទិន្នន័យពីការបាត់បង់' : 'Data Loss Protection Account'}</span>
-                    </p>
-                    <p className="text-slate-400 leading-relaxed font-medium">
-                      {language === 'kh' 
-                        ? 'សូមប្រើប្រាស់គណនីផ្លូវការតែមួយគត់របស់អ្នក ដើម្បីកត់ត្រា និងសមកាលកម្មទិន្នន័យឱ្យមានសុវត្ថិភាពខ្ពស់បំផុត។'
-                        : 'Please use your official account to record and synchronize your data with maximum security.'}
-                    </p>
-                  </div>
-
-                  <SignInForm
-                    onSubmit={handleCredentialsLogin}
-                    loginError={loginError}
-                    setLoginError={setLoginError}
-                    language={language}
-                    t={t}
-                    onForgotPasswordClick={() => {
-                      setLoginMode('forgot_password');
-                      setResetStep('request');
-                      setForgotError('');
-                      setForgotEmail('');
-                    }}
-                  />
-
-                  {/* Switch to Register */}
-                  <div className="border-t border-slate-800/60 pt-4 text-center">
-                    <p className="text-xs text-slate-400">
-                      {t('noAccountText')}{" "}
-                      <button
-                        onClick={() => {
-                          setLoginMode('register');
-                          setRegError('');
-                          setRegUsername('');
-                          setRegEmail('');
-                          setRegPassword('');
-                        }}
-                        className="text-emerald-400 hover:text-emerald-300 font-black hover:underline transition"
-                      >
-                        {t('registerMemberLink')}
-                      </button>
-                    </p>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="flex items-center gap-3">
-                    <div className="h-px bg-slate-800/60 flex-1"></div>
-                    <span className="text-[9px] text-slate-500 font-black uppercase tracking-wider">{t('orSocials')}</span>
-                    <div className="h-px bg-slate-800/60 flex-1"></div>
-                  </div>
-
-                  {/* Social Sign-In Buttons */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      type="button"
-                      onClick={() => {
-                        setAuthModalType('google');
-                        setRegError('');
-                        setShowAuthModal(true);
-                      }}
-                      className="py-2.5 bg-slate-950/40 hover:bg-slate-950/60 border border-slate-800 rounded-xl text-xs font-bold text-slate-200 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-                    >
-                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.61c-.29 1.5-1.14 2.78-2.4 3.63v3.02h3.86c2.26-2.08 3.56-5.14 3.56-8.5Z"/>
-                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3.02c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.32v3.11C3.31 21.88 7.37 24 12 24Z"/>
-                        <path fill="#FBBC05" d="M5.27 14.27a7.2 7.2 0 0 1 0-4.54V6.62H1.32a11.96 11.96 0 0 0 0 10.76l3.95-3.11Z"/>
-                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.93 1.19 15.24 0 12 0 7.37 0 3.31 2.12 1.32 5.62l3.95 3.11c.95-2.85 3.6-4.98 6.73-4.98Z"/>
-                      </svg>
-                      <span>Google</span>
-                    </motion.button>
-
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      type="button"
-                      onClick={() => {
-                        setAuthModalType('facebook');
-                        setRegError('');
-                        setShowAuthModal(true);
-                      }}
-                      className="py-2.5 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/20 rounded-xl text-xs font-bold text-[#1877F2] transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
-                    >
-                      <svg className="w-4 h-4 shrink-0 fill-current" viewBox="0 0 24 24">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                      </svg>
-                      <span>Facebook</span>
-                    </motion.button>
-                  </div>
-                </motion.div>
-              )}
-
-              {loginMode === 'register' && (
-                <motion.div
-                  key="register"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
-                  className="space-y-6"
-                >
-                  <div className="bg-slate-950/40 border border-slate-800/60 p-4 rounded-2xl text-xs space-y-1.5">
-                    <p className="text-emerald-400 font-bold flex items-center gap-1.5">
-                      <span>{t('regNoticeTitle')}</span>
-                    </p>
-                    <p className="text-slate-400 leading-relaxed font-medium">
-                      {t('regNoticeDesc')}
-                    </p>
-                  </div>
-
-                  <RegisterForm
-                    onSubmit={handleMemberRegister}
-                    regError={regError}
-                    setRegError={setRegError}
-                    authLoading={authLoading}
-                    language={language}
-                    t={t}
-                    qrConfig={qrConfig}
-                  />
-
-                  <div className="border-t border-slate-800/60 pt-4 text-center">
-                    <button
-                      onClick={() => setLoginMode('signin')}
-                      className="text-xs text-slate-400 hover:text-white hover:underline font-bold inline-flex items-center gap-1.5 transition"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" /> {t('backToLogin')}
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {loginMode === 'forgot_password' && (
-                <motion.div
-                  key="forgot"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
-                  className="space-y-6"
-                >
-                  <div className="bg-slate-950/40 border border-slate-800/60 p-4 rounded-2xl text-xs space-y-1.5">
-                    <p className="text-blue-400 font-bold flex items-center gap-1.5">
-                      <span>{t('forgotPasswordTitle')}</span>
-                    </p>
-                    <p className="text-slate-400 leading-relaxed font-medium">
-                      {t('forgotPasswordDesc')}
-                    </p>
-                  </div>
-
-                  <ForgotPasswordForm
-                    onRequest={handleForgotPasswordRequest}
-                    onVerify={handleForgotPasswordVerify}
-                    onReset={handleForgotPasswordReset}
-                    resetStep={resetStep}
-                    verificationCode={verificationCode}
-                    forgotEmail={forgotEmail}
-                    forgotError={forgotError}
-                    setForgotError={setForgotError}
-                    authLoading={authLoading}
-                    language={language}
-                    t={t}
-                  />
-
-                  <div className="border-t border-slate-800/60 pt-4 text-center">
-                    <button
-                      onClick={() => {
-                        setLoginMode('signin');
-                        setResetStep('request');
-                        setForgotError('');
-                      }}
-                      className="text-xs text-slate-400 hover:text-white hover:underline font-bold inline-flex items-center gap-1.5 transition"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" /> {t('backToLogin')}
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <p className="text-center text-[10px] text-slate-500 font-semibold pt-2">
-              {t('copyright').replace('{year}', String(new Date().getFullYear()))}
-            </p>
-          </motion.div>
-        </div>
+          )}
+        </AnimatePresence>
 
         {/* Dynamic Social Auth & Registration Modal */}
         {showAuthModal && (
