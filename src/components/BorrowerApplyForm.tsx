@@ -149,12 +149,31 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
       const ctx = canvas.getContext('2d');
       if (ctx) {
         if (type === 'id') {
-          canvas.width = 1280;
-          canvas.height = 810;
+          // Standard Cambodian National ID Card ratio (85.6mm x 53.98mm = 1.585:1)
+          const targetWidth = 1280;
+          const targetHeight = 808;
+          const targetAspect = targetWidth / targetHeight;
+
+          const vWidth = video.videoWidth || 1280;
+          const vHeight = video.videoHeight || 810;
+          const vAspect = vWidth / vHeight;
+
+          let sx = 0, sy = 0, sWidth = vWidth, sHeight = vHeight;
+          if (vAspect > targetAspect) {
+            sWidth = vHeight * targetAspect;
+            sx = (vWidth - sWidth) / 2;
+          } else {
+            sHeight = vWidth / targetAspect;
+            sy = (vHeight - sHeight) / 2;
+          }
+
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(video, 0, 0, 1280, 810);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
+          ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, targetWidth, targetHeight);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
           setIdCardPhoto(dataUrl);
           processIdCardOcr(dataUrl);
         } else {
@@ -621,13 +640,13 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
             <div className="relative border-2 border-dashed border-slate-800 hover:border-cyan-500/40 rounded-2xl bg-slate-950 p-3 transition text-center flex flex-col items-center justify-center space-y-2">
               
               {idCardPhoto ? (
-                <div className="relative w-full h-56 sm:h-64 bg-slate-900 rounded-xl overflow-hidden group border border-slate-800 flex items-center justify-center">
-                  <img src={idCardPhoto} alt="Cambodian National ID Card" className="w-full h-full object-contain p-2" />
+                <div className="relative w-full max-w-md aspect-[1.585/1] bg-slate-900 rounded-xl overflow-hidden group border-2 border-cyan-500/60 flex items-center justify-center shadow-2xl mx-auto">
+                  <img src={idCardPhoto} alt="Cambodian National ID Card" className="w-full h-full object-cover rounded-lg" />
                   
                   {/* Cambodian National ID Security Framing Overlay */}
-                  <div className="absolute inset-2 border-2 border-dashed border-cyan-400/70 rounded-xl pointer-events-none flex flex-col justify-between p-2.5 shadow-[inset_0_0_20px_rgba(6,182,212,0.25)]">
+                  <div className="absolute inset-2 border-2 border-dashed border-cyan-400/80 rounded-xl pointer-events-none flex flex-col justify-between p-2.5 shadow-[inset_0_0_20px_rgba(6,182,212,0.3)]">
                     <div className="flex justify-between items-start">
-                      <div className="bg-slate-950/90 backdrop-blur-md px-2 py-1 rounded border border-cyan-500/40 text-[9px] font-black text-cyan-300 space-y-0.5">
+                      <div className="bg-slate-950/90 backdrop-blur-md px-2 py-1 rounded border border-cyan-500/40 text-[9px] font-black text-cyan-300 space-y-0.5 shadow-md">
                         <div className="text-[8px] text-amber-300">🇰🇭 ព្រះរាជាណាចក្រកម្ពុជា</div>
                         <div>CAMBODIAN NATIONAL ID</div>
                       </div>
@@ -637,7 +656,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                     </div>
 
                     {/* Bottom MRZ Security Bar Overlay matching Cambodian ID format */}
-                    <div className="bg-slate-950/90 backdrop-blur-md px-2 py-1 rounded border border-cyan-500/40 text-left font-mono text-[9px] text-cyan-300/90 leading-tight tracking-wider">
+                    <div className="bg-slate-950/90 backdrop-blur-md px-2 py-1 rounded border border-cyan-500/40 text-left font-mono text-[9px] text-cyan-300/90 leading-tight tracking-wider shadow-md">
                       <div>IDKHM1708411864&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
                       <div>9902196M2411048KHM&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;0</div>
                     </div>
@@ -681,8 +700,8 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                 </div>
               ) : activeCameraType === 'id' ? (
                 /* Live ID Card Camera Stream View */
-                <div className="space-y-3 w-full flex flex-col items-center">
-                  <div className="relative w-full h-64 sm:h-72 rounded-2xl border-2 border-cyan-400/80 overflow-hidden bg-black flex items-center justify-center shadow-2xl">
+                <div className="space-y-3 w-full max-w-md mx-auto flex flex-col items-center">
+                  <div className="relative w-full aspect-[1.585/1] rounded-2xl border-2 border-cyan-400 overflow-hidden bg-black flex items-center justify-center shadow-2xl">
                     <video
                       ref={videoRef}
                       className="w-full h-full object-cover"
@@ -691,7 +710,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                     />
 
                     {/* Live Camera Cambodian ID Card Guide Frame */}
-                    <div className="absolute inset-3 border-2 border-dashed border-cyan-300/80 rounded-xl pointer-events-none flex flex-col justify-between p-3 shadow-[inset_0_0_25px_rgba(6,182,212,0.3)]">
+                    <div className="absolute inset-2 sm:inset-3 border-2 border-dashed border-cyan-300/80 rounded-xl pointer-events-none flex flex-col justify-between p-2.5 sm:p-3 shadow-[inset_0_0_25px_rgba(6,182,212,0.3)]">
                       <div className="flex justify-between items-start bg-slate-950/80 p-1.5 rounded-lg border border-cyan-500/40">
                         <span className="text-[10px] font-black text-amber-300">🇰🇭 ព្រះរាជាណាចក្រកម្ពុជា • CAMBODIAN ID</span>
                         <span className="text-[9px] font-extrabold text-cyan-300 animate-pulse">● LIVE CAMERA</span>
