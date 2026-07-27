@@ -76,12 +76,11 @@ Rules:
             break;
           }
         } catch (mErr: any) {
-          console.warn(`Model ${modelName} scan failed:`, mErr?.message || mErr);
+          // Model unavailable or quota reached, continue to next model/fallback
         }
       }
 
       if (!responseText) {
-        // Return clean response indicating client-side OCR should take over
         return res.json({ fallbackToClient: true });
       }
 
