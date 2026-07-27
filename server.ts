@@ -29,15 +29,16 @@ async function startServer() {
       const mimeTypeMatch = image.match(/^data:(image\/\w+);base64,/);
       const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : 'image/jpeg';
 
-      const prompt = `You are a professional OCR engine specializing in Cambodian Identity Cards (អត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ).
-Extract the following exact fields from the provided ID card image:
-1. "idCardNumber": The 9 or 10-digit ID number (អត្តសញ្ញាណប័ណ្ណ) e.g., "171135765" or "010234567".
-2. "name": Full name in Khmer script e.g., "ពេជ្រ រចនា" or "ចាន់ ម៉ារី".
-3. "dob": Date of birth in DD.MM.YYYY format e.g., "22.06.2001".
-4. "address": Full address in Khmer script e.g., "ផ្ទះ11 ផ្លូវ/ក្រុម01 ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង".
-5. "idExpiryDate": Expiry date in YYYY.MM.DD or DD.MM.YYYY format e.g., "2031.06.22".
+      const prompt = `You are an expert OCR AI specializing in extracting data from Cambodian Identity Cards (អត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ).
+Examine the ID card image thoroughly and extract these EXACT fields:
 
-Return STRICTLY a JSON object with no markdown formatting or markdown wrappers:
+1. "idCardNumber": The 9 or 10-digit National ID number. Look at the top right (e.g., "171107890" or "171135765"), or parse it from the bottom MRZ line starting with "IDKHM" (e.g. "IDKHM1711078906...").
+2. "name": The cardholder's full name in Khmer script (e.g., "សឿន រ៉ាវីន") or Latin name if Khmer is unreadable.
+3. "dob": Date of birth in DD.MM.YYYY format (e.g., "04.06.1988" or "22.06.2001") found after "ថ្ងៃខែឆ្នាំកំណើត:".
+4. "address": Full address in Khmer (e.g., "ផ្ទះ158 ផ្លូវ/ក្រុម03 ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង") found after "អាសយដ្ឋាន:".
+5. "idExpiryDate": The expiry date in YYYY.MM.DD or DD.MM.YYYY format (e.g., "19.05.2026" or "2026.05.19") found after "ផុតកំណត់:" or "ដល់ថ្ងៃ".
+
+Return ONLY a valid raw JSON object without markdown formatting:
 {
   "idCardNumber": "string",
   "name": "string",

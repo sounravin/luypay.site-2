@@ -3,7 +3,7 @@ import { db } from '../lib/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import { useLanguage } from '../i18n';
 import { motion, AnimatePresence } from 'motion/react';
-import { Upload, Camera, CheckCircle, AlertCircle, Phone, User, DollarSign, RefreshCw, ChevronLeft, Eye, X, ZoomIn, FileText, ShieldAlert, Sparkles, AlertTriangle, MapPin, Calendar, CreditCard } from 'lucide-react';
+import { Upload, Camera, CheckCircle, AlertCircle, Phone, User, DollarSign, RefreshCw, ChevronLeft, Eye, X, ZoomIn, FileText, ShieldAlert, Sparkles, AlertTriangle, MapPin, Calendar, CreditCard, Lock, Unlock } from 'lucide-react';
 import { scanIdCardImage, checkExpiryStatus } from '../utils/ocrHelper';
 import { DEFAULT_LENDER_INFO, LoanApplication } from '../types';
 import DigitalLoanContractModal from './DigitalLoanContractModal';
@@ -31,6 +31,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
   const [idExpiryDate, setIdExpiryDate] = useState('');
   const [idExpiryStatus, setIdExpiryStatus] = useState<'valid' | 'expiring_soon' | 'expired'>('valid');
   const [isOcrScanning, setIsOcrScanning] = useState(false);
+  const [isDataLocked, setIsDataLocked] = useState(true);
   const [showDigitalContractModal, setShowDigitalContractModal] = useState(false);
   
   const [idCardPhoto, setIdCardPhoto] = useState<string>('');
@@ -536,16 +537,41 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                     {language === 'kh' ? 'ព័ត៌មានអត្តសញ្ញាណប័ណ្ណ (Reendem ID Data)' : 'Extracted ID Card Credentials'}
                   </h3>
                 </div>
-                {isOcrScanning ? (
-                  <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 animate-pulse">
-                    <RefreshCw className="w-3 h-3 animate-spin" />
-                    កំពុង Read / Scan...
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
-                    ✓ Scan ស្វ័យប្រវត្តិ
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsDataLocked(!isDataLocked)}
+                    className={`text-[10px] px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 border transition cursor-pointer ${
+                      isDataLocked
+                        ? 'bg-slate-900 border-slate-700 text-slate-300 hover:text-white hover:border-slate-600'
+                        : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                    }`}
+                    title={isDataLocked ? 'ចុចដើម្បីអនុញ្ញាតកែប្រែ' : 'ចុចដើម្បីចាក់សោ'}
+                  >
+                    {isDataLocked ? (
+                      <>
+                        <Lock className="w-3 h-3 text-slate-400" />
+                        <span>🔒 មិនអាចកែប្រែ (Locked)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Unlock className="w-3 h-3 text-amber-400" />
+                        <span>🔓 កំពុងអនុញ្ញាតកែប្រែ</span>
+                      </>
+                    )}
+                  </button>
+
+                  {isOcrScanning ? (
+                    <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 animate-pulse">
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      កំពុង Read / Scan...
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
+                      ✓ Scan ស្វ័យប្រវត្តិ
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* ID Number */}
@@ -553,13 +579,19 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                 <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
                   <CreditCard className="w-3.5 h-3.5 text-blue-400" />
                   {language === 'kh' ? 'លេខអត្តសញ្ញាណប័ណ្ណ' : 'ID Card Number'}
+                  {isDataLocked && <Lock className="w-3 h-3 text-slate-500 ml-auto" />}
                 </label>
                 <input
                   type="text"
                   value={idCardNumber}
+                  readOnly={isDataLocked}
                   onChange={(e) => setIdCardNumber(e.target.value)}
                   placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ 171135765' : 'e.g. 171135765'}
-                  className="w-full px-3 py-2 text-sm bg-slate-900 border border-slate-800 rounded-xl text-blue-400 font-bold focus:outline-none focus:border-blue-500"
+                  className={`w-full px-3 py-2 text-sm border rounded-xl text-blue-400 font-bold focus:outline-none ${
+                    isDataLocked
+                      ? 'bg-slate-900/90 border-slate-800/80 cursor-not-allowed opacity-90 select-none'
+                      : 'bg-slate-900 border-blue-500/50 focus:border-blue-500'
+                  }`}
                 />
               </div>
 
@@ -569,13 +601,19 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                   <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5 text-blue-400" />
                     {language === 'kh' ? 'ថ្ងៃខែឆ្នាំកំណើត' : 'Date of Birth'}
+                    {isDataLocked && <Lock className="w-3 h-3 text-slate-500 ml-auto" />}
                   </label>
                   <input
                     type="text"
                     value={dob}
+                    readOnly={isDataLocked}
                     onChange={(e) => setDob(e.target.value)}
                     placeholder="e.g. 22.06.2001"
-                    className="w-full px-3 py-2 text-sm bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-semibold focus:outline-none focus:border-blue-500"
+                    className={`w-full px-3 py-2 text-sm border rounded-xl text-slate-200 font-semibold focus:outline-none ${
+                      isDataLocked
+                        ? 'bg-slate-900/90 border-slate-800/80 cursor-not-allowed opacity-90 select-none'
+                        : 'bg-slate-900 border-blue-500/50 focus:border-blue-500'
+                    }`}
                   />
                 </div>
 
@@ -584,16 +622,22 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                   <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5 text-blue-400" />
                     {language === 'kh' ? 'សុពលភាព ID (ថ្ងៃផុតកំណត់)' : 'ID Expiry Date'}
+                    {isDataLocked && <Lock className="w-3 h-3 text-slate-500 ml-auto" />}
                   </label>
                   <input
                     type="text"
                     value={idExpiryDate}
+                    readOnly={isDataLocked}
                     onChange={(e) => {
                       setIdExpiryDate(e.target.value);
                       setIdExpiryStatus(checkExpiryStatus(e.target.value));
                     }}
                     placeholder="e.g. 2028.12.31"
-                    className="w-full px-3 py-2 text-sm bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-semibold focus:outline-none focus:border-blue-500"
+                    className={`w-full px-3 py-2 text-sm border rounded-xl text-slate-200 font-semibold focus:outline-none ${
+                      isDataLocked
+                        ? 'bg-slate-900/90 border-slate-800/80 cursor-not-allowed opacity-90 select-none'
+                        : 'bg-slate-900 border-blue-500/50 focus:border-blue-500'
+                    }`}
                   />
                 </div>
               </div>
@@ -624,13 +668,19 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                 <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-blue-400" />
                   {language === 'kh' ? 'អាសយដ្ឋាន' : 'Address'}
+                  {isDataLocked && <Lock className="w-3 h-3 text-slate-500 ml-auto" />}
                 </label>
                 <input
                   type="text"
                   value={address}
+                  readOnly={isDataLocked}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង' : 'e.g. Battambang'}
-                  className="w-full px-3 py-2 text-sm bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-semibold focus:outline-none focus:border-blue-500"
+                  className={`w-full px-3 py-2 text-sm border rounded-xl text-slate-200 font-semibold focus:outline-none ${
+                    isDataLocked
+                      ? 'bg-slate-900/90 border-slate-800/80 cursor-not-allowed opacity-90 select-none'
+                      : 'bg-slate-900 border-blue-500/50 focus:border-blue-500'
+                  }`}
                 />
               </div>
 
@@ -649,17 +699,17 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                 <button
                   type="button"
                   onClick={() => {
-                    setIdCardNumber('171135765');
-                    setName('ចាន់ ម៉ារី');
-                    setDob('15.08.1998');
-                    setAddress('ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង');
-                    setIdExpiryDate('2031.12.31');
+                    setIdCardNumber('171107890');
+                    setName('សឿន រ៉ាវីន');
+                    setDob('04.06.1988');
+                    setAddress('ផ្ទះ158 ផ្លូវ/ក្រុម03 ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង');
+                    setIdExpiryDate('19.05.2026');
                     setIdExpiryStatus('valid');
                   }}
                   className="py-2 bg-blue-600/15 hover:bg-blue-600/25 text-blue-300 font-bold rounded-xl text-xs border border-blue-500/30 transition cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                  <span>{language === 'kh' ? 'បំពេញទិន្នន័យគំរូ' : 'Auto Fill Sample'}</span>
+                  <span>{language === 'kh' ? 'បំពេញទិន្នន័យគំរូ (សឿន រ៉ាវីន)' : 'Fill Sample ID Data'}</span>
                 </button>
               </div>
 
