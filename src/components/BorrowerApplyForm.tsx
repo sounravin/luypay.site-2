@@ -38,7 +38,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
   const [selfiePhoto, setSelfiePhoto] = useState<string>('');
   const [previewModalImage, setPreviewModalImage] = useState<{ title: string; src: string } | null>(null);
   
-  const [useCameraForSelfie, setUseCameraForSelfie] = useState(false);
+  const [activeCameraType, setActiveCameraType] = useState<'id' | 'selfie' | null>(null);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -110,11 +110,16 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
     };
   }, []);
 
-  const startCamera = async () => {
+  const startCamera = async (type: 'id' | 'selfie') => {
     try {
-      setUseCameraForSelfie(true);
+      stopCamera();
+      setActiveCameraType(type);
+      const facingMode = type === 'id' ? { ideal: 'environment' } : 'user';
+      const width = type === 'id' ? 1280 : 600;
+      const height = type === 'id' ? 810 : 600;
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 300, height: 300 },
+        video: { facingMode, width: { ideal: width }, height: { ideal: height } },
         audio: false
       });
       setCameraStream(stream);
@@ -124,8 +129,8 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
       }
     } catch (err) {
       console.error("Camera access failed:", err);
-      alert(language === 'kh' ? 'មិនអាចបើកកាមេរ៉ាបានទេ! សូមជ្រើសរើសការ Upload ជំនួសវិញ។' : 'Could not access camera! Please upload a file instead.');
-      setUseCameraForSelfie(false);
+      alert(language === 'kh' ? 'មិនអាចបើកកាមេរ៉ាផ្សាយផ្ទាល់បានទេ! សូមប្រើប្រាស់ប៊ូតុងថតរូបពីកាមេរ៉ាទូរស័ព្ទ។' : 'Could not access live camera! Please use device camera button.');
+      setActiveCameraType(null);
     }
   };
 
@@ -134,29 +139,34 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
       cameraStream.getTracks().forEach(track => track.stop());
       setCameraStream(null);
     }
-    setUseCameraForSelfie(false);
+    setActiveCameraType(null);
   };
 
-  const captureSelfie = () => {
+  const captureLivePhoto = (type: 'id' | 'selfie') => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        canvas.width = 300;
-        canvas.height = 300;
-        
-        // Horizontal flip for mirroring selfie
-        ctx.translate(300, 0);
-        ctx.scale(-1, 1);
-        
-        ctx.drawImage(video, 0, 0, 300, 300);
-        
-        // Reset transform
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // Compress to 60% quality
-        setSelfiePhoto(dataUrl);
+        if (type === 'id') {
+          canvas.width = 1280;
+          canvas.height = 810;
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(video, 0, 0, 1280, 810);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
+          setIdCardPhoto(dataUrl);
+          processIdCardOcr(dataUrl);
+        } else {
+          canvas.width = 600;
+          canvas.height = 600;
+          ctx.translate(600, 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(video, 0, 0, 600, 600);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setSelfiePhoto(dataUrl);
+        }
         stopCamera();
       }
     }
@@ -596,39 +606,44 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
             </select>
           </div>
 
-          {/* ID Card Upload Card with Square/Rectangle Security Frame */}
+          {/* ID Card Upload Card with Cambodian National ID Security Frame */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Lock className="w-4 h-4 text-blue-400" />
-                {language === 'kh' ? 'រូបអត្តសញ្ញាណប័ណ្ណ (SECURITY ID CARD)' : 'National ID Card Photo'} <span className="text-rose-500">*</span>
+                <Lock className="w-4 h-4 text-cyan-400" />
+                {language === 'kh' ? 'រូបអត្តសញ្ញាណប័ណ្ណ (CAMBODIAN ID CARD)' : 'National ID Card Photo'} <span className="text-rose-500">*</span>
               </label>
-              <span className="text-[10px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20 flex items-center gap-1">
-                🔒 Security Frame (ទម្រង់ជាការេ)
+              <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 flex items-center gap-1">
+                📸 កាមេរ៉ាផ្ទាល់ (NO UPLOAD)
               </span>
             </div>
 
-            <div className="relative border-2 border-dashed border-slate-800 hover:border-blue-500/40 rounded-2xl bg-slate-950 p-3 transition text-center flex flex-col items-center justify-center space-y-2">
+            <div className="relative border-2 border-dashed border-slate-800 hover:border-cyan-500/40 rounded-2xl bg-slate-950 p-3 transition text-center flex flex-col items-center justify-center space-y-2">
+              
               {idCardPhoto ? (
-                <div className="relative w-full h-52 sm:h-60 bg-slate-900 rounded-xl overflow-hidden group border border-slate-800 flex items-center justify-center">
-                  <img src={idCardPhoto} alt="National ID Card" className="w-full h-full object-contain p-2" />
+                <div className="relative w-full h-56 sm:h-64 bg-slate-900 rounded-xl overflow-hidden group border border-slate-800 flex items-center justify-center">
+                  <img src={idCardPhoto} alt="Cambodian National ID Card" className="w-full h-full object-contain p-2" />
                   
-                  {/* Square Security Framing Overlay */}
-                  <div className="absolute inset-2 border-2 border-dashed border-cyan-400/60 rounded-xl pointer-events-none flex flex-col justify-between p-2 shadow-[inset_0_0_15px_rgba(6,182,212,0.2)]">
-                    <div className="flex justify-between items-center">
-                      <span className="bg-cyan-950/80 backdrop-blur-md text-cyan-300 text-[9px] font-black px-2 py-0.5 rounded border border-cyan-500/40">
-                        🔒 Security Frame
-                      </span>
-                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/40 flex items-center gap-1">
+                  {/* Cambodian National ID Security Framing Overlay */}
+                  <div className="absolute inset-2 border-2 border-dashed border-cyan-400/70 rounded-xl pointer-events-none flex flex-col justify-between p-2.5 shadow-[inset_0_0_20px_rgba(6,182,212,0.25)]">
+                    <div className="flex justify-between items-start">
+                      <div className="bg-slate-950/90 backdrop-blur-md px-2 py-1 rounded border border-cyan-500/40 text-[9px] font-black text-cyan-300 space-y-0.5">
+                        <div className="text-[8px] text-amber-300">🇰🇭 ព្រះរាជាណាចក្រកម្ពុជា</div>
+                        <div>CAMBODIAN NATIONAL ID</div>
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/90 px-2 py-0.5 rounded border border-emerald-500/40 flex items-center gap-1 shadow-md">
                         ✓ {language === 'kh' ? 'ត្រូវតាមទម្រង់' : 'Frame Matched'}
                       </span>
                     </div>
-                    <div className="text-[9px] font-bold text-cyan-300/80 bg-slate-950/80 backdrop-blur-md px-2 py-0.5 rounded self-center">
-                      {language === 'kh' ? 'អត្តសញ្ញាណប័ណ្ណត្រឹមត្រូវតាមទម្រង់ការេ' : 'ID Card Aligned inside Frame'}
+
+                    {/* Bottom MRZ Security Bar Overlay matching Cambodian ID format */}
+                    <div className="bg-slate-950/90 backdrop-blur-md px-2 py-1 rounded border border-cyan-500/40 text-left font-mono text-[9px] text-cyan-300/90 leading-tight tracking-wider">
+                      <div>IDKHM1708411864&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
+                      <div>9902196M2411048KHM&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;0</div>
                     </div>
                   </div>
 
-                  {/* Laser Scanner animation during scanning */}
+                  {/* Laser Scanner animation during OCR scanning */}
                   {isOcrScanning && (
                     <div className="absolute inset-0 pointer-events-none rounded-xl overflow-hidden bg-cyan-950/30 border-2 border-cyan-400/60 shadow-[0_0_25px_rgba(6,182,212,0.4)] z-10">
                       <motion.div
@@ -645,10 +660,10 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                     </div>
                   )}
 
-                  <div className="absolute inset-0 bg-slate-950/75 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2 p-2 z-20">
+                  <div className="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2 p-2 z-20">
                     <button
                       type="button"
-                      onClick={() => setPreviewModalImage({ title: language === 'kh' ? 'រូបថតអត្តសញ្ញាណប័ណ្ណ (HD Security Frame)' : 'ID Card Photo (HD)', src: idCardPhoto })}
+                      onClick={() => setPreviewModalImage({ title: language === 'kh' ? 'រូបថតអត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ (HD)' : 'Cambodian ID Card Photo (HD)', src: idCardPhoto })}
                       className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95"
                     >
                       <Eye className="w-4 h-4" />
@@ -659,113 +674,204 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                       onClick={() => setIdCardPhoto('')}
                       className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95"
                     >
-                      {language === 'kh' ? 'ថតសារថ្មី' : 'Retake / Redo'}
+                      <Camera className="w-4 h-4" />
+                      {language === 'kh' ? 'ថតសារថ្មី' : 'Retake Photo'}
                     </button>
                   </div>
                 </div>
-              ) : (
-                <label className="w-full py-6 cursor-pointer flex flex-col items-center justify-center gap-3 relative">
-                  {/* Square Security Guide Box UI */}
-                  <div className="w-48 h-32 border-2 border-dashed border-cyan-400/50 rounded-xl bg-cyan-950/20 flex flex-col items-center justify-center gap-1.5 p-3 relative group-hover:border-cyan-400 transition">
-                    <div className="w-10 h-10 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-xl flex items-center justify-center shadow-inner">
-                      <Lock className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] font-black text-cyan-300 bg-slate-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
-                      🔒 ថតអោយត្រូវក្នុងប្រអប់ការេ (Security Frame)
-                    </span>
-                  </div>
-
-                  <div className="space-y-0.5 text-center">
-                    <p className="text-xs font-bold text-slate-200">
-                      {language === 'kh' ? 'ចុចទីនេះដើម្បីថត ឬបង្ហោះរូបអត្តសញ្ញាណប័ណ្ណ' : 'Click to Upload or Snap Security ID Card'}
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-medium">ត្រូវតែជាអត្តសញ្ញាណប័ណ្ណច្បាស់ HD ស្ថិតក្នុងប្រអប់ការេ</p>
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e, 'id')}
-                    className="hidden"
-                  />
-                </label>
-              )}
-            </div>
-          </div>
-
-          {/* Selfie Capture Card */}
-          <div className="space-y-2">
-            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider">
-              {language === 'kh' ? 'ថតរូបមុខខ្លួនឯងផ្ទាល់ (Selfie Photo)' : 'Selfie Face Photo'} <span className="text-rose-500">*</span>
-            </label>
-            
-            <div className="relative border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950 p-4 flex flex-col items-center justify-center text-center">
-              
-              {selfiePhoto ? (
-                <div className="relative w-36 h-36 rounded-full border-4 border-slate-800 overflow-hidden group">
-                  <img src={selfiePhoto} alt="Selfie" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setSelfiePhoto('')}
-                    className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs font-bold text-rose-400 cursor-pointer"
-                  >
-                    {language === 'kh' ? '🗑️ លុបរូបថត' : '🗑️ Delete'}
-                  </button>
-                </div>
-              ) : useCameraForSelfie ? (
-                <div className="space-y-4 w-full flex flex-col items-center">
-                  <div className="relative w-48 h-48 rounded-full border-4 border-blue-500/30 overflow-hidden bg-black flex items-center justify-center">
+              ) : activeCameraType === 'id' ? (
+                /* Live ID Card Camera Stream View */
+                <div className="space-y-3 w-full flex flex-col items-center">
+                  <div className="relative w-full h-64 sm:h-72 rounded-2xl border-2 border-cyan-400/80 overflow-hidden bg-black flex items-center justify-center shadow-2xl">
                     <video
                       ref={videoRef}
-                      className="w-full h-full object-cover scale-x-[-1]"
+                      className="w-full h-full object-cover"
                       playsInline
                       muted
                     />
+
+                    {/* Live Camera Cambodian ID Card Guide Frame */}
+                    <div className="absolute inset-3 border-2 border-dashed border-cyan-300/80 rounded-xl pointer-events-none flex flex-col justify-between p-3 shadow-[inset_0_0_25px_rgba(6,182,212,0.3)]">
+                      <div className="flex justify-between items-start bg-slate-950/80 p-1.5 rounded-lg border border-cyan-500/40">
+                        <span className="text-[10px] font-black text-amber-300">🇰🇭 ព្រះរាជាណាចក្រកម្ពុជា • CAMBODIAN ID</span>
+                        <span className="text-[9px] font-extrabold text-cyan-300 animate-pulse">● LIVE CAMERA</span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[10px] font-bold text-cyan-200/90 bg-slate-950/80 p-1.5 rounded-lg border border-cyan-500/40">
+                        <span>👤 ដាក់អត្តសញ្ញាណប័ណ្ណអោយចំប្រអប់</span>
+                        <span className="font-mono text-[9px] text-slate-400">IDKHM1708411864&lt;&lt;&lt;&lt;&lt;&lt;</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
+
+                  <div className="flex gap-2 w-full">
                     <button
                       type="button"
-                      onClick={captureSelfie}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                      onClick={() => captureLivePhoto('id')}
+                      className="flex-1 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black text-xs rounded-xl transition cursor-pointer shadow-lg active:scale-98 flex items-center justify-center gap-2"
                     >
-                      📸 {language === 'kh' ? 'ថតរូប' : 'Capture'}
+                      <Camera className="w-4 h-4" />
+                      <span>📸 {language === 'kh' ? 'ថតរូបអត្តសញ្ញាណប័ណ្ណ (Snap ID)' : 'Snap ID Photo'}</span>
                     </button>
                     <button
                       type="button"
                       onClick={stopCamera}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                      className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
                     >
                       {language === 'kh' ? 'បោះបង់' : 'Cancel'}
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="w-full py-2 flex flex-col items-center justify-center gap-3">
-                  <div className="flex gap-4">
-                    {/* Live Camera Button */}
+                /* Camera Trigger Area - Strictly NO GALLERY FILE UPLOAD */
+                <div className="w-full py-5 flex flex-col items-center justify-center gap-3">
+                  {/* Cambodian ID Card Guide Frame UI */}
+                  <div className="w-56 h-36 border-2 border-dashed border-cyan-400/60 rounded-xl bg-cyan-950/20 flex flex-col items-center justify-between p-3 relative shadow-inner">
+                    <div className="flex justify-between w-full text-[9px] font-black text-amber-300">
+                      <span>🇰🇭 ព្រះរាជាណាចក្រកម្ពុជា</span>
+                      <span className="text-cyan-300">SECURITY FRAME</span>
+                    </div>
+                    
+                    <div className="w-10 h-10 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 rounded-xl flex items-center justify-center shadow-inner">
+                      <Lock className="w-5 h-5" />
+                    </div>
+
+                    <div className="text-[9px] font-mono text-cyan-300/80 bg-slate-950/90 px-2 py-0.5 rounded w-full text-center border border-cyan-500/30">
+                      IDKHM1708411864&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 text-center">
+                    <p className="text-xs font-black text-slate-200">
+                      {language === 'kh' ? 'ថតរូបអត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ (Cambodian ID)' : 'Snap Cambodian National ID Card'}
+                    </p>
+                    <p className="text-[10px] text-amber-400 font-bold">
+                      ⚠️ {language === 'kh' ? 'មិនអនុញ្ញាតអោយ Upload ទេ ត្រូវថតចេញពីកាមេរ៉ាដោយផ្ទាល់' : 'File upload disabled. Must snap photo with camera.'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2.5 w-full max-w-xs pt-1">
+                    {/* Live Stream Camera Button */}
                     <button
                       type="button"
-                      onClick={startCamera}
-                      className="px-4 py-2 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 text-blue-400 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-2"
+                      onClick={() => startCamera('id')}
+                      className="flex-1 py-2.5 px-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-98"
                     >
                       <Camera className="w-4 h-4" />
-                      {language === 'kh' ? 'បើកកាមេរ៉ាថត' : 'Open Camera'}
+                      <span>{language === 'kh' ? '📷 បើកកាមេរ៉ាថតផ្ទាល់' : 'Open Live Camera'}</span>
                     </button>
 
-                    {/* Standard File Picker */}
-                    <label className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-2 border border-slate-700">
-                      <Upload className="w-4 h-4" />
-                      {language === 'kh' ? 'ជ្រើសរើសរូបភាព' : 'Choose File'}
+                    {/* Direct Camera Capture Trigger */}
+                    <label className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 border border-slate-700 shadow-md active:scale-98">
+                      <Camera className="w-4 h-4 text-cyan-400" />
+                      <span>{language === 'kh' ? '📸 កាមេរ៉ាទូរស័ព្ទ' : 'Device Camera'}</span>
                       <input
                         type="file"
                         accept="image/*"
+                        capture="environment"
+                        onChange={(e) => handleImageUpload(e, 'id')}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Selfie Capture Card - STRICTLY CAMERA ONLY */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <User className="w-4 h-4 text-emerald-400" />
+                {language === 'kh' ? 'ថតរូបមុខខ្លួនឯងផ្ទាល់ (Selfie Photo)' : 'Selfie Face Photo'} <span className="text-rose-500">*</span>
+              </label>
+              <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                📸 កាមេរ៉ាថតផ្ទាល់ (NO GALLERY)
+              </span>
+            </div>
+            
+            <div className="relative border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950 p-4 flex flex-col items-center justify-center text-center">
+              
+              {selfiePhoto ? (
+                <div className="relative w-36 h-36 rounded-full border-4 border-emerald-500/40 overflow-hidden group shadow-lg">
+                  <img src={selfiePhoto} alt="Selfie" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setSelfiePhoto('')}
+                    className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs font-bold text-rose-400 cursor-pointer"
+                  >
+                    {language === 'kh' ? '🗑️ ថតសារថ្មី' : '🗑️ Retake Selfie'}
+                  </button>
+                </div>
+              ) : activeCameraType === 'selfie' ? (
+                <div className="space-y-4 w-full flex flex-col items-center">
+                  <div className="relative w-52 h-52 rounded-full border-4 border-emerald-500/50 overflow-hidden bg-black flex items-center justify-center shadow-2xl">
+                    <video
+                      ref={videoRef}
+                      className="w-full h-full object-cover scale-x-[-1]"
+                      playsInline
+                      muted
+                    />
+                    <div className="absolute inset-2 border-2 border-dashed border-emerald-400/60 rounded-full pointer-events-none animate-pulse" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => captureLivePhoto('selfie')}
+                      className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center gap-2 shadow-lg active:scale-98"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>📸 {language === 'kh' ? 'ថតរូបមុខ' : 'Snap Selfie'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      {language === 'kh' ? 'បោះបង់' : 'Cancel'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full py-3 flex flex-col items-center justify-center gap-3">
+                  <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center shadow-inner">
+                    <User className="w-8 h-8" />
+                  </div>
+
+                  <div className="space-y-0.5 text-center">
+                    <p className="text-xs font-bold text-slate-200">
+                      {language === 'kh' ? 'សូមថតរូបថតផ្ទៃមុខអោយបានច្បាស់ល្អ' : 'Take a clear selfie face photo'}
+                    </p>
+                    <p className="text-[10px] text-emerald-400 font-bold">
+                      ⚠️ {language === 'kh' ? 'ត្រូវតែថតចេញពីកាមេរ៉ាដោយផ្ទាល់ មិនអនុញ្ញាតអោយជ្រើសរើសរូបពី Gallery ទេ' : 'Camera capture required. No gallery selection allowed.'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2.5 w-full max-w-xs pt-1">
+                    {/* Live Camera Button */}
+                    <button
+                      type="button"
+                      onClick={() => startCamera('selfie')}
+                      className="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-98"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>{language === 'kh' ? '📷 បើកកាមេរ៉ាថត' : 'Open Camera'}</span>
+                    </button>
+
+                    {/* Direct Native Camera Button */}
+                    <label className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 border border-slate-700 shadow-md active:scale-98">
+                      <Camera className="w-4 h-4 text-emerald-400" />
+                      <span>{language === 'kh' ? '📸 កាមេរ៉ាទូរស័ព្ទ' : 'Snap Selfie'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="user"
                         onChange={(e) => handleImageUpload(e, 'selfie')}
                         className="hidden"
                       />
                     </label>
                   </div>
-                  <p className="text-[11px] text-slate-400 font-semibold">
-                    {language === 'kh' ? 'សូមថត ឬជ្រើសរើសរូបថតផ្ទៃមុខអោយបានច្បាស់ល្អ' : 'Take a clear camera selfie or select face photo'}
-                  </p>
                 </div>
               )}
             </div>
