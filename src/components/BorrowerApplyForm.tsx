@@ -110,21 +110,16 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
     setIsOcrScanning(true);
     try {
       const res = await scanIdCardImage(imgDataUrl);
-      setIdCardNumber(res.idCardNumber || '171107890');
-      setName(res.name || 'សឿន រ៉ាវីន');
-      setDob(res.dob || '04.06.1988');
-      setAddress(res.address || 'ផ្ទះ158 ផ្លូវ/ក្រុម03 ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង');
-      const expDate = res.idExpiryDate || '19.05.2026';
-      setIdExpiryDate(expDate);
-      setIdExpiryStatus(checkExpiryStatus(expDate));
+      if (res.idCardNumber) setIdCardNumber(res.idCardNumber);
+      if (res.name) setName(res.name);
+      if (res.dob) setDob(res.dob);
+      if (res.address) setAddress(res.address);
+      if (res.idExpiryDate) {
+        setIdExpiryDate(res.idExpiryDate);
+        setIdExpiryStatus(checkExpiryStatus(res.idExpiryDate));
+      }
     } catch (err) {
       console.error("OCR Scanning Error:", err);
-      setIdCardNumber('171107890');
-      setName('សឿន រ៉ាវីន');
-      setDob('04.06.1988');
-      setAddress('ផ្ទះ158 ផ្លូវ/ក្រុម03 ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង');
-      setIdExpiryDate('19.05.2026');
-      setIdExpiryStatus('valid');
     } finally {
       setIsOcrScanning(false);
     }

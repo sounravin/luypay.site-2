@@ -189,34 +189,47 @@ export async function scanIdCardImage(imageDataUrl: string): Promise<ExtractedId
     }
   }
 
-  // 4. Extract Address heuristic
+  // 4. Extract Address directly from OCR text lines
   let address = '';
+  const addressLines: string[] = [];
+  let isCapturingAddress = false;
+
   for (const line of lines) {
-    if (/ADDRESS|Address|ភូមិ|សង្កាត់|ឃុំ|ស្រុក|ខណ្ឌ|ក្រុង|ខេត្ត/i.test(line)) {
-      const clean = line.replace(/ADDRESS|Address|:/gi, '').trim();
-      if (clean.length > 3) {
-        address = clean;
-        break;
+    if (/អាសយដ្ឋាន|Address|ADDRESS/i.test(line)) {
+      isCapturingAddress = true;
+      const clean = line.replace(/អាសយដ្ឋាន|Address|ADDRESS|:/gi, '').trim();
+      if (clean.length > 0) {
+        addressLines.push(clean);
+      }
+      continue;
+    }
+
+    if (isCapturingAddress) {
+      if (/IDKHM|ផុតកំណត់|ដល់ថ្ងៃ|ថ្ងៃខែឆ្នាំ|អត្តសញ្ញាណប័ណ្ណ/i.test(line) || /^\d{9,}/.test(line)) {
+        isCapturingAddress = false;
+      } else {
+        addressLines.push(line);
+      }
+    } else if (/ភូមិ|សង្កាត់|ឃុំ|ស្រុក|ខណ្ឌ|ក្រុង|ខេត្ត|ផ្ទះ|ផ្លូវ/i.test(line)) {
+      if (!addressLines.includes(line)) {
+        addressLines.push(line);
       }
     }
   }
 
-  // Fallback defaults for Cambodian ID card if OCR extraction returned empty values
-  const finalIdCardNumber = idCardNumber || '171107890';
-  const finalName = name || 'សឿន រ៉ាវីន';
-  const finalDob = dob || '04.06.1988';
-  const finalAddress = address || 'ផ្ទះ158 ផ្លូវ/ក្រុម03 ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង';
-  const finalIdExpiryDate = idExpiryDate || '19.05.2026';
+  if (addressLines.length > 0) {
+    address = addressLines.join(' ');
+  }
 
   // Expiry Status Calculation
-  const idExpiryStatus = checkExpiryStatus(finalIdExpiryDate);
+  const idExpiryStatus = checkExpiryStatus(idExpiryDate);
 
   return {
-    idCardNumber: finalIdCardNumber,
-    name: finalName,
-    dob: finalDob,
-    address: finalAddress,
-    idExpiryDate: finalIdExpiryDate,
+    idCardNumber: idCardNumber,
+    name: name,
+    dob: dob,
+    address: address,
+    idExpiryDate: idExpiryDate,
     idExpiryStatus: idExpiryStatus,
     rawText: rawText
   };
