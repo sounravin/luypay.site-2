@@ -181,6 +181,69 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
     }
   };
 
+  // Mandatory GPS Location Gate: If location is not allowed/captured, block access to the form
+  if (gpsStatus !== 'captured' || !latitude || !longitude) {
+    return (
+      <div className="max-w-md mx-auto my-6 bg-slate-900 border border-slate-800 text-slate-100 rounded-3xl p-6 shadow-2xl text-center space-y-6 relative overflow-hidden font-sans">
+        <div className="h-2 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 -mt-6 -mx-6 mb-4" />
+        
+        <div className="w-20 h-20 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-3xl flex items-center justify-center text-3xl mx-auto shadow-inner animate-pulse">
+          <MapPin className="w-10 h-10" />
+        </div>
+
+        <div className="space-y-2">
+          <h2 className="text-xl font-black text-amber-300 tracking-tight">
+            {language === 'kh' ? '📍 តម្រូវអោយបើកទីតាំង GPS (Location Service)' : '📍 GPS Location Required'}
+          </h2>
+          <p className="text-xs text-slate-300 leading-relaxed font-medium px-2">
+            {language === 'kh'
+              ? 'ដើម្បីអាចបើកចូលទៅកាន់ផ្ទាំង ស្នើសុំកម្ចីរហ័ស (លុយឆក់) បាន លោកអ្នកត្រូវចុចអនុញ្ញាត (Allow Location) ទីតាំង GPS របស់ឧបករណ៍លោកអ្នកជាមុនសិន។ ទិន្នន័យទីតាំងនឹងត្រូវបញ្ជូនទៅកាន់ម្ចាស់បំណុលដោយស្វ័យប្រវត្តិ។'
+              : 'To access the Fast Loan Application, you must allow GPS location access on your device. Your coordinates will be securely sent to the lender.'}
+          </p>
+        </div>
+
+        {gpsErrorMessage && (
+          <div className="p-3 bg-rose-500/15 border border-rose-500/30 rounded-2xl text-xs text-rose-300 font-bold text-left flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+            <p>{gpsErrorMessage}</p>
+          </div>
+        )}
+
+        <div className="space-y-3 pt-2">
+          <button
+            type="button"
+            onClick={requestGpsLocation}
+            disabled={gpsStatus === 'requesting'}
+            className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black rounded-2xl text-sm transition shadow-lg shadow-orange-900/30 active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+          >
+            {gpsStatus === 'requesting' ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                <span>{language === 'kh' ? 'កំពុងទាញយកទីតាំង GPS...' : 'Fetching Location...'}</span>
+              </>
+            ) : (
+              <>
+                <Navigation className="w-4 h-4" />
+                <span>{language === 'kh' ? '📍 ចុចទីនេះដើម្បីបើកទីតាំង GPS (Allow Location)' : '📍 Allow Location Access'}</span>
+              </>
+            )}
+          </button>
+
+          {onBackToPortal && (
+            <button
+              type="button"
+              onClick={onBackToPortal}
+              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold rounded-2xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>{language === 'kh' ? 'ត្រឡប់ទៅវិញ' : 'Go Back'}</span>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // Helper to process high quality image uploads with optimal HD resolution for ID card clarity
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'id' | 'selfie') => {
     const file = e.target.files?.[0];
@@ -533,21 +596,38 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
             </select>
           </div>
 
-          {/* ID Card Upload Card */}
+          {/* ID Card Upload Card with Square/Rectangle Security Frame */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider">
-                {language === 'kh' ? 'រូបអត្តសញ្ញាណប័ណ្ណ (ID CARD PHOTO)' : 'National ID Card Photo'} <span className="text-rose-500">*</span>
+              <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Lock className="w-4 h-4 text-blue-400" />
+                {language === 'kh' ? 'រូបអត្តសញ្ញាណប័ណ្ណ (SECURITY ID CARD)' : 'National ID Card Photo'} <span className="text-rose-500">*</span>
               </label>
-              <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                {language === 'kh' ? 'គុណភាពច្បាស់ HD' : 'HD Clarity'}
+              <span className="text-[10px] font-black text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20 flex items-center gap-1">
+                🔒 Security Frame (ទម្រង់ជាការេ)
               </span>
             </div>
+
             <div className="relative border-2 border-dashed border-slate-800 hover:border-blue-500/40 rounded-2xl bg-slate-950 p-3 transition text-center flex flex-col items-center justify-center space-y-2">
               {idCardPhoto ? (
-                <div className="relative w-full h-48 sm:h-56 bg-slate-900 rounded-xl overflow-hidden group border border-slate-800 flex items-center justify-center">
-                  <img src={idCardPhoto} alt="National ID Card" className="w-full h-full object-contain p-1" />
+                <div className="relative w-full h-52 sm:h-60 bg-slate-900 rounded-xl overflow-hidden group border border-slate-800 flex items-center justify-center">
+                  <img src={idCardPhoto} alt="National ID Card" className="w-full h-full object-contain p-2" />
                   
+                  {/* Square Security Framing Overlay */}
+                  <div className="absolute inset-2 border-2 border-dashed border-cyan-400/60 rounded-xl pointer-events-none flex flex-col justify-between p-2 shadow-[inset_0_0_15px_rgba(6,182,212,0.2)]">
+                    <div className="flex justify-between items-center">
+                      <span className="bg-cyan-950/80 backdrop-blur-md text-cyan-300 text-[9px] font-black px-2 py-0.5 rounded border border-cyan-500/40">
+                        🔒 Security Frame
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/40 flex items-center gap-1">
+                        ✓ {language === 'kh' ? 'ត្រូវតាមទម្រង់' : 'Frame Matched'}
+                      </span>
+                    </div>
+                    <div className="text-[9px] font-bold text-cyan-300/80 bg-slate-950/80 backdrop-blur-md px-2 py-0.5 rounded self-center">
+                      {language === 'kh' ? 'អត្តសញ្ញាណប័ណ្ណត្រឹមត្រូវតាមទម្រង់ការេ' : 'ID Card Aligned inside Frame'}
+                    </div>
+                  </div>
+
                   {/* Laser Scanner animation during scanning */}
                   {isOcrScanning && (
                     <div className="absolute inset-0 pointer-events-none rounded-xl overflow-hidden bg-cyan-950/30 border-2 border-cyan-400/60 shadow-[0_0_25px_rgba(6,182,212,0.4)] z-10">
@@ -560,7 +640,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                       <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/15 via-transparent to-cyan-500/15 animate-pulse" />
                       <div className="absolute top-2 left-2 bg-slate-950/90 backdrop-blur-md border border-cyan-400/50 text-cyan-300 text-[10px] font-black px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-xl">
                         <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
-                        <span>កំពុងស្កេនរូបថតអត្តសញ្ញាណប័ណ្ណ (Scanning Progress)...</span>
+                        <span>កំពុងស្កេនរូបថតអត្តសញ្ញាណប័ណ្ណ...</span>
                       </div>
                     </div>
                   )}
@@ -568,7 +648,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                   <div className="absolute inset-0 bg-slate-950/75 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2 p-2 z-20">
                     <button
                       type="button"
-                      onClick={() => setPreviewModalImage({ title: language === 'kh' ? 'រូបថតអត្តសញ្ញាណប័ណ្ណ (HD)' : 'ID Card Photo (HD)', src: idCardPhoto })}
+                      onClick={() => setPreviewModalImage({ title: language === 'kh' ? 'រូបថតអត្តសញ្ញាណប័ណ្ណ (HD Security Frame)' : 'ID Card Photo (HD)', src: idCardPhoto })}
                       className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95"
                     >
                       <Eye className="w-4 h-4" />
@@ -579,20 +659,27 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                       onClick={() => setIdCardPhoto('')}
                       className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95"
                     >
-                      {language === 'kh' ? 'លុបដើម្បីបង្ហោះថ្មី' : 'Remove & Redo'}
+                      {language === 'kh' ? 'ថតសារថ្មី' : 'Retake / Redo'}
                     </button>
                   </div>
                 </div>
               ) : (
-                <label className="w-full py-6 cursor-pointer flex flex-col items-center justify-center gap-2">
-                  <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center shadow-inner">
-                    <Upload className="w-6 h-6" />
+                <label className="w-full py-6 cursor-pointer flex flex-col items-center justify-center gap-3 relative">
+                  {/* Square Security Guide Box UI */}
+                  <div className="w-48 h-32 border-2 border-dashed border-cyan-400/50 rounded-xl bg-cyan-950/20 flex flex-col items-center justify-center gap-1.5 p-3 relative group-hover:border-cyan-400 transition">
+                    <div className="w-10 h-10 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-xl flex items-center justify-center shadow-inner">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-black text-cyan-300 bg-slate-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
+                      🔒 ថតអោយត្រូវក្នុងប្រអប់ការេ (Security Frame)
+                    </span>
                   </div>
-                  <div className="space-y-0.5">
+
+                  <div className="space-y-0.5 text-center">
                     <p className="text-xs font-bold text-slate-200">
-                      {language === 'kh' ? 'បង្ហោះ ឬថតរូបអត្តសញ្ញាណប័ណ្ណ' : 'Upload or snap ID card'}
+                      {language === 'kh' ? 'ចុចទីនេះដើម្បីថត ឬបង្ហោះរូបអត្តសញ្ញាណប័ណ្ណ' : 'Click to Upload or Snap Security ID Card'}
                     </p>
-                    <p className="text-[10px] text-slate-400 font-medium">PNG, JPG (រក្សាទុករូបភាពច្បាស់ HD រហូតដល់ 10MB)</p>
+                    <p className="text-[10px] text-slate-400 font-medium">ត្រូវតែជាអត្តសញ្ញាណប័ណ្ណច្បាស់ HD ស្ថិតក្នុងប្រអប់ការេ</p>
                   </div>
                   <input
                     type="file"
@@ -604,119 +691,6 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
               )}
             </div>
           </div>
-
-          {/* OCR Extracted ID Card Details Section */}
-          {(idCardPhoto || isOcrScanning) && (
-            <div className="p-4 bg-slate-950 border border-blue-500/30 rounded-2xl space-y-3.5 shadow-lg">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
-                  <h3 className="text-xs font-black text-white uppercase tracking-wider">
-                    {language === 'kh' ? 'ព័ត៌មានអត្តសញ្ញាណប័ណ្ណ (REENDEM ID DATA)' : 'Extracted ID Card Credentials'}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {isOcrScanning ? (
-                    <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 animate-pulse">
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                      កំពុង Read / Scan...
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3 text-emerald-400" />
-                      ✓ Scan ស្វ័យប្រវត្តិ
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* ID Number */}
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
-                  <CreditCard className="w-3.5 h-3.5 text-blue-400" />
-                  {language === 'kh' ? 'លេខអត្តសញ្ញាណប័ណ្ណ' : 'ID Card Number'}
-                </label>
-                <input
-                  type="text"
-                  value={idCardNumber}
-                  onChange={(e) => setIdCardNumber(e.target.value)}
-                  placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ 171135765' : 'e.g. 171135765'}
-                  className="w-full px-3.5 py-2.5 text-sm bg-slate-900 border border-slate-800 rounded-xl text-blue-400 font-bold focus:outline-none focus:border-blue-500/80 focus:ring-1 focus:ring-blue-500/30 transition"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Date of Birth */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                    {language === 'kh' ? 'ថ្ងៃខែឆ្នាំកំណើត' : 'Date of Birth'}
-                  </label>
-                  <input
-                    type="text"
-                    value={dob}
-                    onChange={(e) => setDob(e.target.value)}
-                    placeholder="e.g. 22.06.2001"
-                    className="w-full px-3.5 py-2.5 text-sm bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-semibold focus:outline-none focus:border-blue-500/80 focus:ring-1 focus:ring-blue-500/30 transition"
-                  />
-                </div>
-
-                {/* Expiry Date */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                    {language === 'kh' ? 'សុពលភាព ID (ថ្ងៃផុតកំណត់)' : 'ID Expiry Date'}
-                  </label>
-                  <input
-                    type="text"
-                    value={idExpiryDate}
-                    onChange={(e) => {
-                      setIdExpiryDate(e.target.value);
-                      setIdExpiryStatus(checkExpiryStatus(e.target.value));
-                    }}
-                    placeholder="e.g. 2028.12.31"
-                    className="w-full px-3.5 py-2.5 text-sm bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-semibold focus:outline-none focus:border-blue-500/80 focus:ring-1 focus:ring-blue-500/30 transition"
-                  />
-                </div>
-              </div>
-
-              {/* ID Expiry Status Indicator Badge */}
-              <div className="p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs font-bold bg-slate-900 border-slate-800">
-                <span className="text-slate-400">ស្ថានភាពសុពលភាព ID៖</span>
-                {checkExpiryStatus(idExpiryDate) === 'expired' ? (
-                  <div className="px-2.5 py-1 bg-rose-500/15 border border-rose-500/30 text-rose-400 rounded-lg flex items-center gap-1.5 font-black">
-                    <AlertTriangle className="w-4 h-4 text-rose-500 animate-bounce" />
-                    <span>🔴 ID ផុតកំណត់ (Expired)</span>
-                  </div>
-                ) : checkExpiryStatus(idExpiryDate) === 'expiring_soon' ? (
-                  <div className="px-2.5 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-300 rounded-lg flex items-center gap-1.5 font-black">
-                    <AlertCircle className="w-4 h-4 text-amber-400" />
-                    <span>🟡 ID ជិតផុតកំណត់ ត្រឹម ១ខែ (Expiring Soon)</span>
-                  </div>
-                ) : (
-                  <div className="px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded-lg flex items-center gap-1.5 font-black">
-                    <CheckCircle className="w-4 h-4 text-emerald-400" />
-                    <span>🟢 ID មានសុពលភាព (Valid)</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Address */}
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-blue-400" />
-                  {language === 'kh' ? 'អាសយដ្ឋាន' : 'Address'}
-                </label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង' : 'e.g. Battambang'}
-                  className="w-full px-3.5 py-2.5 text-sm bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-semibold focus:outline-none focus:border-blue-500/80 focus:ring-1 focus:ring-blue-500/30 transition"
-                />
-              </div>
-            </div>
-          )}
 
           {/* Selfie Capture Card */}
           <div className="space-y-2">
