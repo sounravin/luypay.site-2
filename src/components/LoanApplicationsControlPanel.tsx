@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { LoanApplication } from '../types';
+import { LoanApplication, DEFAULT_LENDER_INFO } from '../types';
 import { useLanguage } from '../i18n';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, Check, X, FileText, Phone, DollarSign, Calendar, Copy, 
   ExternalLink, Eye, AlertCircle, CheckCircle, ChevronDown, 
-  Trash2, Search, Sparkles, UserCheck, ShieldAlert, RefreshCw 
+  Trash2, Search, Sparkles, UserCheck, ShieldAlert, RefreshCw, AlertTriangle, CreditCard, MapPin 
 } from 'lucide-react';
+import { checkExpiryStatus } from '../utils/ocrHelper';
+import DigitalLoanContractModal from './DigitalLoanContractModal';
 
 interface LoanApplicationsControlPanelProps {
   currentUser: string;
@@ -31,6 +33,7 @@ export default function LoanApplicationsControlPanel({
   const [selectedPhoto, setSelectedPhoto] = useState<{ title: string; src: string } | null>(null);
   const [rejectingApp, setRejectingApp] = useState<LoanApplication | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [contractApp, setContractApp] = useState<LoanApplication | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -528,6 +531,60 @@ export default function LoanApplicationsControlPanel({
                     </div>
                   </div>
 
+                  {/* Extracted ID Card Credentials & Expiry Status */}
+                  <div className="p-3 bg-slate-950 border border-slate-800 rounded-2xl space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between border-b border-slate-850 pb-2">
+                      <span className="font-extrabold text-blue-400 flex items-center gap-1.5 uppercase text-[11px] tracking-wider">
+                        <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                        {language === 'kh' ? 'ទិន្នន័យអត្តសញ្ញាណប័ណ្ណ (Reendem Data)' : 'ID Credentials'}
+                      </span>
+                      {checkExpiryStatus(app.idExpiryDate) === 'expired' ? (
+                        <span className="px-2 py-0.5 bg-rose-500/15 border border-rose-500/30 text-rose-400 font-black rounded-md text-[10px] flex items-center gap-1 animate-pulse">
+                          <AlertTriangle className="w-3 h-3 text-rose-500" />
+                          🔴 ផុតកំណត់ (Expired)
+                        </span>
+                      ) : checkExpiryStatus(app.idExpiryDate) === 'expiring_soon' ? (
+                        <span className="px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 font-black rounded-md text-[10px] flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3 text-amber-400" />
+                          🟡 ជិតផុតកំណត់ ត្រឹម ១ខែ
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-black rounded-md text-[10px] flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3 text-emerald-400" />
+                          🟢 មានសុពលភាព (Valid)
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <div>
+                        <span className="text-slate-500 block text-[9px] uppercase font-bold">លេខ ID Card:</span>
+                        <span className="font-extrabold text-blue-300">{app.idCardNumber || 'មិនទាន់មាន'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[9px] uppercase font-bold">ថ្ងៃកំណើត:</span>
+                        <span className="font-bold text-slate-300">{app.dob || 'មិនទាន់មាន'}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-slate-500 block text-[9px] uppercase font-bold">អាសយដ្ឋាន:</span>
+                        <span className="font-semibold text-slate-300">{app.address || 'មិនទាន់មាន'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[9px] uppercase font-bold">ថ្ងៃផុតកំណត់ ID:</span>
+                        <span className="font-bold text-slate-300">{app.idExpiryDate || 'មិនទាន់មាន'}</span>
+                      </div>
+                    </div>
+
+                    {/* Action Button to Generate / Open Digital Contract */}
+                    <button
+                      onClick={() => setContractApp(app)}
+                      className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-blue-400 border border-blue-500/30 hover:border-blue-500/60 font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-blue-400" />
+                      <span>📄 {language === 'kh' ? 'បង្កើត/បោះពុម្ព លិខិតកម្ចី Digital' : 'Digital Loan Contract'}</span>
+                    </button>
+                  </div>
+
                   {/* Rejected Reason info bar if rejected */}
                   {app.status === 'rejected' && app.rejectedReason && (
                     <div className="p-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-start gap-1.5 text-[11px] text-rose-400 font-bold leading-relaxed">
@@ -650,6 +707,16 @@ export default function LoanApplicationsControlPanel({
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Digital Loan Contract Modal */}
+      <AnimatePresence>
+        {contractApp && (
+          <DigitalLoanContractModal
+            application={contractApp}
+            onClose={() => setContractApp(null)}
+          />
         )}
       </AnimatePresence>
 

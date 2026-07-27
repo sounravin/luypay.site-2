@@ -65,6 +65,12 @@ export interface Borrower {
   shareholderSharePercent?: number; // Partner's profit split share % (defaults to 50%)
   shareholderCalculationType?: 'daily_usd' | 'percent'; // Calculation mode ('daily_usd' or 'percent')
   shareholderDailyUSD?: number; // Daily fixed profit in USD per installment/day (e.g. $1.00/day)
+  idCardNumber?: string;
+  dob?: string;
+  address?: string;
+  idExpiryDate?: string;
+  idExpiryStatus?: 'valid' | 'expiring_soon' | 'expired';
+  lenderInfo?: LenderInfo;
 }
 
 export interface Shareholder {
@@ -147,6 +153,24 @@ export interface LayoutConfig {
   cardLayer: 'default' | 'compact' | 'detailed';
 }
 
+export interface LenderInfo {
+  idCardNumber: string;
+  name: string;
+  dob: string;
+  gender: string;
+  height: string;
+  address: string;
+}
+
+export const DEFAULT_LENDER_INFO: LenderInfo = {
+  idCardNumber: '171135765',
+  name: 'ពេជ្រ រចនា',
+  dob: '22.06.2001',
+  gender: 'ស្រី',
+  height: '158 ស.ម',
+  address: 'ផ្ទះ11 ផ្លូវ/ក្រុម01 ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង'
+};
+
 export interface LoanApplication {
   id: string;
   name: string;
@@ -162,5 +186,13 @@ export interface LoanApplication {
   loanDuration?: number; // Duration of loan in days
   paymentType?: string;
   interestMethod?: string;
+  // Extracted ID Card Data (Reendem / OCR)
+  idCardNumber?: string;
+  extractedName?: string;
+  dob?: string;
+  address?: string;
+  idExpiryDate?: string;
+  idExpiryStatus?: 'valid' | 'expiring_soon' | 'expired';
+  lenderInfo?: LenderInfo;
 }
 

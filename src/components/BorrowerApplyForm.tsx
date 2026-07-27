@@ -3,7 +3,10 @@ import { db } from '../lib/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import { useLanguage } from '../i18n';
 import { motion, AnimatePresence } from 'motion/react';
-import { Upload, Camera, CheckCircle, AlertCircle, Phone, User, DollarSign, RefreshCw, ChevronLeft, Eye, X, ZoomIn } from 'lucide-react';
+import { Upload, Camera, CheckCircle, AlertCircle, Phone, User, DollarSign, RefreshCw, ChevronLeft, Eye, X, ZoomIn, FileText, ShieldAlert, Sparkles, AlertTriangle, MapPin, Calendar, CreditCard } from 'lucide-react';
+import { scanIdCardImage, checkExpiryStatus } from '../utils/ocrHelper';
+import { DEFAULT_LENDER_INFO, LoanApplication } from '../types';
+import DigitalLoanContractModal from './DigitalLoanContractModal';
 
 interface BorrowerApplyFormProps {
   lenderId: string;
@@ -20,6 +23,15 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
   const [paymentType, setPaymentType] = useState('daily');
   const [interestMethod, setInterestMethod] = useState('flat');
   const [lastCreatedAppId, setLastCreatedAppId] = useState('');
+
+  // OCR Extracted ID Card State
+  const [idCardNumber, setIdCardNumber] = useState('');
+  const [dob, setDob] = useState('');
+  const [address, setAddress] = useState('');
+  const [idExpiryDate, setIdExpiryDate] = useState('');
+  const [idExpiryStatus, setIdExpiryStatus] = useState<'valid' | 'expiring_soon' | 'expired'>('valid');
+  const [isOcrScanning, setIsOcrScanning] = useState(false);
+  const [showDigitalContractModal, setShowDigitalContractModal] = useState(false);
   
   const [idCardPhoto, setIdCardPhoto] = useState<string>('');
   const [selfiePhoto, setSelfiePhoto] = useState<string>('');
@@ -93,6 +105,25 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
     }
   };
 
+  const processIdCardOcr = async (imgDataUrl: string) => {
+    setIsOcrScanning(true);
+    try {
+      const res = await scanIdCardImage(imgDataUrl);
+      if (res.idCardNumber) setIdCardNumber(res.idCardNumber);
+      if (res.name && !name) setName(res.name);
+      if (res.dob) setDob(res.dob);
+      if (res.address) setAddress(res.address);
+      if (res.idExpiryDate) {
+        setIdExpiryDate(res.idExpiryDate);
+        setIdExpiryStatus(checkExpiryStatus(res.idExpiryDate));
+      }
+    } catch (err) {
+      console.error("OCR Scanning Error:", err);
+    } finally {
+      setIsOcrScanning(false);
+    }
+  };
+
   // Helper to process high quality image uploads with optimal HD resolution for ID card clarity
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'id' | 'selfie') => {
     const file = e.target.files?.[0];
@@ -136,6 +167,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
         
         if (type === 'id') {
           setIdCardPhoto(dataUrl);
+          processIdCardOcr(dataUrl);
         } else {
           setSelfiePhoto(dataUrl);
         }
@@ -166,6 +198,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
     setErrorMessage('');
 
     try {
+      const calculatedExpiryStatus = checkExpiryStatus(idExpiryDate);
       const applicationId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const applicationData = {
         id: applicationId,
@@ -179,7 +212,14 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
         interestMethod,
         lenderId,
         status: 'pending',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        idCardNumber: idCardNumber.trim(),
+        extractedName: name.trim(),
+        dob: dob.trim(),
+        address: address.trim(),
+        idExpiryDate: idExpiryDate.trim(),
+        idExpiryStatus: calculatedExpiryStatus,
+        lenderInfo: DEFAULT_LENDER_INFO
       };
 
       await setDoc(doc(db, 'loan_applications', applicationId), applicationData);
@@ -486,6 +526,126 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
             </div>
           </div>
 
+          {/* OCR Extracted ID Card Details Section */}
+          {(idCardPhoto || isOcrScanning) && (
+            <div className="p-4 bg-slate-950 border border-blue-500/30 rounded-2xl space-y-3.5 shadow-lg">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider">
+                    {language === 'kh' ? 'ព័ត៌មានអត្តសញ្ញាណប័ណ្ណ (Reendem ID Data)' : 'Extracted ID Card Credentials'}
+                  </h3>
+                </div>
+                {isOcrScanning ? (
+                  <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 animate-pulse">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    កំពុង Read / Scan...
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
+                    ✓ Scan ស្វ័យប្រវត្តិ
+                  </span>
+                )}
+              </div>
+
+              {/* ID Number */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
+                  <CreditCard className="w-3.5 h-3.5 text-blue-400" />
+                  {language === 'kh' ? 'លេខអត្តសញ្ញាណប័ណ្ណ' : 'ID Card Number'}
+                </label>
+                <input
+                  type="text"
+                  value={idCardNumber}
+                  onChange={(e) => setIdCardNumber(e.target.value)}
+                  placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ 171135765' : 'e.g. 171135765'}
+                  className="w-full px-3 py-2 text-sm bg-slate-900 border border-slate-800 rounded-xl text-blue-400 font-bold focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Date of Birth */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                    {language === 'kh' ? 'ថ្ងៃខែឆ្នាំកំណើត' : 'Date of Birth'}
+                  </label>
+                  <input
+                    type="text"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    placeholder="e.g. 22.06.2001"
+                    className="w-full px-3 py-2 text-sm bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-semibold focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Expiry Date */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                    {language === 'kh' ? 'សុពលភាព ID (ថ្ងៃផុតកំណត់)' : 'ID Expiry Date'}
+                  </label>
+                  <input
+                    type="text"
+                    value={idExpiryDate}
+                    onChange={(e) => {
+                      setIdExpiryDate(e.target.value);
+                      setIdExpiryStatus(checkExpiryStatus(e.target.value));
+                    }}
+                    placeholder="e.g. 2028.12.31"
+                    className="w-full px-3 py-2 text-sm bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-semibold focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* ID Expiry Status Indicator Badge */}
+              <div className="p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs font-bold bg-slate-900 border-slate-800">
+                <span className="text-slate-400">ស្ថានភាពសុពលភាព ID៖</span>
+                {checkExpiryStatus(idExpiryDate) === 'expired' ? (
+                  <div className="px-2.5 py-1 bg-rose-500/15 border border-rose-500/30 text-rose-400 rounded-lg flex items-center gap-1.5 font-black">
+                    <AlertTriangle className="w-4 h-4 text-rose-500 animate-bounce" />
+                    <span>🔴 ID ផុតកំណត់ (Expired)</span>
+                  </div>
+                ) : checkExpiryStatus(idExpiryDate) === 'expiring_soon' ? (
+                  <div className="px-2.5 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-300 rounded-lg flex items-center gap-1.5 font-black">
+                    <AlertCircle className="w-4 h-4 text-amber-400" />
+                    <span>🟡 ID ជិតផុតកំណត់ ត្រឹម ១ខែ (Expiring Soon)</span>
+                  </div>
+                ) : (
+                  <div className="px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded-lg flex items-center gap-1.5 font-black">
+                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                    <span>🟢 ID មានសុពលភាព (Valid)</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Address */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-blue-400" />
+                  {language === 'kh' ? 'អាសយដ្ឋាន' : 'Address'}
+                </label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង' : 'e.g. Battambang'}
+                  className="w-full px-3 py-2 text-sm bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-semibold focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Button to Preview Digital Contract */}
+              <button
+                type="button"
+                onClick={() => setShowDigitalContractModal(true)}
+                className="w-full py-2.5 bg-slate-900 hover:bg-slate-850 text-blue-400 border border-blue-500/30 hover:border-blue-500/60 font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-2"
+              >
+                <FileText className="w-4 h-4 text-blue-400" />
+                <span>មើលគំរូលិខិតកម្ចី Digital (Digital Contract Preview)</span>
+              </button>
+            </div>
+          )}
+
           {/* Selfie Capture Card */}
           <div className="space-y-2">
             <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider">
@@ -605,6 +765,35 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
           </button>
         )}
       </div>
+
+      {/* Digital Loan Contract Modal */}
+      <AnimatePresence>
+        {showDigitalContractModal && (
+          <DigitalLoanContractModal
+            application={{
+              id: 'draft',
+              name: name || 'ចាន់ ម៉ារី',
+              phone: phone || '089778221',
+              idCardPhoto: idCardPhoto,
+              selfiePhoto: selfiePhoto,
+              amountRequested: parseFloat(amountRequested) || 100,
+              lenderId: lenderId,
+              status: 'pending',
+              createdAt: new Date().toISOString(),
+              loanDuration: parseInt(loanDuration) || 30,
+              paymentType,
+              interestMethod,
+              idCardNumber,
+              dob,
+              address,
+              idExpiryDate,
+              idExpiryStatus,
+              lenderInfo: DEFAULT_LENDER_INFO
+            }}
+            onClose={() => setShowDigitalContractModal(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* HD Image Preview Modal */}
       <AnimatePresence>
