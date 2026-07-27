@@ -145,6 +145,16 @@ export default function App() {
     notes?: string;
     applicationId?: string;
     loanDuration?: number;
+    idCardNumber?: string;
+    dob?: string;
+    address?: string;
+    idExpiryDate?: string;
+    idExpiryStatus?: 'valid' | 'expiring_soon' | 'expired';
+    latitude?: number;
+    longitude?: number;
+    locationAddress?: string;
+    locationAccuracy?: number;
+    gpsCapturedAt?: string;
   } | null>(null);
 
   const [isApplyMode, setIsApplyMode] = useState<boolean>(() => {
@@ -4349,7 +4359,16 @@ export default function App() {
                             profilePhoto: app.selfiePhoto,
                             notes: `សំណើខ្ចីលុយឆក់អេឡិចត្រូនិច ID: ${app.id}`,
                             applicationId: app.id,
-                            loanDuration: app.loanDuration
+                            loanDuration: app.loanDuration,
+                            idCardNumber: app.idCardNumber,
+                            dob: app.dob,
+                            address: app.address,
+                            idExpiryDate: app.idExpiryDate,
+                            idExpiryStatus: app.idExpiryStatus,
+                            latitude: app.latitude,
+                            longitude: app.longitude,
+                            locationAccuracy: app.locationAccuracy,
+                            gpsCapturedAt: app.gpsCapturedAt
                           });
                           setActiveSection('ledger');
                           setIsAddModalOpen(true);
@@ -5670,7 +5689,16 @@ export default function App() {
                     profilePhoto: app.selfiePhoto,
                     notes: `សំណើខ្ចីលុយឆក់អេឡិចត្រូនិច ID: ${app.id}`,
                     applicationId: app.id,
-                    loanDuration: app.loanDuration
+                    loanDuration: app.loanDuration,
+                    idCardNumber: app.idCardNumber,
+                    dob: app.dob,
+                    address: app.address,
+                    idExpiryDate: app.idExpiryDate,
+                    idExpiryStatus: app.idExpiryStatus,
+                    latitude: app.latitude,
+                    longitude: app.longitude,
+                    locationAccuracy: app.locationAccuracy,
+                    gpsCapturedAt: app.gpsCapturedAt
                   });
                   setActiveSection('ledger');
                   setIsAddModalOpen(true);

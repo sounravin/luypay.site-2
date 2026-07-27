@@ -3,7 +3,7 @@ import { db } from '../lib/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
 import { useLanguage } from '../i18n';
 import { motion, AnimatePresence } from 'motion/react';
-import { Upload, Camera, CheckCircle, AlertCircle, Phone, User, DollarSign, RefreshCw, ChevronLeft, Eye, X, ZoomIn, FileText, ShieldAlert, Sparkles, AlertTriangle, MapPin, Calendar, CreditCard, Lock, Unlock } from 'lucide-react';
+import { Upload, Camera, CheckCircle, AlertCircle, Phone, User, DollarSign, RefreshCw, ChevronLeft, Eye, X, ZoomIn, FileText, ShieldAlert, Sparkles, AlertTriangle, MapPin, Navigation, Calendar, CreditCard, Lock, Unlock } from 'lucide-react';
 import { scanIdCardImage, checkExpiryStatus } from '../utils/ocrHelper';
 import { DEFAULT_LENDER_INFO, LoanApplication } from '../types';
 import DigitalLoanContractModal from './DigitalLoanContractModal';
@@ -46,6 +46,62 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+
+  // GPS Location State for Borrower
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
+  const [gpsStatus, setGpsStatus] = useState<'idle' | 'requesting' | 'captured' | 'denied' | 'error'>('idle');
+  const [gpsErrorMessage, setGpsErrorMessage] = useState('');
+
+  // Request GPS Location from Browser / Mobile device
+  const requestGpsLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsStatus('error');
+      setGpsErrorMessage(language === 'kh' ? 'ឧបករណ៍ ឬកម្មវិធីរុករករបស់អ្នកមិនគាំទ្រ GPS ទេ!' : 'Device or browser does not support Geolocation.');
+      return;
+    }
+
+    setGpsStatus('requesting');
+    setGpsErrorMessage('');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLatitude(position.coords.latitude);
+        setLongitude(position.coords.longitude);
+        setLocationAccuracy(position.coords.accuracy);
+        setGpsStatus('captured');
+        setGpsErrorMessage('');
+      },
+      (err) => {
+        console.warn("GPS Location error:", err);
+        setGpsStatus('denied');
+        if (err.code === 1) { // PERMISSION_DENIED
+          setGpsErrorMessage(
+            language === 'kh'
+              ? 'លោកអ្នកបានបដិសេធសិទ្ធិចូលមើលទីតាំង (Permission Denied)! សូមចុចលើរូបសោក្នុង Browser ឬចូលទៅកាន់ Device Settings ដើម្បីបើក Location Access!'
+              : 'Location permission denied. Please allow location access in your browser/device settings.'
+          );
+        } else {
+          setGpsErrorMessage(
+            language === 'kh'
+              ? 'មិនអាចទាញយកទីតាំង GPS បានទេ! សូមពិនិត្យមើលថា Location Service (GPS) លើទូរស័ព្ទត្រូវបានបើករួចរាល់!'
+              : 'Could not fetch GPS location. Please check if Location Service (GPS) is enabled on your device.'
+          );
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  // Automatically request GPS location on mount
+  useEffect(() => {
+    requestGpsLocation();
+  }, []);
 
   // Clean up camera stream when component unmounts or view changes
   useEffect(() => {
@@ -194,6 +250,14 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
     if (!selfiePhoto) {
       return alert(language === 'kh' ? 'សូមថតរូប ឬបង្ហោះរូបថតមុខរបស់អ្នក!' : 'Please take/upload a selfie photo!');
     }
+    if (!latitude || !longitude || gpsStatus !== 'captured') {
+      requestGpsLocation();
+      return alert(
+        language === 'kh'
+          ? '⚠️ តម្រូវអោយបើក Location Service (GPS)! ប្រព័ន្ធត្រូវការចាប់យកទីតាំងជាក់ស្តែងរបស់កូនបំណុលជាមុនសិន។ សូមចុចលើប៊ូតុង "បើកទីតាំង GPS"!'
+          : '⚠️ Location Service (GPS) is required! Please turn on GPS location service before submitting.'
+      );
+    }
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -220,6 +284,10 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
         address: address.trim(),
         idExpiryDate: idExpiryDate.trim(),
         idExpiryStatus: calculatedExpiryStatus,
+        latitude: latitude,
+        longitude: longitude,
+        locationAccuracy: locationAccuracy ?? undefined,
+        gpsCapturedAt: new Date().toISOString(),
         lenderInfo: DEFAULT_LENDER_INFO
       };
 
@@ -735,6 +803,112 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                 </div>
               )}
             </div>
+          </div>
+
+          {/* GPS Location Option Section */}
+          <div className={`p-4 rounded-2xl border transition-all space-y-3 ${
+            gpsStatus === 'captured'
+              ? 'bg-emerald-950/20 border-emerald-500/40'
+              : 'bg-amber-950/20 border-amber-500/40'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm ${
+                  gpsStatus === 'captured' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400 animate-pulse'
+                }`}>
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div>
+                  <label className="block text-[13px] font-black text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                    {language === 'kh' ? 'ទីតាំង GPS កូនបំណុល (Location Service)' : 'Debtor GPS Location'}
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    {language === 'kh' ? 'តម្រូវអោយបើក Location ដើម្បីអោយម្ចាស់បំណុលដឹងពីទីតាំងជាក់ស្តែង' : 'Required so lender knows borrower location'}
+                  </p>
+                </div>
+              </div>
+
+              {gpsStatus === 'captured' ? (
+                <span className="px-2.5 py-1 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-black rounded-lg flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3 text-emerald-400" />
+                  {language === 'kh' ? 'បានចាប់ទីតាំង' : 'GPS Captured'}
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[10px] font-black rounded-lg flex items-center gap-1 animate-pulse">
+                  <AlertTriangle className="w-3 h-3 text-amber-400" />
+                  {language === 'kh' ? 'តម្រូវអោយបើក GPS' : 'Enable GPS'}
+                </span>
+              )}
+            </div>
+
+            {gpsStatus === 'captured' && latitude && longitude ? (
+              <div className="space-y-2 pt-1 border-t border-slate-800/60">
+                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div>
+                    <span className="text-[9px] text-slate-500 font-bold block uppercase">Latitude:</span>
+                    <span className="font-extrabold text-blue-400">{latitude.toFixed(6)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-slate-500 font-bold block uppercase">Longitude:</span>
+                    <span className="font-extrabold text-blue-400">{longitude.toFixed(6)}</span>
+                  </div>
+                  {locationAccuracy && (
+                    <div className="col-span-2 text-[10px] text-slate-400 font-semibold flex items-center gap-1 pt-1 border-t border-slate-900">
+                      <span>🎯 {language === 'kh' ? `ភាពច្បាស់លាស់ទីតាំង៖ ~${Math.round(locationAccuracy)}m` : `Accuracy: ~${Math.round(locationAccuracy)}m`}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <a
+                    href={`https://www.google.com/maps?q=${latitude},${longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>{language === 'kh' ? 'ផ្ទៀងផ្ទាត់លើ Google Maps 📍' : 'View on Google Maps'}</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={requestGpsLocation}
+                    className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold rounded-xl border border-slate-800 flex items-center gap-1"
+                    title={language === 'kh' ? 'ចាប់យកទីតាំងឡើងវិញ' : 'Refresh GPS'}
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 pt-1">
+                {gpsErrorMessage && (
+                  <div className="p-2.5 bg-rose-500/10 border border-rose-500/20 rounded-xl text-[11px] text-rose-400 font-bold flex items-start gap-1.5">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{gpsErrorMessage}</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={requestGpsLocation}
+                  disabled={gpsStatus === 'requesting'}
+                  className="w-full py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-black text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer active:scale-98 animate-bounce"
+                >
+                  {gpsStatus === 'requesting' ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>{language === 'kh' ? 'កំពុងស្វែងរកទីតាំង GPS...' : 'Locating GPS...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Navigation className="w-4 h-4 text-white" />
+                      <span>📍 {language === 'kh' ? 'ចុចទីនេះដើម្បីបើកទីតាំង GPS (Enable Location Service)' : 'Click to Enable GPS Location'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Hidden Canvas for compression */}

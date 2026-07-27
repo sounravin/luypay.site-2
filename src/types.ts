@@ -70,6 +70,11 @@ export interface Borrower {
   address?: string;
   idExpiryDate?: string;
   idExpiryStatus?: 'valid' | 'expiring_soon' | 'expired';
+  latitude?: number;
+  longitude?: number;
+  locationAddress?: string;
+  locationAccuracy?: number;
+  gpsCapturedAt?: string;
   lenderInfo?: LenderInfo;
 }
 
@@ -193,6 +198,11 @@ export interface LoanApplication {
   address?: string;
   idExpiryDate?: string;
   idExpiryStatus?: 'valid' | 'expiring_soon' | 'expired';
+  latitude?: number;
+  longitude?: number;
+  locationAddress?: string;
+  locationAccuracy?: number;
+  gpsCapturedAt?: string;
   lenderInfo?: LenderInfo;
 }
 

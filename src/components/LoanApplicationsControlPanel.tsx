@@ -575,6 +575,90 @@ export default function LoanApplicationsControlPanel({
                       </div>
                     </div>
 
+                    {/* GPS Pin Location Option - Lenders Only */}
+                    <div className="p-3 bg-slate-950 border border-blue-500/30 rounded-2xl space-y-2 text-xs">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span className="font-extrabold text-blue-400 flex items-center gap-1.5 uppercase text-[11px] tracking-wider">
+                          <MapPin className="w-3.5 h-3.5 text-blue-400 animate-bounce" />
+                          {language === 'kh' ? 'ទីតាំង GPS កូនបំណុល (Location Service)' : 'Borrower GPS Pin Location'}
+                        </span>
+                        {app.latitude && app.longitude ? (
+                          <span className="px-2 py-0.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-black rounded-md text-[10px] flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3 text-emerald-400" />
+                            🟢 GPS បានចាប់ (Captured)
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-rose-500/15 border border-rose-500/30 text-rose-400 font-black rounded-md text-[10px] flex items-center gap-1">
+                            🔴 គ្មានទិន្នន័យ GPS
+                          </span>
+                        )}
+                      </div>
+
+                      {app.latitude && app.longitude ? (
+                        <div className="space-y-2 pt-1">
+                          <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                            <div>
+                              <span className="text-slate-500 block text-[9px] uppercase font-bold">Latitude:</span>
+                              <span className="font-extrabold text-emerald-400">{app.latitude.toFixed(6)}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 block text-[9px] uppercase font-bold">Longitude:</span>
+                              <span className="font-extrabold text-emerald-400">{app.longitude.toFixed(6)}</span>
+                            </div>
+                            {app.locationAccuracy && (
+                              <div className="col-span-2 text-[10px] text-slate-400 font-semibold pt-1 border-t border-slate-850 flex items-center justify-between">
+                                <span>🎯 ភាពច្បាស់លាស់៖ ~{Math.round(app.locationAccuracy)}m</span>
+                                {app.gpsCapturedAt && (
+                                  <span className="text-slate-500">{new Date(app.gpsCapturedAt).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Direct Map Links & Interactive Map Embed */}
+                          <div className="flex gap-2">
+                            <a
+                              href={`https://www.google.com/maps?q=${app.latitude},${app.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/20 active:scale-95"
+                            >
+                              <MapPin className="w-3.5 h-3.5" />
+                              <span>📍 Pin Location Google Map</span>
+                              <ExternalLink className="w-3 h-3 opacity-80" />
+                            </a>
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${app.latitude},${app.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1 shadow-md shadow-emerald-600/20 active:scale-95"
+                              title={language === 'kh' ? 'នាំផ្លូវទៅកាន់ទីតាំង' : 'Get Directions'}
+                            >
+                              🚀 នាំផ្លូវ
+                            </a>
+                          </div>
+
+                          {/* Embedded Google Map Preview */}
+                          <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-900 mt-1">
+                            <iframe
+                              title={`Map preview for ${app.name}`}
+                              width="100%"
+                              height="130"
+                              frameBorder="0"
+                              style={{ border: 0 }}
+                              src={`https://maps.google.com/maps?q=${app.latitude},${app.longitude}&z=15&output=embed`}
+                              allowFullScreen
+                              loading="lazy"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-400 italic py-1 text-center">
+                          {language === 'kh' ? 'សំណើកម្ចីនេះមិនមានទិន្នន័យ GPS ទីតាំងជាក់ស្តែងឡើយ។' : 'No GPS coordinates were captured for this request.'}
+                        </p>
+                      )}
+                    </div>
+
                     {/* Action Button to Generate / Open Digital Contract */}
                     <button
                       onClick={() => setContractApp(app)}

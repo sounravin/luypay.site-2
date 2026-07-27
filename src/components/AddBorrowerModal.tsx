@@ -27,6 +27,16 @@ interface AddBorrowerModalProps {
     dueTime?: string;
     profilePhoto?: string;
     coverPhoto?: string;
+    idCardNumber?: string;
+    dob?: string;
+    address?: string;
+    idExpiryDate?: string;
+    idExpiryStatus?: 'valid' | 'expiring_soon' | 'expired';
+    latitude?: number;
+    longitude?: number;
+    locationAddress?: string;
+    locationAccuracy?: number;
+    gpsCapturedAt?: string;
   }) => void;
   prefilledData?: {
     name?: string;
@@ -35,6 +45,16 @@ interface AddBorrowerModalProps {
     profilePhoto?: string;
     notes?: string;
     loanDuration?: number;
+    idCardNumber?: string;
+    dob?: string;
+    address?: string;
+    idExpiryDate?: string;
+    idExpiryStatus?: 'valid' | 'expiring_soon' | 'expired';
+    latitude?: number;
+    longitude?: number;
+    locationAddress?: string;
+    locationAccuracy?: number;
+    gpsCapturedAt?: string;
   } | null;
 }
 
@@ -59,6 +79,18 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [coverPhoto, setCoverPhoto] = useState<string>('');
 
+  // Extracted ID and GPS Location State
+  const [idCardNumber, setIdCardNumber] = useState('');
+  const [dob, setDob] = useState('');
+  const [address, setAddress] = useState('');
+  const [idExpiryDate, setIdExpiryDate] = useState('');
+  const [idExpiryStatus, setIdExpiryStatus] = useState<'valid' | 'expiring_soon' | 'expired'>('valid');
+  const [latitude, setLatitude] = useState<number | undefined>(undefined);
+  const [longitude, setLongitude] = useState<number | undefined>(undefined);
+  const [locationAddress, setLocationAddress] = useState<string | undefined>(undefined);
+  const [locationAccuracy, setLocationAccuracy] = useState<number | undefined>(undefined);
+  const [gpsCapturedAt, setGpsCapturedAt] = useState<string | undefined>(undefined);
+
   useEffect(() => {
     if (isOpen) {
       if (prefilledData) {
@@ -71,6 +103,17 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
         setDuration(prefilledData.loanDuration ? prefilledData.loanDuration.toString() : '24');
         setIsTotalToPayManuallyEdited(false);
         setIsInstallmentManuallyEdited(false);
+
+        setIdCardNumber(prefilledData.idCardNumber || '');
+        setDob(prefilledData.dob || '');
+        setAddress(prefilledData.address || '');
+        setIdExpiryDate(prefilledData.idExpiryDate || '');
+        setIdExpiryStatus(prefilledData.idExpiryStatus || 'valid');
+        setLatitude(prefilledData.latitude);
+        setLongitude(prefilledData.longitude);
+        setLocationAddress(prefilledData.locationAddress);
+        setLocationAccuracy(prefilledData.locationAccuracy);
+        setGpsCapturedAt(prefilledData.gpsCapturedAt);
       } else {
         setName('');
         setPhone('');
@@ -87,6 +130,17 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
         setInterestCalculation('per-period');
         setIsTotalToPayManuallyEdited(false);
         setIsInstallmentManuallyEdited(false);
+
+        setIdCardNumber('');
+        setDob('');
+        setAddress('');
+        setIdExpiryDate('');
+        setIdExpiryStatus('valid');
+        setLatitude(undefined);
+        setLongitude(undefined);
+        setLocationAddress(undefined);
+        setLocationAccuracy(undefined);
+        setGpsCapturedAt(undefined);
       }
     }
   }, [isOpen, prefilledData]);
@@ -296,6 +350,16 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
       dueTime,
       profilePhoto,
       coverPhoto,
+      idCardNumber,
+      dob,
+      address,
+      idExpiryDate,
+      idExpiryStatus,
+      latitude,
+      longitude,
+      locationAddress,
+      locationAccuracy,
+      gpsCapturedAt,
     });
 
     // Reset fields
