@@ -29,16 +29,18 @@ async function startServer() {
       const mimeTypeMatch = image.match(/^data:(image\/\w+);base64,/);
       const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : 'image/jpeg';
 
-      const prompt = `You are an expert OCR AI specializing in extracting data from Cambodian Identity Cards (អត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ).
+      const prompt = `You are a high-precision OCR engine specializing in Cambodian Identity Cards (អត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ).
 Examine the ID card image thoroughly and extract these EXACT fields:
 
-1. "idCardNumber": The 9 or 10-digit National ID number. Look at the top right (e.g., "171107890" or "171135765"), or parse it from the bottom MRZ line starting with "IDKHM" (e.g. "IDKHM1711078906...").
-2. "name": The cardholder's full name in Khmer script (e.g., "សឿន រ៉ាវីន") or Latin name if Khmer is unreadable.
-3. "dob": Date of birth in DD.MM.YYYY format (e.g., "04.06.1988" or "22.06.2001") found after "ថ្ងៃខែឆ្នាំកំណើត:".
-4. "address": Full address in Khmer (e.g., "ផ្ទះ158 ផ្លូវ/ក្រុម03 ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង") found after "អាសយដ្ឋាន:".
-5. "idExpiryDate": The expiry date in YYYY.MM.DD or DD.MM.YYYY format (e.g., "19.05.2026" or "2026.05.19") found after "ផុតកំណត់:" or "ដល់ថ្ងៃ".
+1. "idCardNumber": The 9-digit or 10-digit National ID number (e.g., "171107890" or "171135765"). Look at the top right of the card, or the bottom MRZ zone starting with "IDKHM". Convert all Khmer numerals to standard 0-9 digits.
+2. "name": The cardholder's full name in Khmer script (e.g. "សឿន រ៉ាវីន" or "ចាន់ ម៉ារី").
+3. "dob": Date of birth in DD.MM.YYYY format (e.g. "04.06.1988" or "22.06.2001") found after "ថ្ងៃខែឆ្នាំកំណើត:".
+4. "address": Full address in Khmer script (e.g. "ផ្ទះ158 ផ្លូវ/ក្រុម03 ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង") found after "អាសយដ្ឋាន:".
+5. "idExpiryDate": Expiry date in DD.MM.YYYY format (e.g. "19.05.2026" or "31.12.2031") found after "ដល់ថ្ងៃ" or "ផុតកំណត់:".
 
-Return ONLY a valid raw JSON object without markdown formatting:
+Rules:
+- Convert any Khmer numerals (០,១,២,៣,៤,៥,៦,៧,៨,៩) to Arabic numerals (0,1,2,3,4,5,6,7,8,9).
+- Return STRICTLY a valid JSON object without markdown formatting or code blocks:
 {
   "idCardNumber": "string",
   "name": "string",
@@ -47,25 +49,42 @@ Return ONLY a valid raw JSON object without markdown formatting:
   "idExpiryDate": "string"
 }`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [
+      let responseText = '';
+      const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+      
+      for (const modelName of modelsToTry) {
+        try {
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: [
               {
-                inlineData: {
-                  data: base64Data,
-                  mimeType: mimeType
-                }
-              },
-              { text: prompt }
+                role: 'user',
+                parts: [
+                  {
+                    inlineData: {
+                      data: base64Data,
+                      mimeType: mimeType
+                    }
+                  },
+                  { text: prompt }
+                ]
+              }
             ]
+          });
+          if (response && response.text) {
+            responseText = response.text;
+            break;
           }
-        ]
-      });
+        } catch (mErr: any) {
+          console.warn(`Model ${modelName} scan failed:`, mErr?.message || mErr);
+        }
+      }
 
-      const responseText = response.text || '';
+      if (!responseText) {
+        // Return clean response indicating client-side OCR should take over
+        return res.json({ fallbackToClient: true });
+      }
+
       const cleanedJsonText = responseText
         .replace(/```json\n?/gi, '')
         .replace(/```\n?/g, '')
@@ -74,8 +93,8 @@ Return ONLY a valid raw JSON object without markdown formatting:
       const parsedData = JSON.parse(cleanedJsonText);
       return res.json(parsedData);
     } catch (err: any) {
-      console.error("Server ID Scan Error:", err);
-      return res.status(500).json({ error: err.message || "Failed to parse ID card" });
+      console.warn("Server ID Scan notice:", err?.message || err);
+      return res.json({ fallbackToClient: true });
     }
   });
 

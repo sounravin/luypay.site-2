@@ -20,22 +20,44 @@ export function checkExpiryStatus(expiryDateStr: string): 'valid' | 'expiring_so
   if (!expiryDateStr || expiryDateStr.trim() === '') return 'valid';
 
   try {
-    const cleanStr = expiryDateStr.trim().replace(/\./g, '/').replace(/-/g, '/');
-    const parts = cleanStr.split('/');
+    // Convert Khmer numerals to western numerals first if any
+    const westernStr = convertKhmerNumerals(expiryDateStr.trim());
+    const cleanStr = westernStr.replace(/[^\d./-]/g, '');
+    const parts = cleanStr.split(/[./-]/).filter(Boolean);
     let expiryDate: Date | null = null;
 
     if (parts.length === 3) {
-      const p0 = parseInt(parts[0], 10);
-      const p1 = parseInt(parts[1], 10);
-      const p2 = parseInt(parts[2], 10);
+      let day = 1;
+      let month = 1;
+      let year = 2030;
 
       if (parts[0].length === 4) {
         // YYYY/MM/DD
-        expiryDate = new Date(p0, p1 - 1, p2);
+        year = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10);
+        day = parseInt(parts[2], 10);
       } else if (parts[2].length === 4) {
-        // DD/MM/YYYY
-        expiryDate = new Date(p2, p1 - 1, p0);
+        // DD/MM/YYYY or MM/DD/YYYY
+        year = parseInt(parts[2], 10);
+        const p0 = parseInt(parts[0], 10);
+        const p1 = parseInt(parts[1], 10);
+        
+        if (p0 > 12) {
+          // p0 is Day, p1 is Month
+          day = p0;
+          month = p1;
+        } else if (p1 > 12) {
+          // p1 is Day, p0 is Month
+          day = p1;
+          month = p0;
+        } else {
+          // Standard Cambodian ID format is DD.MM.YYYY
+          day = p0;
+          month = p1;
+        }
       }
+
+      expiryDate = new Date(year, month - 1, day);
     }
 
     if (!expiryDate || isNaN(expiryDate.getTime())) {
