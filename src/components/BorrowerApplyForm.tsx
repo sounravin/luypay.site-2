@@ -750,29 +750,16 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                     </p>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-2.5 w-full max-w-xs pt-1">
+                  <div className="w-full max-w-xs pt-1">
                     {/* Live Stream Camera Button */}
                     <button
                       type="button"
                       onClick={() => startCamera('id')}
-                      className="flex-1 py-2.5 px-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-98"
+                      className="w-full py-3 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-98"
                     >
                       <Camera className="w-4 h-4" />
                       <span>{language === 'kh' ? '📷 បើកកាមេរ៉ាថតផ្ទាល់' : 'Open Live Camera'}</span>
                     </button>
-
-                    {/* Direct Camera Capture Trigger */}
-                    <label className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 border border-slate-700 shadow-md active:scale-98">
-                      <Camera className="w-4 h-4 text-cyan-400" />
-                      <span>{language === 'kh' ? '📸 កាមេរ៉ាទូរស័ព្ទ' : 'Device Camera'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={(e) => handleImageUpload(e, 'id')}
-                        className="hidden"
-                      />
-                    </label>
                   </div>
                 </div>
               )}
@@ -848,29 +835,16 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                     </p>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-2.5 w-full max-w-xs pt-1">
+                  <div className="w-full max-w-xs pt-1">
                     {/* Live Camera Button */}
                     <button
                       type="button"
                       onClick={() => startCamera('selfie')}
-                      className="flex-1 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-98"
+                      className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-md active:scale-98"
                     >
                       <Camera className="w-4 h-4" />
                       <span>{language === 'kh' ? '📷 បើកកាមេរ៉ាថត' : 'Open Camera'}</span>
                     </button>
-
-                    {/* Direct Native Camera Button */}
-                    <label className="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 border border-slate-700 shadow-md active:scale-98">
-                      <Camera className="w-4 h-4 text-emerald-400" />
-                      <span>{language === 'kh' ? '📸 កាមេរ៉ាទូរស័ព្ទ' : 'Snap Selfie'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="user"
-                        onChange={(e) => handleImageUpload(e, 'selfie')}
-                        className="hidden"
-                      />
-                    </label>
                   </div>
                 </div>
               )}
