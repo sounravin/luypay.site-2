@@ -110,7 +110,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
     try {
       const res = await scanIdCardImage(imgDataUrl);
       if (res.idCardNumber) setIdCardNumber(res.idCardNumber);
-      if (res.name && !name) setName(res.name);
+      if (res.name) setName(res.name);
       if (res.dob) setDob(res.dob);
       if (res.address) setAddress(res.address);
       if (res.idExpiryDate) {
@@ -632,6 +632,35 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                   placeholder={language === 'kh' ? 'ឧទាហរណ៍៖ ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង' : 'e.g. Battambang'}
                   className="w-full px-3 py-2 text-sm bg-slate-900 border border-slate-800 rounded-xl text-slate-200 font-semibold focus:outline-none focus:border-blue-500"
                 />
+              </div>
+
+              {/* Action Toolbar for Rescan & Sample Fill */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => idCardPhoto && processIdCardOcr(idCardPhoto)}
+                  disabled={!idCardPhoto || isOcrScanning}
+                  className="py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-slate-300 font-bold rounded-xl text-xs border border-slate-800 transition cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-blue-400 ${isOcrScanning ? 'animate-spin' : ''}`} />
+                  <span>{language === 'kh' ? 'ស្កេនរូបថតម្ដងទៀត' : 'Rescan Image'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIdCardNumber('171135765');
+                    setName('ចាន់ ម៉ារី');
+                    setDob('15.08.1998');
+                    setAddress('ភូមិចំការឬស្សី សង្កាត់ព្រែកព្រះស្ដេច ក្រុងបាត់ដំបង');
+                    setIdExpiryDate('2031.12.31');
+                    setIdExpiryStatus('valid');
+                  }}
+                  className="py-2 bg-blue-600/15 hover:bg-blue-600/25 text-blue-300 font-bold rounded-xl text-xs border border-blue-500/30 transition cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                  <span>{language === 'kh' ? 'បំពេញទិន្នន័យគំរូ' : 'Auto Fill Sample'}</span>
+                </button>
               </div>
 
               {/* Button to Preview Digital Contract */}

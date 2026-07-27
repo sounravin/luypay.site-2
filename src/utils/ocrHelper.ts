@@ -75,6 +75,40 @@ function convertKhmerNumerals(str: string): string {
  * Scan National ID Card Image using Tesseract OCR & smart Khmer pattern matcher
  */
 export async function scanIdCardImage(imageDataUrl: string): Promise<ExtractedIdCardData> {
+  // 1. Try AI-powered Gemini Vision OCR via server API
+  try {
+    const apiRes = await fetch('/api/scan-id', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: imageDataUrl })
+    });
+
+    if (apiRes.ok) {
+      const data = await apiRes.json();
+      if (data && (data.idCardNumber || data.name || data.dob || data.address || data.idExpiryDate)) {
+        const idCardNum = (data.idCardNumber || '').toString().trim();
+        const nameVal = (data.name || '').trim();
+        const dobVal = (data.dob || '').trim();
+        const addressVal = (data.address || '').trim();
+        const expiryVal = (data.idExpiryDate || '').trim();
+        const expiryStatus = checkExpiryStatus(expiryVal);
+
+        return {
+          idCardNumber: idCardNum,
+          name: nameVal,
+          dob: dobVal,
+          address: addressVal,
+          idExpiryDate: expiryVal,
+          idExpiryStatus: expiryStatus,
+          rawText: JSON.stringify(data)
+        };
+      }
+    }
+  } catch (apiErr) {
+    console.warn("Server OCR API call skipped/failed, falling back to client OCR:", apiErr);
+  }
+
+  // 2. Fallback to Tesseract OCR & smart pattern matching
   let rawText = '';
   try {
     const worker = await createWorker('eng');
