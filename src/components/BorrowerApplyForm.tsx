@@ -596,7 +596,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
           {(() => {
             const numAmount = parseFloat(amountRequested) || 0;
             const numDays = parseInt(loanDuration) || 0;
-            const calcInterestRate = loanType === 'luy_rab' ? 0.02 : 0.005;
+            const calcInterestRate = loanType === 'luy_rab' ? 0.02 : 0.04;
             const autoCalculatedInterest = numAmount > 0 && numDays > 0 ? numAmount * calcInterestRate * numDays : 0;
             const autoTotalToPay = numAmount + autoCalculatedInterest;
             const autoDailyPayment = numDays > 0 ? autoTotalToPay / numDays : 0;
@@ -632,7 +632,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                       <span>{language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok'}</span>
                     </div>
                     <p className="text-[10px] text-slate-400 mt-1">
-                      {language === 'kh' ? '$100 រយៈពេល 1ខែ (30ថ្ងៃ) ការ $15' : '$100 for 1mo = $15 interest'}
+                      {language === 'kh' ? '$100 ការប្រាក់ 4$ ក្នុង 1ថ្ងៃ' : '$100 = $4/day interest'}
                     </p>
                   </button>
 
@@ -663,9 +663,12 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                       <span className="font-bold text-slate-100">${numAmount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center text-slate-300">
-                      <span>📈 {language === 'kh' ? 'អត្រាការប្រាក់រាប់ (1ខែ/30ថ្ងៃ):' : 'Monthly Interest Rate:'}</span>
-                      <span className="font-bold text-purple-300">
-                        {loanType === 'luy_rab' ? `$60 ក្នុង $100 ($${(numAmount * 0.02).toFixed(2)}/ថ្ងៃ)` : '15% / ខែ'}
+                      <span>📈 {language === 'kh' ? 'អត្រាការប្រាក់:' : 'Interest Rate:'}</span>
+                      <span className="font-bold text-amber-300">
+                        {loanType === 'luy_rab' 
+                          ? `$60 ក្នុង $100 ($${(numAmount * 0.02).toFixed(2)}/ថ្ងៃ)` 
+                          : `$4 ក្នុង $100 ($${(numAmount * 0.04).toFixed(2)}/ថ្ងៃ)`
+                        }
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-slate-300">

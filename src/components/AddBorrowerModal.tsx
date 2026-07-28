@@ -641,7 +641,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     ⚡️ {language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok'}
                   </span>
                   <span className="text-[10px] text-slate-500 mt-0.5">
-                    {language === 'kh' ? '$100 1ខែ (30ថ្ងៃ) ការ $15' : '$100 30d = $15 interest'}
+                    {language === 'kh' ? '$100 ការប្រាក់ 4$ ក្នុង 1ថ្ងៃ' : '$100 = $4/day interest'}
                   </span>
                 </button>
 

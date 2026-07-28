@@ -1137,7 +1137,7 @@ export default function BorrowerDetail({
                         ⚡️ {language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok'}
                       </span>
                       <span className="text-[10px] text-slate-500 mt-0.5">
-                        {language === 'kh' ? '$100 30ថ្ងៃ = $15' : '$100 30d = $15'}
+                        {language === 'kh' ? '$100 ការប្រាក់ 4$ ក្នុង 1ថ្ងៃ' : '$100 = $4/day interest'}
                       </span>
                     </button>
 
