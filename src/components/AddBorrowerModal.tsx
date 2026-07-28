@@ -37,6 +37,7 @@ interface AddBorrowerModalProps {
     locationAddress?: string;
     locationAccuracy?: number;
     gpsCapturedAt?: string;
+    loanType?: 'luy_chok' | 'luy_rab';
   }) => void;
   prefilledData?: {
     name?: string;
@@ -45,6 +46,7 @@ interface AddBorrowerModalProps {
     profilePhoto?: string;
     notes?: string;
     loanDuration?: number;
+    loanType?: 'luy_chok' | 'luy_rab';
     idCardNumber?: string;
     dob?: string;
     address?: string;
@@ -67,6 +69,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
   const [principal, setPrincipal] = useState<string>('');
   const [totalToPay, setTotalToPay] = useState<string>('');
   const [duration, setDuration] = useState<string>('24'); // Default 24 installments
+  const [loanType, setLoanType] = useState<'luy_chok' | 'luy_rab'>('luy_chok');
   const [installmentAmount, setInstallmentAmount] = useState<string>('');
   const [frequency, setFrequency] = useState<FrequencyType>('daily');
   const [loanDate, setLoanDate] = useState(getTodayDateString());
@@ -101,6 +104,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
         setProfilePhoto(prefilledData.profilePhoto || '');
         setNotes(prefilledData.notes || '');
         setDuration(prefilledData.loanDuration ? prefilledData.loanDuration.toString() : '24');
+        setLoanType(prefilledData.loanType || 'luy_chok');
         setIsTotalToPayManuallyEdited(false);
         setIsInstallmentManuallyEdited(false);
 
@@ -234,21 +238,39 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
       ? ['4', '5', '10', '20', '50']
       : ['10000', '20000', '50000', '100000', '200000'];
 
+  // Auto enforce settings when switching to Luy Rab (កម្ចីលុយរាប់)
+  useEffect(() => {
+    if (loanType === 'luy_rab') {
+      setPaymentMode('all');
+      setInterestCalculation('per-period');
+      setFrequency('daily');
+      setInterestType('percent');
+      setInterestValue('60'); // 60% per 30 days ($60 per $100 per 30 days = $2/day per $100)
+      setIsTotalToPayManuallyEdited(false);
+      setIsInstallmentManuallyEdited(false);
+    }
+  }, [loanType]);
+
   // Helper values for calculations & visual breakdown
   const pValNum = parseFloat(principal) || 0;
   const iValNum = parseFloat(interestValue) || 0;
-  const computedInterestAmount = interestType === 'percent' 
-    ? pValNum * (iValNum / 100) 
-    : iValNum;
+  const dValNum = parseInt(duration) || 1;
+
+  // Luy Rab interest is strictly $60 per $100 per 30 days ($2 per day per $100)
+  const computedInterestAmount = loanType === 'luy_rab'
+    ? pValNum * 0.02 * dValNum
+    : (interestType === 'percent' ? pValNum * (iValNum / 100) : iValNum);
   
   // Total computed amount depends on the selected payment mode and interest calculation type
-  const computedCalculatedTotal = interestCalculation === 'per-period'
-    ? (paymentMode === 'all'
-        ? pValNum + (computedInterestAmount * (parseInt(duration) || 1))
-        : computedInterestAmount * (parseInt(duration) || 1))
-    : (paymentMode === 'all'
-        ? pValNum + computedInterestAmount
-        : computedInterestAmount);
+  const computedCalculatedTotal = loanType === 'luy_rab'
+    ? pValNum + (pValNum * 0.02 * dValNum)
+    : (interestCalculation === 'per-period'
+        ? (paymentMode === 'all'
+            ? pValNum + (computedInterestAmount * dValNum)
+            : computedInterestAmount * dValNum)
+        : (paymentMode === 'all'
+            ? pValNum + computedInterestAmount
+            : computedInterestAmount));
 
   // Auto calculate values when principal, interestType, interestValue, paymentMode, duration, interestCalculation, or currency changes
   useEffect(() => {
@@ -262,7 +284,11 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
         const interestAmt = interestType === 'percent' ? pVal * (iVal / 100) : iVal;
         const safeInterestAmt = isNaN(interestAmt) ? 0 : interestAmt;
         
-        if (interestCalculation === 'per-period') {
+        if (loanType === 'luy_rab') {
+          // Luy Rab (កម្ចីលុយរាប់): $100 for 30 days = $60 interest (2% per day)
+          const rabInterest = pVal * 0.02 * dVal;
+          computedTotal = paymentMode === 'all' ? pVal + rabInterest : rabInterest;
+        } else if (interestCalculation === 'per-period') {
           if (paymentMode === 'all') {
             computedTotal = pVal + (safeInterestAmt * dVal);
           } else {
@@ -287,7 +313,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
     } else {
       if (!isTotalToPayManuallyEdited) setTotalToPay('');
     }
-  }, [principal, interestType, interestValue, paymentMode, duration, interestCalculation, currency, isTotalToPayManuallyEdited]);
+  }, [principal, loanType, interestType, interestValue, paymentMode, duration, interestCalculation, currency, isTotalToPayManuallyEdited]);
 
   useEffect(() => {
     const tVal = parseFloat(totalToPay);
@@ -341,6 +367,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
       duration: dVal,
       currency,
       notes: notes.trim(),
+      loanType,
       interestType,
       interestValue: isNaN(parseFloat(interestValue)) ? 0 : parseFloat(interestValue),
       paymentMode,
@@ -586,10 +613,70 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
               </div>
             </div>
 
+            {/* Loan Type Selector Box (កម្ចីលុយឆក់ vs កម្ចីលុយរាប់) */}
+            <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 space-y-1.5">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
+                <span>{language === 'kh' ? 'ប្រភេទកម្ចី (Loan Type)' : 'Loan Type'}</span>
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                  loanType === 'luy_rab' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'
+                }`}>
+                  {loanType === 'luy_rab' ? (language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab') : (language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok')}
+                </span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoanType('luy_chok');
+                    setIsTotalToPayManuallyEdited(false);
+                    setIsInstallmentManuallyEdited(false);
+                  }}
+                  className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                    loanType === 'luy_chok'
+                      ? 'bg-amber-500/10 border-amber-500 text-amber-900 shadow-xs ring-1 ring-amber-500/30'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="font-extrabold text-xs flex items-center gap-1">
+                    ⚡️ {language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok'}
+                  </span>
+                  <span className="text-[10px] text-slate-500 mt-0.5">
+                    {language === 'kh' ? '$100 1ខែ (30ថ្ងៃ) ការ $15' : '$100 30d = $15 interest'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoanType('luy_rab');
+                    setIsTotalToPayManuallyEdited(false);
+                    setIsInstallmentManuallyEdited(false);
+                  }}
+                  className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                    loanType === 'luy_rab'
+                      ? 'bg-purple-500/10 border-purple-500 text-purple-900 shadow-xs ring-1 ring-purple-500/30'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="font-extrabold text-xs flex items-center gap-1">
+                    🔢 {language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab'}
+                  </span>
+                  <span className="text-[10px] text-slate-500 mt-0.5">
+                    {language === 'kh' ? '$100 1ខែ (30ថ្ងៃ) ការ $60' : '$100 30d = $60 interest'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
             {/* Payment Mode Choice Option */}
             <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 space-y-1">
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                {language === 'kh' ? 'ប្រភេទនៃការបង់ប្រាក់' : 'Payment Mode'}
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                <span>{language === 'kh' ? 'ប្រភេទនៃការបង់ប្រាក់' : 'Payment Mode'}</span>
+                {loanType === 'luy_rab' && (
+                  <span className="text-[10px] text-purple-700 bg-purple-100 px-2 py-0.5 rounded font-extrabold">
+                    🔒 {language === 'kh' ? 'កម្ចីលុយរាប់៖ មានតែបង់ទាំងដើមទាំងការ' : 'Luy Rab: Principal + Interest Only'}
+                  </span>
+                )}
               </label>
               <div className="inline-flex w-full bg-slate-200/60 p-0.5 rounded-xl h-[38px] items-center">
                 <button
@@ -607,28 +694,35 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                 >
                   💵 {language === 'kh' ? 'បង់ទាំងដើមទាំងការ' : 'Principal + Interest'}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPaymentMode('interest-only');
-                    setIsTotalToPayManuallyEdited(false);
-                    setIsInstallmentManuallyEdited(false);
-                  }}
-                  className={`flex-1 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 h-full ${
-                    paymentMode === 'interest-only' 
-                      ? 'bg-blue-600 text-white shadow-sm' 
-                      : 'text-slate-600 hover:text-slate-800'
-                  }`}
-                >
-                  📈 {language === 'kh' ? 'បង់តែការសុទ្ធ' : 'Interest-Only'}
-                </button>
+                {loanType !== 'luy_rab' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaymentMode('interest-only');
+                      setIsTotalToPayManuallyEdited(false);
+                      setIsInstallmentManuallyEdited(false);
+                    }}
+                    className={`flex-1 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 h-full ${
+                      paymentMode === 'interest-only' 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'text-slate-600 hover:text-slate-800'
+                    }`}
+                  >
+                    📈 {language === 'kh' ? 'បង់តែការសុទ្ធ' : 'Interest-Only'}
+                  </button>
+                )}
               </div>
             </div>
 
             {/* Interest Calculation Method Option */}
             <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 space-y-1">
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                {language === 'kh' ? 'របៀបគណនាការប្រាក់' : 'Interest Calculation'}
+              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                <span>{language === 'kh' ? 'របៀបគណនាការប្រាក់' : 'Interest Calculation'}</span>
+                {loanType === 'luy_rab' && (
+                  <span className="text-[10px] text-purple-700 bg-purple-100 px-2 py-0.5 rounded font-extrabold">
+                    🔒 {language === 'kh' ? 'កម្ចីលុយរាប់៖ ការប្រាក់ប្រចាំថ្ងៃ' : 'Luy Rab: Daily Interest'}
+                  </span>
+                )}
               </label>
               <div className="inline-flex w-full bg-slate-200/60 p-0.5 rounded-xl h-[38px] items-center">
                 <button
@@ -646,21 +740,23 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                 >
                   🔄 {language === 'kh' ? 'ការប្រាក់ប្រចាំថ្ងៃ/វគ្គ' : 'Per Day/Period'}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInterestCalculation('flat');
-                    setIsTotalToPayManuallyEdited(false);
-                    setIsInstallmentManuallyEdited(false);
-                  }}
-                  className={`flex-1 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 h-full ${
-                    interestCalculation === 'flat' 
-                      ? 'bg-blue-600 text-white shadow-sm' 
-                      : 'text-slate-600 hover:text-slate-800'
-                  }`}
-                >
-                  🎯 {language === 'kh' ? 'ការប្រាក់សរុប' : 'Flat/Total Rate'}
-                </button>
+                {loanType !== 'luy_rab' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInterestCalculation('flat');
+                      setIsTotalToPayManuallyEdited(false);
+                      setIsInstallmentManuallyEdited(false);
+                    }}
+                    className={`flex-1 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 h-full ${
+                      interestCalculation === 'flat' 
+                        ? 'bg-blue-600 text-white shadow-sm' 
+                        : 'text-slate-600 hover:text-slate-800'
+                    }`}
+                  >
+                    🎯 {language === 'kh' ? 'ការប្រាក់សរុប' : 'Flat/Total Rate'}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -806,12 +902,54 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
             {/* Live Formula Explanation / Breakdown Card */}
             {pValNum > 0 && (
               <div className="p-3.5 bg-blue-50/50 border border-blue-100 rounded-2xl space-y-2.5 text-xs animate-fadeIn">
-                <div className="font-extrabold text-blue-950 flex items-center gap-1.5">
-                  <Info className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span>{language === 'kh' ? 'សេចក្តីលម្អិតនៃការគណនា (Calculation Details)' : 'Calculation Details'}</span>
+                <div className="font-extrabold text-blue-950 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Info className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>{language === 'kh' ? 'សេចក្តីលម្អិតនៃការគណនា (Calculation Details)' : 'Calculation Details'}</span>
+                  </div>
+                  {loanType === 'luy_rab' && (
+                    <span className="text-[10px] font-black bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md">
+                      🔢 {language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab Loan'}
+                    </span>
+                  )}
                 </div>
                 
-                {paymentMode === 'all' ? (
+                {loanType === 'luy_rab' ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-2 text-slate-600 font-semibold pt-1">
+                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                        <span>{language === 'kh' ? 'ប្រាក់ខ្ចីដើម៖' : 'Principal:'}</span>
+                        <span className="font-bold text-slate-800">
+                          {pValNum.toLocaleString('en-US')} {currency === 'USD' ? '$' : '៛'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                        <span>{language === 'kh' ? 'ការប្រាក់រាប់ (1ខែ/30ថ្ងៃ)៖' : 'Monthly Rate:'}</span>
+                        <span className="font-bold text-purple-700">
+                          $60 / $100 ({currency === 'USD' ? '$' : '៛'}{(pValNum * 0.02).toFixed(2)}/{language === 'kh' ? 'ថ្ងៃ' : 'day'})
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                        <span>{language === 'kh' ? 'ការប្រាក់សរុប (' + (duration || '30') + ' ថ្ងៃ)៖' : 'Total Interest:'}</span>
+                        <span className="font-bold text-amber-600">
+                          +{(pValNum * 0.02 * dValNum).toLocaleString('en-US')} {currency === 'USD' ? '$' : '៛'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                        <span>{language === 'kh' ? 'ប្រាក់បង់ប្រចាំថ្ងៃ៖' : 'Daily Installment:'}</span>
+                        <span className="font-extrabold text-blue-700">
+                          {(computedCalculatedTotal / dValNum).toFixed(2)} {currency === 'USD' ? '$' : '៛'}/{language === 'kh' ? 'ថ្ងៃ' : 'd'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-blue-900 font-extrabold pt-2 text-sm border-t border-blue-100">
+                      <span>{language === 'kh' ? 'ប្រាក់សរុបត្រូវសង (ដើម + ការ)៖' : 'Total to Pay (Principal + Interest):'}</span>
+                      <span className="text-purple-700 font-black">
+                        {computedCalculatedTotal.toLocaleString('en-US')} {currency === 'USD' ? '$' : '៛'}
+                      </span>
+                    </div>
+                  </>
+                ) : paymentMode === 'all' ? (
                   <>
                     <div className="grid grid-cols-2 gap-3 text-slate-600 font-semibold pt-1">
                       <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
@@ -880,29 +1018,59 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                   {language === 'kh' ? 'វគ្គបង់ប្រាក់' : 'Payment Frequency'}
                 </label>
                 <select
+                  disabled={loanType === 'luy_rab'}
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value as FrequencyType)}
-                  className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                  className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none transition font-medium ${
+                    loanType === 'luy_rab' 
+                      ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed'
+                      : 'bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                  }`}
                 >
-                  <option value="daily">{language === 'kh' ? 'រាល់ថ្ងៃ (Daily)' : 'Daily'}</option>
-                  <option value="weekly">{language === 'kh' ? 'រាល់សប្តាហ៍ (Weekly)' : 'Weekly'}</option>
-                  <option value="monthly">{language === 'kh' ? 'រាល់ខែ (Monthly)' : 'Monthly'}</option>
+                  <option value="daily">{language === 'kh' ? 'ជារៀងរាល់ថ្ងៃ (Daily)' : 'Daily'}</option>
+                  {loanType !== 'luy_rab' && (
+                    <>
+                      <option value="weekly">{language === 'kh' ? 'រាល់សប្តាហ៍ (Weekly)' : 'Weekly'}</option>
+                      <option value="monthly">{language === 'kh' ? 'រាល់ខែ (Monthly)' : 'Monthly'}</option>
+                    </>
+                  )}
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                  {language === 'kh' ? 'ចំនួនដងត្រូវសង (ដង)' : 'Installments Duration (times)'}
+                  {language === 'kh' ? 'ចំនួនដងត្រូវសង (ចំនួនថ្ងៃ)' : 'Installments Duration (Days)'}
                 </label>
                 <input
                   type="number"
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  placeholder="24"
+                  placeholder="30"
                   className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
                   min="1"
                   required
                 />
+                {/* Preset Duration Buttons */}
+                <div className="flex gap-1 mt-1.5">
+                  {[20, 30, 60].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        setDuration(d.toString());
+                        setIsTotalToPayManuallyEdited(false);
+                        setIsInstallmentManuallyEdited(false);
+                      }}
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded border cursor-pointer transition ${
+                        duration === d.toString()
+                          ? 'bg-purple-600 text-white border-purple-600'
+                          : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                      }`}
+                    >
+                      {d} {language === 'kh' ? 'ថ្ងៃ' : 'd'}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 

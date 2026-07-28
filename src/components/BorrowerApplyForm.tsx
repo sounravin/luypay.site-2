@@ -21,6 +21,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
   const [phone, setPhone] = useState('');
   const [amountRequested, setAmountRequested] = useState('');
   const [loanDuration, setLoanDuration] = useState('0');
+  const [loanType, setLoanType] = useState<'luy_chok' | 'luy_rab'>('luy_chok');
   const [paymentType, setPaymentType] = useState('daily');
   const [interestMethod, setInterestMethod] = useState('flat');
   const [lastCreatedAppId, setLastCreatedAppId] = useState('');
@@ -358,6 +359,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
         selfiePhoto,
         amountRequested: amt,
         loanDuration: parseInt(loanDuration) || 0,
+        loanType,
         paymentType,
         interestMethod,
         lenderId,
@@ -570,17 +572,17 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
 
             {/* Quick Template Options for Duration */}
             <div className="pt-1 flex flex-wrap gap-1.5">
-              {[5, 7, 10, 15, 20, 25, 30].map((days) => {
+              {[20, 30, 45, 60].map((days) => {
                 const isSelected = loanDuration === days.toString();
                 return (
                   <button
                     key={days}
                     type="button"
                     onClick={() => setLoanDuration(days.toString())}
-                    className={`px-2.5 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                    className={`px-3 py-1.5 text-xs font-black rounded-xl transition-all cursor-pointer border ${
                       isSelected
-                        ? 'bg-blue-600 text-white border-blue-400 shadow-xs shadow-blue-500/20 scale-105'
-                        : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-blue-500/50 hover:bg-slate-900'
+                        ? 'bg-purple-600 text-white border-purple-400 shadow-sm shadow-purple-500/30 scale-105'
+                        : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-purple-500/50 hover:bg-slate-900'
                     }`}
                   >
                     {days} {language === 'kh' ? 'ថ្ងៃ' : 'Days'}
@@ -590,11 +592,112 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
             </div>
           </div>
 
-          {/* Payment Type Option - Fixed to Daily only */}
+          {/* Loan Type Selector Option Box (កម្ចីលុយឆក់ vs កម្ចីលុយរាប់) */}
+          {(() => {
+            const numAmount = parseFloat(amountRequested) || 0;
+            const numDays = parseInt(loanDuration) || 0;
+            const calcInterestRate = loanType === 'luy_rab' ? 0.02 : 0.005;
+            const autoCalculatedInterest = numAmount > 0 && numDays > 0 ? numAmount * calcInterestRate * numDays : 0;
+            const autoTotalToPay = numAmount + autoCalculatedInterest;
+            const autoDailyPayment = numDays > 0 ? autoTotalToPay / numDays : 0;
+
+            return (
+              <div className="space-y-2 p-3.5 bg-slate-950 border border-slate-800 rounded-2xl">
+                <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-amber-400 text-sm">🏷️</span>
+                    {language === 'kh' ? 'ជ្រើសរើសប្រភេទកម្ចី' : 'Select Loan Type'} <span className="text-rose-500">*</span>
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    loanType === 'luy_rab'
+                      ? 'text-purple-300 bg-purple-500/15 border-purple-500/30'
+                      : 'text-amber-300 bg-amber-500/15 border-amber-500/30'
+                  }`}>
+                    {loanType === 'luy_rab' ? (language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab') : (language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok')}
+                  </span>
+                </label>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLoanType('luy_chok')}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                      loanType === 'luy_chok'
+                        ? 'bg-amber-500/15 border-amber-500 text-amber-300 shadow-md shadow-amber-500/10'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-black text-xs">
+                      <span>⚡️</span>
+                      <span>{language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok'}</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      {language === 'kh' ? '$100 រយៈពេល 1ខែ (30ថ្ងៃ) ការ $15' : '$100 for 1mo = $15 interest'}
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setLoanType('luy_rab')}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                      loanType === 'luy_rab'
+                        ? 'bg-purple-500/15 border-purple-500 text-purple-300 shadow-md shadow-purple-500/10'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 font-black text-xs">
+                      <span>🔢</span>
+                      <span>{language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab'}</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      {language === 'kh' ? '$100 រយៈពេល 1ខែ (30ថ្ងៃ) ការ $60' : '$100 for 1mo = $60 interest'}
+                    </p>
+                  </button>
+                </div>
+
+                {/* Auto Calculation Live Summary Card */}
+                {numAmount > 0 && numDays > 0 && (
+                  <div className="mt-2 p-3 bg-slate-900/90 border border-purple-500/30 rounded-xl space-y-1.5 text-xs font-mono">
+                    <div className="flex justify-between items-center text-slate-300">
+                      <span>💡 {language === 'kh' ? 'ប្រាក់ខ្ចីដើម:' : 'Principal:'}</span>
+                      <span className="font-bold text-slate-100">${numAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-300">
+                      <span>📈 {language === 'kh' ? 'អត្រាការប្រាក់រាប់ (1ខែ/30ថ្ងៃ):' : 'Monthly Interest Rate:'}</span>
+                      <span className="font-bold text-purple-300">
+                        {loanType === 'luy_rab' ? `$60 ក្នុង $100 ($${(numAmount * 0.02).toFixed(2)}/ថ្ងៃ)` : '15% / ខែ'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-300">
+                      <span>💰 {language === 'kh' ? 'ការប្រាក់សរុប (' + numDays + ' ថ្ងៃ):' : 'Total Interest:'}</span>
+                      <span className="font-bold text-amber-400">${autoCalculatedInterest.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-300 border-t border-slate-800 pt-1">
+                      <span>💵 {language === 'kh' ? 'ប្រាក់សរុបត្រូវសង (ដើម+ការ):' : 'Total to Pay:'}</span>
+                      <span className="font-extrabold text-emerald-400">${autoTotalToPay.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-300 pt-1 border-t border-slate-800">
+                      <span>📅 {language === 'kh' ? 'ត្រូវសងប្រចាំថ្ងៃ (' + numDays + ' ថ្ងៃ):' : 'Daily Installment:'}</span>
+                      <span className="font-black text-cyan-300">${autoDailyPayment.toFixed(2)} / {language === 'kh' ? 'ថ្ងៃ' : 'day'}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Payment Type Option - Fixed to Daily only for Luy Rab */}
           <div className="space-y-1.5">
-            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <span className="text-blue-400 text-sm">🔄</span>
-              {language === 'kh' ? 'ប្រភេទនៃការបង់ប្រាក់' : 'Payment Type'} <span className="text-rose-500">*</span>
+            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <span className="text-blue-400 text-sm">🔄</span>
+                {language === 'kh' ? 'ប្រភេទនៃការបង់ប្រាក់' : 'Payment Type'} <span className="text-rose-500">*</span>
+              </span>
+              {loanType === 'luy_rab' && (
+                <span className="text-[10px] font-black text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-md border border-purple-500/30">
+                  🔒 {language === 'kh' ? 'កម្ចីលុយរាប់៖ បង់ទាំងដើមទាំងការ' : 'Luy Rab: Principal + Interest'}
+                </span>
+              )}
             </label>
             <div className="relative">
               <select
@@ -602,7 +705,12 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                 value="daily"
                 className="w-full px-4 py-3 text-base bg-slate-950/80 border border-slate-800 rounded-2xl font-bold text-slate-300 appearance-none cursor-not-allowed opacity-90"
               >
-                <option value="daily">{language === 'kh' ? 'បង់រាល់ថ្ងៃ (Daily)' : 'Daily'}</option>
+                <option value="daily">
+                  {loanType === 'luy_rab' 
+                    ? (language === 'kh' ? 'បង់រាល់ថ្ងៃ (ដើម + ការ)' : 'Daily (Principal + Interest)')
+                    : (language === 'kh' ? 'បង់រាល់ថ្ងៃ (Daily)' : 'Daily')
+                  }
+                </option>
               </select>
               <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-xl border border-emerald-500/20">
                 {language === 'kh' ? 'បង់រាល់ថ្ងៃ' : 'Daily Only'}
@@ -612,18 +720,35 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
 
           {/* New Interest Calculation Method Select Option */}
           <div className="space-y-1.5">
-            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <span className="text-blue-400 text-sm">📈</span>
-              {language === 'kh' ? 'របៀបគណនាការប្រាក់' : 'Interest Calculation'} <span className="text-rose-500">*</span>
+            <label className="block text-[13px] font-black text-slate-300 uppercase tracking-wider flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <span className="text-blue-400 text-sm">📈</span>
+                {language === 'kh' ? 'របៀបគណនាការប្រាក់' : 'Interest Calculation'} <span className="text-rose-500">*</span>
+              </span>
+              {loanType === 'luy_rab' && (
+                <span className="text-[10px] font-black text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-md border border-purple-500/30">
+                  🔒 {language === 'kh' ? 'កម្ចីលុយរាប់៖ ការប្រាក់ប្រចាំថ្ងៃ' : 'Luy Rab: Daily Rate'}
+                </span>
+              )}
             </label>
             <select
-              value={interestMethod}
+              disabled={loanType === 'luy_rab'}
+              value={loanType === 'luy_rab' ? 'per-period' : interestMethod}
               onChange={(e) => setInterestMethod(e.target.value)}
-              className="w-full px-4 py-3 text-base bg-slate-950 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-bold text-slate-100"
+              className={`w-full px-4 py-3 text-base bg-slate-950 border rounded-2xl font-bold text-slate-100 transition ${
+                loanType === 'luy_rab'
+                  ? 'border-purple-500/40 text-purple-200 cursor-not-allowed opacity-90'
+                  : 'border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+              }`}
             >
-              <option value="flat">{language === 'kh' ? 'ការប្រាក់ថេរ (Flat Rate)' : 'Flat Rate'}</option>
-              <option value="declining">{language === 'kh' ? 'ការប្រាក់ថយចុះ (Declining Rate)' : 'Declining Rate'}</option>
-              <option value="none">{language === 'kh' ? 'គ្មានការប្រាក់ (No Interest)' : 'No Interest'}</option>
+              <option value="per-period">{language === 'kh' ? 'ការប្រាក់ប្រចាំថ្ងៃ (Daily Rate)' : 'Daily Interest Rate'}</option>
+              {loanType !== 'luy_rab' && (
+                <>
+                  <option value="flat">{language === 'kh' ? 'ការប្រាក់ថេរ (Flat Rate)' : 'Flat Rate'}</option>
+                  <option value="declining">{language === 'kh' ? 'ការប្រាក់ថយចុះ (Declining Rate)' : 'Declining Rate'}</option>
+                  <option value="none">{language === 'kh' ? 'គ្មានការប្រាក់ (No Interest)' : 'No Interest'}</option>
+                </>
+              )}
             </select>
           </div>
 

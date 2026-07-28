@@ -96,6 +96,7 @@ export default function BorrowerDetail({
   const [editPaymentQr, setEditPaymentQr] = useState(borrower.paymentQr || '');
 
   // Interest-related Edit Mode states
+  const [editLoanType, setEditLoanType] = useState<'luy_chok' | 'luy_rab'>(borrower.loanType || 'luy_chok');
   const [editInterestType, setEditInterestType] = useState<'percent' | 'fixed'>(borrower.interestType || 'percent');
   const [editInterestValue, setEditInterestValue] = useState<string>(borrower.interestValue?.toString() || '4');
   const [editPaymentMode, setEditPaymentMode] = useState<'all' | 'interest-only'>(borrower.paymentMode || 'all');
@@ -140,6 +141,7 @@ export default function BorrowerDetail({
       setEditProfilePhoto(borrower.profilePhoto || '');
       setEditCoverPhoto(borrower.coverPhoto || '');
       setEditPaymentQr(borrower.paymentQr || '');
+      setEditLoanType(borrower.loanType || 'luy_chok');
       setEditInterestType(borrower.interestType || 'percent');
       setEditInterestValue(borrower.interestValue?.toString() || '4');
       setEditPaymentMode(borrower.paymentMode || 'all');
@@ -165,6 +167,20 @@ export default function BorrowerDetail({
     }
   }, [borrower.id, isEditing]);
 
+  // Auto enforce settings when editLoanType changes in Edit Mode for Luy Rab
+  useEffect(() => {
+    if (!isEditing) return;
+    if (editLoanType === 'luy_rab') {
+      setEditPaymentMode('all');
+      setEditInterestCalculation('per-period');
+      setEditFrequency('daily');
+      setEditInterestType('percent');
+      setEditInterestValue('60');
+      setIsTotalToPayManuallyEdited(false);
+      setIsInstallmentManuallyEdited(false);
+    }
+  }, [isEditing, editLoanType]);
+
   // Auto calculate total expected amount inside Edit Mode
   useEffect(() => {
     if (!isEditing) return;
@@ -178,7 +194,11 @@ export default function BorrowerDetail({
         const interestAmt = editInterestType === 'percent' ? pVal * (iVal / 100) : iVal;
         const safeInterestAmt = isNaN(interestAmt) ? 0 : interestAmt;
         
-        if (editInterestCalculation === 'per-period') {
+        if (editLoanType === 'luy_rab') {
+          // Luy Rab (កម្ចីលុយរាប់): $100 for 30 days = $60 interest (2% per day)
+          const rabInterest = pVal * 0.02 * dVal;
+          computedTotal = editPaymentMode === 'all' ? pVal + rabInterest : rabInterest;
+        } else if (editInterestCalculation === 'per-period') {
           if (editPaymentMode === 'all') {
             computedTotal = pVal + (safeInterestAmt * dVal);
           } else {
@@ -203,7 +223,7 @@ export default function BorrowerDetail({
     } else {
       if (!isTotalToPayManuallyEdited) setEditTotalToPay('');
     }
-  }, [isEditing, editPrincipal, editInterestType, editInterestValue, editPaymentMode, editDuration, editInterestCalculation, editCurrency, isTotalToPayManuallyEdited]);
+  }, [isEditing, editPrincipal, editLoanType, editInterestType, editInterestValue, editPaymentMode, editDuration, editInterestCalculation, editCurrency, isTotalToPayManuallyEdited]);
 
   // Auto calculate installment amount inside Edit Mode
   useEffect(() => {
@@ -428,6 +448,7 @@ export default function BorrowerDetail({
         currency: editCurrency,
         notes: editNotes.trim(),
         noticeMessage: editNoticeMessage.trim(),
+        loanType: editLoanType,
         profilePhoto: editProfilePhoto,
         coverPhoto: editCoverPhoto,
         paymentQr: editPaymentQr,
@@ -1088,12 +1109,72 @@ export default function BorrowerDetail({
                   </div>
                 </div>
 
+                {/* Loan Type Selector Box (កម្ចីលុយឆក់ vs កម្ចីលុយរាប់) */}
+                <div className="bg-slate-50 dark:bg-slate-850/40 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 space-y-1.5 col-span-1 sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
+                    <span>{language === 'kh' ? 'ប្រភេទកម្ចី (Loan Type)' : 'Loan Type'}</span>
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                      editLoanType === 'luy_rab' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {editLoanType === 'luy_rab' ? (language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab') : (language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok')}
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditLoanType('luy_chok');
+                        setIsTotalToPayManuallyEdited(false);
+                        setIsInstallmentManuallyEdited(false);
+                      }}
+                      className={`p-2 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                        editLoanType === 'luy_chok'
+                          ? 'bg-amber-500/10 border-amber-500 text-amber-900 shadow-xs ring-1 ring-amber-500/30'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="font-extrabold text-xs flex items-center gap-1">
+                        ⚡️ {language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok'}
+                      </span>
+                      <span className="text-[10px] text-slate-500 mt-0.5">
+                        {language === 'kh' ? '$100 30ថ្ងៃ = $15' : '$100 30d = $15'}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditLoanType('luy_rab');
+                        setIsTotalToPayManuallyEdited(false);
+                        setIsInstallmentManuallyEdited(false);
+                      }}
+                      className={`p-2 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                        editLoanType === 'luy_rab'
+                          ? 'bg-purple-500/10 border-purple-500 text-purple-900 shadow-xs ring-1 ring-purple-500/30'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="font-extrabold text-xs flex items-center gap-1">
+                        🔢 {language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab'}
+                      </span>
+                      <span className="text-[10px] text-slate-500 mt-0.5">
+                        {language === 'kh' ? '$100 30ថ្ងៃ = $60' : '$100 30d = $60'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* Interest and Payment Configurations */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Payment Mode */}
                   <div className="bg-slate-50 dark:bg-slate-850/40 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 space-y-1">
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      {language === 'kh' ? 'ប្រភេទនៃការបង់ប្រាក់' : 'Payment Mode'}
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                      <span>{language === 'kh' ? 'ប្រភេទនៃការបង់ប្រាក់' : 'Payment Mode'}</span>
+                      {editLoanType === 'luy_rab' && (
+                        <span className="text-[10px] text-purple-700 bg-purple-100 dark:bg-purple-950/50 dark:text-purple-300 px-1.5 py-0.5 rounded font-bold">
+                          🔒 {language === 'kh' ? 'ដើម+ការ' : 'P+I Only'}
+                        </span>
+                      )}
                     </label>
                     <div className="inline-flex w-full bg-slate-200/60 dark:bg-slate-800/80 p-0.5 rounded-xl h-[38px] items-center">
                       <button
@@ -1111,28 +1192,35 @@ export default function BorrowerDetail({
                       >
                         💵 {language === 'kh' ? 'ដើម+ការ' : 'Principal+Interest'}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditPaymentMode('interest-only');
-                          setIsTotalToPayManuallyEdited(false);
-                          setIsInstallmentManuallyEdited(false);
-                        }}
-                        className={`flex-1 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1 h-full ${
-                          editPaymentMode === 'interest-only' 
-                            ? 'bg-blue-600 text-white shadow-sm' 
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                        }`}
-                      >
-                        📈 {language === 'kh' ? 'តែការសុទ្ធ' : 'Interest-Only'}
-                      </button>
+                      {editLoanType !== 'luy_rab' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditPaymentMode('interest-only');
+                            setIsTotalToPayManuallyEdited(false);
+                            setIsInstallmentManuallyEdited(false);
+                          }}
+                          className={`flex-1 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1 h-full ${
+                            editPaymentMode === 'interest-only' 
+                              ? 'bg-blue-600 text-white shadow-sm' 
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          📈 {language === 'kh' ? 'តែការសុទ្ធ' : 'Interest-Only'}
+                        </button>
+                      )}
                     </div>
                   </div>
 
                   {/* Interest Calculation Method */}
                   <div className="bg-slate-50 dark:bg-slate-850/40 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800/80 space-y-1">
-                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      {language === 'kh' ? 'របៀបគណនាការប្រាក់' : 'Interest Calculation'}
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                      <span>{language === 'kh' ? 'របៀបគណនាការប្រាក់' : 'Interest Calculation'}</span>
+                      {editLoanType === 'luy_rab' && (
+                        <span className="text-[10px] text-purple-700 bg-purple-100 dark:bg-purple-950/50 dark:text-purple-300 px-1.5 py-0.5 rounded font-bold">
+                          🔒 {language === 'kh' ? 'ប្រចាំថ្ងៃ' : 'Per Period'}
+                        </span>
+                      )}
                     </label>
                     <div className="inline-flex w-full bg-slate-200/60 dark:bg-slate-800/80 p-0.5 rounded-xl h-[38px] items-center">
                       <button
@@ -1148,23 +1236,25 @@ export default function BorrowerDetail({
                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                         }`}
                       >
-                        🔄 {language === 'kh' ? 'រាល់ដង' : 'Per Period'}
+                        🔄 {language === 'kh' ? 'រាល់ដង/ប្រចាំថ្ងៃ' : 'Per Period'}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditInterestCalculation('flat');
-                          setIsTotalToPayManuallyEdited(false);
-                          setIsInstallmentManuallyEdited(false);
-                        }}
-                        className={`flex-1 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1 h-full ${
-                          editInterestCalculation === 'flat' 
-                            ? 'bg-blue-600 text-white shadow-sm' 
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                        }`}
-                      >
-                        🎯 {language === 'kh' ? 'ការសរុប' : 'Flat Total'}
-                      </button>
+                      {editLoanType !== 'luy_rab' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditInterestCalculation('flat');
+                            setIsTotalToPayManuallyEdited(false);
+                            setIsInstallmentManuallyEdited(false);
+                          }}
+                          className={`flex-1 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1 h-full ${
+                            editInterestCalculation === 'flat' 
+                              ? 'bg-blue-600 text-white shadow-sm' 
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          🎯 {language === 'kh' ? 'ការសរុប' : 'Flat Total'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1297,17 +1387,31 @@ export default function BorrowerDetail({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      {language === 'kh' ? 'វគ្គបង់ប្រាក់' : 'Payment Frequency'}
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
+                      <span>{language === 'kh' ? 'វគ្គបង់ប្រាក់' : 'Payment Frequency'}</span>
+                      {editLoanType === 'luy_rab' && (
+                        <span className="text-[10px] text-purple-700 bg-purple-100 dark:bg-purple-950/50 dark:text-purple-300 px-1.5 py-0.5 rounded font-bold">
+                          🔒 {language === 'kh' ? 'រៀងរាល់ថ្ងៃ' : 'Daily'}
+                        </span>
+                      )}
                     </label>
                     <select
+                      disabled={editLoanType === 'luy_rab'}
                       value={editFrequency}
                       onChange={(e) => setEditFrequency(e.target.value as any)}
-                      className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium"
+                      className={`w-full px-3.5 py-2.5 text-sm border rounded-xl focus:outline-none transition font-medium ${
+                        editLoanType === 'luy_rab'
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-not-allowed border-slate-200 dark:border-slate-700'
+                          : 'bg-white border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                      }`}
                     >
-                      <option value="daily">{language === 'kh' ? 'រាល់ថ្ងៃ' : 'Daily'}</option>
-                      <option value="weekly">{language === 'kh' ? 'រាល់សប្តាហ៍' : 'Weekly'}</option>
-                      <option value="monthly">{language === 'kh' ? 'រាល់ខែ' : 'Monthly'}</option>
+                      <option value="daily">{language === 'kh' ? 'ជារៀងរាល់ថ្ងៃ' : 'Daily'}</option>
+                      {editLoanType !== 'luy_rab' && (
+                        <>
+                          <option value="weekly">{language === 'kh' ? 'រាល់សប្តាហ៍' : 'Weekly'}</option>
+                          <option value="monthly">{language === 'kh' ? 'រាល់ខែ' : 'Monthly'}</option>
+                        </>
+                      )}
                     </select>
                   </div>
                   <div>
@@ -1597,6 +1701,15 @@ export default function BorrowerDetail({
                   }`}>
                     {isCompleted ? (language === 'kh' ? 'សងរួចរាល់' : 'Completed') : (language === 'kh' ? 'កំពុងសង' : 'Active')}
                   </span>
+                  {borrower.loanType && (
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                      borrower.loanType === 'luy_rab'
+                        ? 'bg-purple-100 text-purple-800 border-purple-200'
+                        : 'bg-amber-100 text-amber-800 border-amber-200'
+                    }`}>
+                      {borrower.loanType === 'luy_rab' ? '🔢 ' + (language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab') : '⚡️ ' + (language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok')}
+                    </span>
+                  )}
                   {borrower.statusTag && (
                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                       borrower.statusTag === 'good' 

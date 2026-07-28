@@ -76,6 +76,7 @@ export interface Borrower {
   locationAccuracy?: number;
   gpsCapturedAt?: string;
   lenderInfo?: LenderInfo;
+  loanType?: 'luy_chok' | 'luy_rab';
 }
 
 export interface Shareholder {
@@ -204,5 +205,6 @@ export interface LoanApplication {
   locationAccuracy?: number;
   gpsCapturedAt?: string;
   lenderInfo?: LenderInfo;
+  loanType?: 'luy_chok' | 'luy_rab';
 }
 

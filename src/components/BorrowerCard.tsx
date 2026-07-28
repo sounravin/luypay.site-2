@@ -287,6 +287,15 @@ export default function BorrowerCard({
                   {borrower.shortId}
                 </span>
               )}
+              {borrower.loanType && (
+                <span className={`inline-flex items-center text-[10px] font-extrabold px-1.5 py-0.5 rounded border shadow-xs ${
+                  borrower.loanType === 'luy_rab'
+                    ? 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30'
+                    : 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30'
+                }`}>
+                  {borrower.loanType === 'luy_rab' ? '🔢 ' + (language === 'kh' ? 'លុយរាប់' : 'Luy Rab') : '⚡️ ' + (language === 'kh' ? 'លុយឆក់' : 'Luy Chok')}
+                </span>
+              )}
               {isOnline && (
                 <span className="inline-flex items-center text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500 text-white border border-emerald-600 shadow-xs animate-pulse">
                   🟢 {language === 'kh' ? 'អនឡាញ' : 'Online'}
