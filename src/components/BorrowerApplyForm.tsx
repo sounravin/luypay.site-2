@@ -5,6 +5,7 @@ import { useLanguage } from '../i18n';
 import { motion, AnimatePresence } from 'motion/react';
 import { Upload, Camera, CheckCircle, AlertCircle, Phone, User, DollarSign, RefreshCw, ChevronLeft, Eye, X, ZoomIn, FileText, ShieldAlert, Sparkles, AlertTriangle, MapPin, Navigation, Calendar, CreditCard, Lock, Unlock } from 'lucide-react';
 import { scanIdCardImage, checkExpiryStatus } from '../utils/ocrHelper';
+import { playNewApplicationAlertSound } from '../utils';
 import { DEFAULT_LENDER_INFO, LoanApplication } from '../types';
 import DigitalLoanContractModal from './DigitalLoanContractModal';
 
@@ -376,6 +377,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
       };
 
       await setDoc(doc(db, 'loan_applications', applicationId), applicationData);
+      playNewApplicationAlertSound();
       setLastCreatedAppId(applicationId);
       setSubmitStatus('success');
     } catch (err: any) {

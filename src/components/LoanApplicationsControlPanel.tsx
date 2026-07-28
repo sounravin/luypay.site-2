@@ -7,9 +7,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, Check, X, FileText, Phone, DollarSign, Calendar, Copy, 
   ExternalLink, Eye, AlertCircle, CheckCircle, ChevronDown, 
-  Trash2, Search, Sparkles, UserCheck, ShieldAlert, RefreshCw, AlertTriangle, CreditCard, MapPin 
+  Trash2, Search, Sparkles, UserCheck, ShieldAlert, RefreshCw, AlertTriangle, CreditCard, MapPin,
+  Volume2, VolumeX, Bell, BellOff
 } from 'lucide-react';
 import { checkExpiryStatus } from '../utils/ocrHelper';
+import { playNewApplicationAlertSound } from '../utils';
 import DigitalLoanContractModal from './DigitalLoanContractModal';
 
 interface LoanApplicationsControlPanelProps {
@@ -35,26 +37,84 @@ export default function LoanApplicationsControlPanel({
   const [rejectReason, setRejectReason] = useState('');
   const [contractApp, setContractApp] = useState<LoanApplication | null>(null);
 
+  // Sound Alert Notification option state
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('loan_app_sound_enabled');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  const isInitialLoad = React.useRef(true);
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    localStorage.setItem('loan_app_sound_enabled', String(next));
+    if (next) {
+      playNewApplicationAlertSound();
+      showToast(
+        language === 'kh' ? '🔔 បានបើកសំឡេង Alert Notification' : '🔔 Sound Alert Enabled',
+        'info'
+      );
+    } else {
+      showToast(
+        language === 'kh' ? '🔕 បានបិទសំឡេង Alert Notification' : '🔕 Sound Alert Disabled',
+        'info'
+      );
+    }
+  };
+
+  const handleTestSound = () => {
+    playNewApplicationAlertSound();
+    showToast(
+      language === 'kh' ? '🔔 សាកល្បងសំឡេង Alert Notification' : '🔔 Testing Sound Alert',
+      'info'
+    );
+  };
+
   useEffect(() => {
     setLoading(true);
     const q = collection(db, 'loan_applications');
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const list: LoanApplication[] = [];
+      let hasNewPendingApp = false;
+
+      if (!isInitialLoad.current) {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added') {
+            const data = change.doc.data() as LoanApplication;
+            if (!data.status || data.status === 'pending') {
+              hasNewPendingApp = true;
+            }
+          }
+        });
+      }
+
       snapshot.forEach((doc) => {
         list.push({ id: doc.id, ...doc.data() } as LoanApplication);
       });
+
       // Sort by newest first
       list.sort((a, b) => (new Date(b.createdAt || 0).getTime() || 0) - (new Date(a.createdAt || 0).getTime() || 0));
       setApplications(list);
       setLoading(false);
+
+      if (hasNewPendingApp && soundEnabled) {
+        playNewApplicationAlertSound();
+        showToast(
+          language === 'kh' ? '🔔 មានសំណើសុំកម្ចីថ្មីទើបតែផ្ញើមក!' : '🔔 New loan application received!',
+          'info'
+        );
+      }
+
+      isInitialLoad.current = false;
     }, (error) => {
       console.error(error);
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [currentUser]);
+  }, [currentUser, soundEnabled]);
 
   const copyApplyLink = () => {
     const applyUrl = `${window.location.origin}/?apply=true&lender=${currentUser}`;
@@ -288,6 +348,62 @@ export default function LoanApplicationsControlPanel({
               {language === 'kh' ? 'បើកមើល' : 'Preview'}
             </a>
           </div>
+        </div>
+      </div>
+
+      {/* Sound Alert Notification Option Control Card */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800/90 p-4 rounded-2xl shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className={`p-2.5 rounded-2xl border ${soundEnabled ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
+            {soundEnabled ? <Volume2 className="w-5 h-5 animate-pulse" /> : <VolumeX className="w-5 h-5" />}
+          </div>
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-slate-100 flex items-center gap-1.5">
+                🔔 {language === 'kh' ? 'ជម្រើសសំឡេង Alert Notification' : 'Alert Notification Sound Option'}
+              </span>
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${soundEnabled ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>
+                {soundEnabled ? (language === 'kh' ? '● បើកដំណើរការ (ON)' : '● ACTIVE') : (language === 'kh' ? '○ បានបិទ (OFF)' : '○ OFF')}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium">
+              {language === 'kh' ? 'លាន់សំឡេង alert ស្វ័យប្រវត្តិនៅពេលកូនបំណុលផ្ញើសំណើសុំកម្ចីចូលមកកាន់ប្រព័ន្ធ' : 'Automatically plays a sound alert whenever a borrower submits a loan request'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 justify-end">
+          <button
+            type="button"
+            onClick={handleTestSound}
+            className="flex-1 sm:flex-none px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 border border-slate-700 cursor-pointer active:scale-95 shadow-sm"
+            title="Test Sound"
+          >
+            <Bell className="w-3.5 h-3.5 text-cyan-400" />
+            <span>{language === 'kh' ? '🔊 សាកល្បងសំឡេង' : 'Test Sound'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleSound}
+            className={`flex-1 sm:flex-none px-4 py-2 text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-95 ${
+              soundEnabled 
+                ? 'bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300' 
+                : 'bg-cyan-600 hover:bg-cyan-500 text-white'
+            }`}
+          >
+            {soundEnabled ? (
+              <>
+                <BellOff className="w-3.5 h-3.5" />
+                <span>{language === 'kh' ? 'បិទសំឡេង' : 'Disable Sound'}</span>
+              </>
+            ) : (
+              <>
+                <Bell className="w-3.5 h-3.5" />
+                <span>{language === 'kh' ? 'បើកសំឡេង' : 'Enable Sound'}</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
