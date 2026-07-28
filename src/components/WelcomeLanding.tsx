@@ -116,40 +116,44 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
   return (
     <div className="min-h-screen bg-[#030712] text-slate-100 font-sans selection:bg-blue-500 selection:text-white relative overflow-x-hidden">
       
-      {/* Background Animated Glowing Orbs */}
+      {/* Background Animated Glowing Orbs - Optimized for Mobile Performance */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <motion.div
-          animate={{
-            x: [0, 80, -40, 0],
-            y: [0, -60, 40, 0],
-            scale: [1, 1.15, 0.9, 1],
-          }}
-          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-20 -left-20 w-[500px] h-[500px] rounded-full bg-blue-600/10 blur-[120px]"
-        />
-        <motion.div
-          animate={{
-            x: [0, -70, 60, 0],
-            y: [0, 50, -70, 0],
-            scale: [1, 0.9, 1.1, 1],
-          }}
-          transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/3 -right-20 w-[600px] h-[600px] rounded-full bg-violet-600/10 blur-[140px]"
-        />
-        <motion.div
-          animate={{
-            x: [0, 50, -50, 0],
-            y: [0, -40, 50, 0],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -bottom-20 left-1/3 w-[550px] h-[550px] rounded-full bg-emerald-500/10 blur-[130px]"
-        />
+        {/* Mobile-optimized static subtle glow */}
+        <div className="md:hidden absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(37,99,235,0.12),transparent_40%),radial-gradient(circle_at_80%_60%,rgba(124,58,237,0.1),transparent_40%)]" />
+
+        {/* Desktop animated glowing orbs with GPU acceleration */}
+        <div className="hidden md:block">
+          <motion.div
+            animate={{
+              x: [0, 60, -30, 0],
+              y: [0, -40, 30, 0],
+            }}
+            transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -top-20 -left-20 w-[450px] h-[450px] rounded-full bg-blue-600/10 blur-[90px] transform-gpu will-change-transform"
+          />
+          <motion.div
+            animate={{
+              x: [0, -50, 40, 0],
+              y: [0, 40, -50, 0],
+            }}
+            transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-1/3 -right-20 w-[500px] h-[500px] rounded-full bg-violet-600/10 blur-[100px] transform-gpu will-change-transform"
+          />
+          <motion.div
+            animate={{
+              x: [0, 40, -40, 0],
+              y: [0, -30, 40, 0],
+            }}
+            transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -bottom-20 left-1/3 w-[450px] h-[450px] rounded-full bg-emerald-500/10 blur-[90px] transform-gpu will-change-transform"
+          />
+        </div>
         {/* Subtle Grid Pattern Overlay */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-20" />
       </div>
 
-      {/* Navigation Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#030712]/80 border-b border-slate-800/80 transition-all">
+      {/* Navigation Header - Mobile Optimized Backdrop */}
+      <header className="sticky top-0 z-40 bg-[#030712]/95 backdrop-blur-md sm:backdrop-blur-xl border-b border-slate-800/80 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
           
           {/* Logo & Brand */}
@@ -353,8 +357,8 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative rounded-3xl bg-slate-900/80 border border-slate-800 p-4 sm:p-6 shadow-2xl shadow-blue-900/20 backdrop-blur-2xl space-y-4"
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="relative rounded-3xl bg-slate-900/95 sm:backdrop-blur-xl border border-slate-800 p-4 sm:p-6 shadow-2xl shadow-blue-900/20 space-y-4"
             >
               {/* Top Bar Decoration */}
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
@@ -418,19 +422,17 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
               </div>
 
               {/* Floating Badge Overlay */}
-              <motion.div
-                animate={{ y: [0, -6, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -bottom-4 -left-4 bg-slate-900 border border-blue-500/40 p-3 rounded-2xl shadow-xl flex items-center gap-3 backdrop-blur-xl"
+              <div
+                className="absolute -bottom-3 left-2 sm:-bottom-4 sm:-left-4 bg-slate-900 border border-blue-500/40 p-2.5 sm:p-3 rounded-2xl shadow-xl flex items-center gap-2.5 sm:gap-3"
               >
-                <div className="w-9 h-9 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold">
-                  <Send className="w-5 h-5 text-blue-400" />
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold">
+                  <Send className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-xs font-extrabold text-white">Telegram Bot Alerts</p>
-                  <p className="text-[10px] text-slate-400">{language === 'kh' ? 'ផ្ញើសារបង្កាន់ដៃភ្លាមៗ 24/7' : 'Instant Receipts Sent'}</p>
+                  <p className="text-[11px] sm:text-xs font-extrabold text-white">Telegram Bot Alerts</p>
+                  <p className="text-[9px] sm:text-[10px] text-slate-400">{language === 'kh' ? 'ផ្ញើសារបង្កាន់ដៃភ្លាមៗ 24/7' : 'Instant Receipts Sent'}</p>
                 </div>
-              </motion.div>
+              </div>
 
             </motion.div>
           </div>
@@ -633,54 +635,54 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
             </p>
           </div>
 
-          {/* Demo Navigation Tabs */}
-          <div className="flex items-center justify-center gap-2 flex-wrap bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 max-w-3xl mx-auto">
+          {/* Demo Navigation Tabs - Mobile Touch Scroll Optimized */}
+          <div className="flex items-center sm:justify-center gap-2 overflow-x-auto overscroll-x-contain pb-2 sm:pb-0 scrollbar-none bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 max-w-3xl mx-auto -mx-2 px-2 sm:mx-auto">
             <button
               onClick={() => setActiveDemoTab('khqr')}
-              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer flex items-center gap-2 ${
+              className={`shrink-0 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer flex items-center gap-1.5 sm:gap-2 ${
                 activeDemoTab === 'khqr'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
-              <QrCode className="w-4 h-4 text-amber-400" />
+              <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
               <span>{language === 'kh' ? '1. ABA KHQR Auto Sync' : '1. KHQR Auto Match'}</span>
             </button>
 
             <button
               onClick={() => setActiveDemoTab('schedule')}
-              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer flex items-center gap-2 ${
+              className={`shrink-0 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer flex items-center gap-1.5 sm:gap-2 ${
                 activeDemoTab === 'schedule'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
-              <Calendar className="w-4 h-4 text-emerald-400" />
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
               <span>{language === 'kh' ? '2. ផ្ទាំងកូនបំណុល' : '2. Borrower Card'}</span>
             </button>
 
             <button
               onClick={() => setActiveDemoTab('calculator')}
-              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer flex items-center gap-2 ${
+              className={`shrink-0 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer flex items-center gap-1.5 sm:gap-2 ${
                 activeDemoTab === 'calculator'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
-              <BarChart3 className="w-4 h-4 text-purple-400" />
-              <span>{language === 'kh' ? '3. ម៉ាស៊ីនគណនាការប្រាក់' : '3. Interest Calculator'}</span>
+              <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
+              <span>{language === 'kh' ? '3. ម៉ាស៊ីនគណនា' : '3. Calculator'}</span>
             </button>
 
             <button
               onClick={() => setActiveDemoTab('telegram')}
-              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer flex items-center gap-2 ${
+              className={`shrink-0 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition cursor-pointer flex items-center gap-1.5 sm:gap-2 ${
                 activeDemoTab === 'telegram'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
-              <Send className="w-4 h-4 text-cyan-400" />
-              <span>{language === 'kh' ? '4. Telegram Bot Receipt' : '4. Telegram Alert'}</span>
+              <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
+              <span>{language === 'kh' ? '4. Telegram Bot' : '4. Telegram Alert'}</span>
             </button>
           </div>
 

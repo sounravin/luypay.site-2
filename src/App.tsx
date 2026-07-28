@@ -2942,6 +2942,18 @@ export default function App() {
   const isExpired = isSubscriptionExpired(memberProfile);
 
   if (!isLoggedIn) {
+    if (!showLoginModal) {
+      return (
+        <WelcomeLanding
+          language={language}
+          setLanguage={setLanguage}
+          onOpenLogin={() => setShowLoginModal(true)}
+          renderSystemLogo={renderSystemLogo}
+          systemName={logoConfig?.systemName || t('appName')}
+        />
+      );
+    }
+
     return (
       <div className="min-h-screen bg-[#030712] flex flex-col antialiased font-sans relative overflow-hidden">
         {/* Background Ambient Glow */}
@@ -2952,32 +2964,43 @@ export default function App() {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-25 pointer-events-none" />
 
         <div className="flex-1 flex flex-col justify-center items-center p-4 relative z-10 my-auto">
-          {/* Top-Right Language Switcher */}
-          <div className="absolute top-6 right-6 z-20 flex gap-2">
+          {/* Top Back to Home & Language Switcher */}
+          <div className="absolute top-6 left-6 right-6 z-20 flex justify-between items-center">
             <button
               type="button"
-              onClick={() => setLanguage('kh')}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
-                language === 'kh'
-                  ? 'bg-blue-600/15 border-blue-500/50 text-blue-400 font-extrabold shadow-blue-500/10'
-                  : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-slate-300'
-              }`}
+              onClick={() => setShowLoginModal(false)}
+              className="px-3.5 py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md"
             >
-              <span className="text-sm">🇰🇭</span>
-              <span>ខ្មែរ</span>
+              <span>←</span>
+              <span>{language === 'kh' ? 'ត្រឡប់ទៅទំព័រដើម' : 'Back to Home'}</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setLanguage('en')}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
-                language === 'en'
-                  ? 'bg-blue-600/15 border-blue-500/50 text-blue-400 font-extrabold shadow-blue-500/10'
-                  : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              <span className="text-sm">🇺🇸</span>
-              <span>EN</span>
-            </button>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setLanguage('kh')}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                  language === 'kh'
+                    ? 'bg-blue-600/15 border-blue-500/50 text-blue-400 font-extrabold shadow-blue-500/10'
+                    : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-slate-300'
+                }`}
+              >
+                <span className="text-sm">🇰🇭</span>
+                <span>ខ្មែរ</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                  language === 'en'
+                    ? 'bg-blue-600/15 border-blue-500/50 text-blue-400 font-extrabold shadow-blue-500/10'
+                    : 'bg-slate-900/40 border-slate-800 text-slate-400 hover:text-slate-300'
+                }`}
+              >
+                <span className="text-sm">🇺🇸</span>
+                <span>EN</span>
+              </button>
+            </div>
           </div>
 
           {/* Toast Notification inside login */}

@@ -657,12 +657,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                       </span>
                     </div>
 
-                    {/* Bottom MRZ Security Bar Overlay matching Cambodian ID format */}
-                    <div className="bg-slate-950/90 backdrop-blur-md px-2 py-1 rounded border border-cyan-500/40 text-left font-mono text-[9px] text-cyan-300/90 leading-tight tracking-wider shadow-md">
-                      <div>IDKHM1708411864&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;</div>
-                      <div>9902196M2411048KHM&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;0</div>
                     </div>
-                  </div>
 
                   {/* Laser Scanner animation during OCR scanning */}
                   {isOcrScanning && (
@@ -720,7 +715,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
 
                       <div className="flex justify-between items-center text-[10px] font-bold text-cyan-200/90 bg-slate-950/80 p-1.5 rounded-lg border border-cyan-500/40">
                         <span>👤 ដាក់អត្តសញ្ញាណប័ណ្ណអោយចំប្រអប់</span>
-                        <span className="font-mono text-[9px] text-slate-400">IDKHM1708411864&lt;&lt;&lt;&lt;&lt;&lt;</span>
+                        <span className="text-[9px] text-cyan-300 font-bold">SECURITY FRAME</span>
                       </div>
                     </div>
                   </div>
@@ -757,8 +752,8 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                       <Lock className="w-5 h-5" />
                     </div>
 
-                    <div className="text-[9px] font-mono text-cyan-300/80 bg-slate-950/90 px-2 py-0.5 rounded w-full text-center border border-cyan-500/30">
-                      IDKHM1708411864&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+                    <div className="text-[9px] font-bold text-cyan-300/90 bg-slate-950/90 px-2 py-1 rounded w-full text-center border border-cyan-500/30">
+                      🇰🇭 CAMBODIAN NATIONAL ID CARD
                     </div>
                   </div>
 
