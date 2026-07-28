@@ -12,19 +12,16 @@ import {
   Database, 
   CheckCircle2, 
   ArrowRight, 
-  PhoneCall, 
   MessageSquare, 
   Smartphone, 
   Lock, 
   Award, 
   Layers, 
   Sparkles, 
-  X, 
   ChevronRight, 
   BarChart3, 
   Calendar, 
   FileSpreadsheet,
-  Check,
   Building2,
   HelpCircle,
   ExternalLink
@@ -60,15 +57,6 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
   const [calcRate, setCalcRate] = useState<number>(1.5); // % per week or month
   const [calcDuration, setCalcDuration] = useState<number>(30); // days
 
-  // Contact / Buy Inquiry Modal State
-  const [showInquiryModal, setShowInquiryModal] = useState<boolean>(false);
-  const [selectedPlan, setSelectedPlan] = useState<string>('Professional');
-  const [inquiryName, setInquiryName] = useState<string>('');
-  const [inquiryPhone, setInquiryPhone] = useState<string>('');
-  const [inquiryBusiness, setInquiryBusiness] = useState<string>('');
-  const [inquiryNote, setInquiryNote] = useState<string>('');
-  const [inquirySubmitted, setInquirySubmitted] = useState<boolean>(false);
-
   // Handle KHQR Simulation action
   const handleSimulatePayment = () => {
     setDemoPaymentStatus('checking');
@@ -87,26 +75,6 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
   const handleResetDemo = () => {
     setDemoPaymentStatus('idle');
     setDemoLogs([]);
-  };
-
-  // Submit Buy Inquiry
-  const handleSubmitInquiry = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inquiryName || !inquiryPhone) return;
-
-    setInquirySubmitted(true);
-    setTimeout(() => {
-      // Construct Telegram deep link for direct instant message
-      const msg = encodeURIComponent(
-        `Bonjour Admin! ខ្ញុំចង់សាកសួរទិញប្រព័ន្ធ LUY-PAY:\n` +
-        `👤 ឈ្មោះ: ${inquiryName}\n` +
-        `📞 លេខទូរស័ព្ទ: ${inquiryPhone}\n` +
-        `🏢 អាជីវកម្ម: ${inquiryBusiness || 'N/A'}\n` +
-        `📦 កញ្ចប់: ${selectedPlan}\n` +
-        `📝 ចំណាំ: ${inquiryNote || 'គ្មាន'}`
-      );
-      window.open(`https://t.me/laymeancamera?text=${msg}`, '_blank');
-    }, 1000);
   };
 
   // Calculations for Calculator Demo
@@ -185,12 +153,6 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
             </a>
             <a href="#demos" className="hover:text-blue-400 transition cursor-pointer">
               {language === 'kh' ? 'សាកល្បង Demos' : 'Product Demos'}
-            </a>
-            <a href="#pricing" className="hover:text-blue-400 transition cursor-pointer">
-              {language === 'kh' ? 'កញ្ចប់សេវាកម្ម' : 'Pricing Plans'}
-            </a>
-            <a href="#contact" className="hover:text-blue-400 transition cursor-pointer">
-              {language === 'kh' ? 'ទាក់ទងទិញ' : 'Contact Sales'}
             </a>
           </nav>
 
@@ -313,14 +275,6 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
                 <Zap className="w-4 h-4 text-amber-400" />
                 <span>{language === 'kh' ? 'មើល Demos ផ្ទាល់' : 'View Interactive Demos'}</span>
               </a>
-
-              <button
-                onClick={() => setShowInquiryModal(true)}
-                className="px-6 py-3.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 rounded-2xl text-xs sm:text-sm font-extrabold border border-emerald-500/40 flex items-center gap-2 transition cursor-pointer"
-              >
-                <PhoneCall className="w-4 h-4 text-emerald-400" />
-                <span>{language === 'kh' ? 'ទាក់ទងទិញ / កញ្ចប់សេវា' : 'Buy / Contact Sales'}</span>
-              </button>
             </motion.div>
 
             {/* Quick Trust Indicators */}
@@ -970,172 +924,7 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
         </div>
       </section>
 
-      {/* PRICING & SUBSCRIPTION PACKAGES SECTION */}
-      <section id="pricing" className="py-20 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
-          <div className="text-center max-w-3xl mx-auto space-y-4">
-            <span className="text-xs font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-              {language === 'kh' ? 'កញ្ចប់សេវាកម្មទិញប្រើប្រាស់' : 'LUY-PAY License Pricing'}
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-white">
-              {language === 'kh' ? 'ជ្រើសរើសកញ្ចប់ប្រព័ន្ធដែលសមស្របនឹងអាជីវកម្ម' : 'Choose Your LUY-PAY System License'}
-            </h2>
-            <p className="text-slate-400 text-sm sm:text-base">
-              {language === 'kh' ? 'គ្មានថ្លៃសេវាកំបាំងមុខ គាំទ្របច្ចេកទេស និងបង្រៀនប្រើប្រាស់ដោយផ្ទាល់ ២៤/៧' : 'Transparent options with 24/7 dedicated Khmer technical setup'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            {/* Plan 1: Starter */}
-            <div className="p-8 rounded-3xl bg-slate-900/60 border border-slate-800 space-y-6 flex flex-col justify-between hover:border-slate-700 transition">
-              <div className="space-y-4">
-                <span className="text-xs font-black uppercase text-slate-400 bg-slate-800 px-3 py-1 rounded-full">
-                  Starter Plan
-                </span>
-                <h3 className="text-xl font-black text-white">សម្រាប់ម្ចាស់ដើមទុនតូចតាច</h3>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black text-white">$15</span>
-                  <span className="text-xs text-slate-400">/ ខែ (Monthly)</span>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  {language === 'kh' ? 'ស័ក្តិសមសម្រាប់អ្នកកម្ចីម្នាក់ឯង ឬដើមទុនដំបូង' : 'Ideal for solo individual lenders starting out.'}
-                </p>
-
-                <ul className="space-y-2.5 text-xs text-slate-300 pt-4 border-t border-slate-800">
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>កត់ត្រាកូនបំណុលបានរហូតដល់ 50 នាក់</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Pure Cloud Sync 100% គ្មានបាត់ទិន្នន័យ</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>គណនាប្រាក់ដើម-ការប្រាក់ស្វ័យប្រវត្តិ</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Export របាយការណ៍ជា Excel</span>
-                  </li>
-                </ul>
-              </div>
-
-              <button
-                onClick={() => {
-                  setSelectedPlan('Starter Plan');
-                  setShowInquiryModal(true);
-                }}
-                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-extrabold rounded-2xl text-xs transition cursor-pointer"
-              >
-                {language === 'kh' ? 'ជ្រើសរើស Starter' : 'Select Starter'}
-              </button>
-            </div>
-
-            {/* Plan 2: Professional (RECOMMENDED) */}
-            <div className="p-8 rounded-3xl bg-slate-900/90 border-2 border-blue-500/60 space-y-6 flex flex-col justify-between relative shadow-2xl shadow-blue-900/30 transform lg:-translate-y-2">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black uppercase px-4 py-1 rounded-full shadow-md">
-                ⭐ ពេញនិយមបំផុត (Most Popular)
-              </div>
-
-              <div className="space-y-4">
-                <span className="text-xs font-black uppercase text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
-                  Professional Plan
-                </span>
-                <h3 className="text-xl font-black text-white">សម្រាប់អាជីវកម្មកម្ចីទូទៅ</h3>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black text-blue-400">$29</span>
-                  <span className="text-xs text-slate-400">/ ខែ (Monthly)</span>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  {language === 'kh' ? 'មុខងារពេញលេញ ជាមួយ ABA Auto Match & Telegram Bot' : 'Complete solution with KHQR Auto Match and Telegram Receipts.'}
-                </p>
-
-                <ul className="space-y-2.5 text-xs text-slate-200 pt-4 border-t border-slate-800">
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span className="font-bold text-white">កត់ត្រាកូនបំណុលមិនកំណត់ (Unlimited Borrowers)</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span className="font-bold text-amber-300">ABA Merchant KHQR Auto Checking</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-cyan-400 shrink-0" />
-                    <span className="font-bold text-cyan-300">Telegram Bot Dispatched Receipts 24/7</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>គណនេយ្យពីររូបិយវត្ថុ USD / KHR</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>សិទ្ធិប្រើប្រាស់ Member & Shareholder Views</span>
-                  </li>
-                </ul>
-              </div>
-
-              <button
-                onClick={() => {
-                  setSelectedPlan('Professional Plan');
-                  setShowInquiryModal(true);
-                }}
-                className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black rounded-2xl text-xs transition cursor-pointer shadow-lg shadow-blue-600/30"
-              >
-                {language === 'kh' ? 'ជ្រើសរើស Professional' : 'Select Professional'}
-              </button>
-            </div>
-
-            {/* Plan 3: Enterprise / Lifetime */}
-            <div className="p-8 rounded-3xl bg-slate-900/60 border border-slate-800 space-y-6 flex flex-col justify-between hover:border-slate-700 transition">
-              <div className="space-y-4">
-                <span className="text-xs font-black uppercase text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
-                  Enterprise Unlimited
-                </span>
-                <h3 className="text-xl font-black text-white">សម្រាប់ក្រុមហ៊ុន / ទិញផ្ដាច់</h3>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl sm:text-3xl font-black text-purple-400">ទាក់ទងទិញ</span>
-                  <span className="text-xs text-slate-400">(Custom/Lifetime)</span>
-                </div>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  {language === 'kh' ? 'ទិញអាជ្ញាប័ណ្ណប្រើរហូត ព្រមទាំងរៀបចំ Domain ផ្ទាល់ខ្លួន' : 'Custom domain installation and lifetime server ownership.'}
-                </p>
-
-                <ul className="space-y-2.5 text-xs text-slate-300 pt-4 border-t border-slate-800">
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>គ្រប់មុខងារទាំងអស់របស់ប្រព័ន្ធ LUY-PAY</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>ដំឡើងលើ Custom Domain / Brand ផ្ទាល់ខ្លួន</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>បណ្តុះបណ្តាល និង Setup ផ្ទាល់ដល់កន្លែង</span>
-                  </li>
-                </ul>
-              </div>
-
-              <button
-                onClick={() => {
-                  setSelectedPlan('Enterprise Unlimited');
-                  setShowInquiryModal(true);
-                }}
-                className="w-full py-3 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 font-extrabold rounded-2xl text-xs border border-purple-500/30 transition cursor-pointer"
-              >
-                {language === 'kh' ? 'ទាក់ទង Enterprise' : 'Contact Enterprise'}
-              </button>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* FOOTER & CONTACT SECTION */}
+      {/* FOOTER SECTION */}
       <footer id="contact" className="py-16 bg-slate-950 border-t border-slate-900 text-slate-400 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
           
@@ -1153,14 +942,6 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
             </div>
 
             <div className="md:col-span-6 flex flex-wrap items-center justify-start md:justify-end gap-3">
-              <button
-                onClick={() => setShowInquiryModal(true)}
-                className="px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-600/20 flex items-center gap-2 cursor-pointer"
-              >
-                <PhoneCall className="w-4 h-4" />
-                <span>{language === 'kh' ? 'ទាក់ទងទិញប្រព័ន្ធ / សាកល្បង' : 'Contact Sales & Trial'}</span>
-              </button>
-
               <a
                 href="https://t.me/laymeancamera"
                 target="_blank"
@@ -1168,7 +949,7 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
                 className="px-5 py-3 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-bold border border-slate-800 flex items-center gap-2 transition"
               >
                 <Send className="w-4 h-4 text-cyan-400" />
-                <span>Telegram: @laymeancamera</span>
+                <span>Telegram Support: @laymeancamera</span>
               </a>
             </div>
           </div>
@@ -1180,136 +961,6 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
 
         </div>
       </footer>
-
-      {/* CONTACT & BUY INQUIRY MODAL */}
-      <AnimatePresence>
-        {showInquiryModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 relative overflow-hidden shadow-2xl"
-            >
-              <button
-                onClick={() => {
-                  setShowInquiryModal(false);
-                  setInquirySubmitted(false);
-                }}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800/60 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase text-blue-400 tracking-wider bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20">
-                  {language === 'kh' ? 'ទាក់ទងទិញ / សាកសួរព័ត៌មាន' : 'Purchase & Trial Inquiry'}
-                </span>
-                <h3 className="text-xl font-black text-white">
-                  {language === 'kh' ? 'ស្នើសុំទិញប្រព័ន្ធ LUY-PAY' : 'Inquire for LUY-PAY License'}
-                </h3>
-                <p className="text-xs text-slate-400">
-                  {language === 'kh' ? 'សូមបញ្ចូលព័ត៌មានខាងក្រោម ប្រព័ន្ធនឹងផ្ញើសារទៅកាន់ Telegram Admin ភ្លាមៗ' : 'Fill out details to connect with our Telegram technical team directly.'}
-                </p>
-              </div>
-
-              {inquirySubmitted ? (
-                <div className="py-8 text-center space-y-3">
-                  <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto text-xl font-bold">
-                    ✓
-                  </div>
-                  <h4 className="text-lg font-black text-white">
-                    {language === 'kh' ? 'បានផ្ញើការស្នើសុំជោគជ័យ!' : 'Inquiry Sent Successfully!'}
-                  </h4>
-                  <p className="text-xs text-slate-400 max-w-xs mx-auto">
-                    {language === 'kh' ? 'ប្រព័ន្ធបានបើក Telegram ដើម្បីផ្ញើសារទៅ Admin ឡាយមាន រួចរាល់។' : 'Redirected to Telegram Admin @laymeancamera for quick chat.'}
-                  </p>
-                  <button
-                    onClick={() => {
-                      setShowInquiryModal(false);
-                      setInquirySubmitted(false);
-                    }}
-                    className="mt-2 px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl"
-                  >
-                    {language === 'kh' ? 'បិទផ្ទាំងនេះ' : 'Close'}
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmitInquiry} className="space-y-4">
-                  <div>
-                    <label className="text-xs font-bold text-slate-300">ឈ្មោះរបស់អ្នក (Your Name) *</label>
-                    <input
-                      type="text"
-                      required
-                      value={inquiryName}
-                      onChange={(e) => setInquiryName(e.target.value)}
-                      placeholder="ឧទាហរណ៍: សុខ ជា"
-                      className="w-full mt-1 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-300">លេខទូរស័ព្ទ / Telegram *</label>
-                      <input
-                        type="text"
-                        required
-                        value={inquiryPhone}
-                        onChange={(e) => setInquiryPhone(e.target.value)}
-                        placeholder="096 888 8xxx"
-                        className="w-full mt-1 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-300">កញ្ចប់សេវា (Plan Choice)</label>
-                      <select
-                        value={selectedPlan}
-                        onChange={(e) => setSelectedPlan(e.target.value)}
-                        className="w-full mt-1 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="Starter Plan">Starter Plan ($15/mo)</option>
-                        <option value="Professional Plan">Professional Plan ($29/mo)</option>
-                        <option value="Enterprise Unlimited">Enterprise Unlimited</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-300">ឈ្មោះអាជីវកម្ម / ក្រុមហ៊ុន (Business Name)</label>
-                    <input
-                      type="text"
-                      value={inquiryBusiness}
-                      onChange={(e) => setInquiryBusiness(e.target.value)}
-                      placeholder="ឧទាហរណ៍: អាជីវកម្មកម្ចី សុខជា"
-                      className="w-full mt-1 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-300">ចំណាំ ឬសំណួរផ្សេងៗ (Optional Note)</label>
-                    <textarea
-                      rows={2}
-                      value={inquiryNote}
-                      onChange={(e) => setInquiryNote(e.target.value)}
-                      placeholder="ចង់បានការបង្រៀនប្រើប្រាស់ដោយផ្ទាល់..."
-                      className="w-full mt-1 px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm rounded-xl shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer transition"
-                  >
-                    <Send className="w-4 h-4 text-cyan-300" />
-                    <span>{language === 'kh' ? 'ផ្ញើសារទាក់ទងទិញតាម Telegram' : 'Send Inquiry via Telegram'}</span>
-                  </button>
-                </form>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
     </div>
   );
