@@ -2851,10 +2851,10 @@ export default function App() {
           ...b,
           ...cleanedFields,
         };
-        if (updatedFields.topUpLoanAmount === undefined) delete (updated as any).topUpLoanAmount;
-        if (updatedFields.topUpNotes === undefined) delete (updated as any).topUpNotes;
-        if (updatedFields.topUpDate === undefined) delete (updated as any).topUpDate;
-        if (updatedFields.shareholderId === undefined) {
+        if ('topUpLoanAmount' in updatedFields && updatedFields.topUpLoanAmount === undefined) delete (updated as any).topUpLoanAmount;
+        if ('topUpNotes' in updatedFields && updatedFields.topUpNotes === undefined) delete (updated as any).topUpNotes;
+        if ('topUpDate' in updatedFields && updatedFields.topUpDate === undefined) delete (updated as any).topUpDate;
+        if ('shareholderId' in updatedFields && (updatedFields.shareholderId === undefined || updatedFields.shareholderId === '')) {
           delete (updated as any).shareholderId;
           delete (updated as any).shareholderName;
           delete (updated as any).shareholderSharePercent;

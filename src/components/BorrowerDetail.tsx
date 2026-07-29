@@ -173,9 +173,14 @@ export default function BorrowerDetail({
       setQuickTopUpNotes(borrower.topUpNotes || '');
       setQuickTopUpDate(borrower.topUpDate || '');
 
+      const validShareholders = shareholders.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
       const isPartner = Boolean(borrower.shareholderId || borrower.shareholderName);
       setEditFundType(isPartner ? 'partner' : 'personal');
-      setEditShareholderId(borrower.shareholderId || (shareholders[0]?.id || ''));
+      setEditShareholderId(
+        borrower.shareholderId && validShareholders.some((s) => s.id === borrower.shareholderId)
+          ? borrower.shareholderId
+          : (validShareholders[0]?.id || '')
+      );
     }
   }, [borrower.id, isEditing]);
 
