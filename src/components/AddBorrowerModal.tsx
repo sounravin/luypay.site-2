@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { CurrencyType, FrequencyType } from '../types';
+import { CurrencyType, FrequencyType, Shareholder } from '../types';
 import { getTodayDateString } from '../utils';
-import { X, Info, Camera, User, Image } from 'lucide-react';
+import { X, Info, Camera, User, Image, Users, Wallet } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
 interface AddBorrowerModalProps {
   isOpen: boolean;
   onClose: () => void;
+  shareholders?: Shareholder[];
   onSave: (data: {
     name: string;
     phone: string;
@@ -38,6 +39,10 @@ interface AddBorrowerModalProps {
     locationAccuracy?: number;
     gpsCapturedAt?: string;
     loanType?: 'luy_chok' | 'luy_rab';
+    shareholderId?: string;
+    shareholderName?: string;
+    shareholderSharePercent?: number;
+    shareholderCalculationType?: 'daily_usd' | 'percent';
   }) => void;
   prefilledData?: {
     name?: string;
@@ -60,7 +65,7 @@ interface AddBorrowerModalProps {
   } | null;
 }
 
-export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledData }: AddBorrowerModalProps) {
+export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledData, shareholders = [] }: AddBorrowerModalProps) {
   const { t, language } = useLanguage();
   const [name, setName] = useState('');
 
@@ -70,6 +75,10 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
   const [totalToPay, setTotalToPay] = useState<string>('');
   const [duration, setDuration] = useState<string>('24'); // Default 24 installments
   const [loanType, setLoanType] = useState<'luy_chok' | 'luy_rab'>('luy_chok');
+
+  // Partner / Personal Fund Option State
+  const [fundType, setFundType] = useState<'personal' | 'partner'>('personal');
+  const [selectedShareholderId, setSelectedShareholderId] = useState<string>('sh_dalypoa');
   const [installmentAmount, setInstallmentAmount] = useState<string>('');
   const [frequency, setFrequency] = useState<FrequencyType>('daily');
   const [loanDate, setLoanDate] = useState(getTodayDateString());
@@ -356,6 +365,13 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
 
 
 
+    const selectedPartner = shareholders.find((s) => s.id === selectedShareholderId) || {
+      id: 'sh_dalypoa',
+      name: 'Daly Poa',
+    };
+    const shId = fundType === 'partner' ? selectedPartner.id : undefined;
+    const shName = fundType === 'partner' ? selectedPartner.name : undefined;
+
     onSave({
       name: name.trim(),
       phone: phone.trim(),
@@ -387,6 +403,10 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
       locationAddress,
       locationAccuracy,
       gpsCapturedAt,
+      shareholderId: shId,
+      shareholderName: shName,
+      shareholderSharePercent: fundType === 'partner' ? 50 : undefined,
+      shareholderCalculationType: fundType === 'partner' ? 'percent' : undefined,
     });
 
     // Reset fields
@@ -611,6 +631,109 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                   KHR (៛)
                 </button>
               </div>
+            </div>
+
+            {/* Fund Source Selector Box (លុយផ្ទាល់ខ្លួន vs លុយដៃគូរ) */}
+            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Wallet className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{language === 'kh' ? 'ប្រភពដើមទុនកម្ចី (Fund Source)' : 'Fund Source'}</span>
+                </label>
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                  fundType === 'partner' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-blue-100 text-blue-800'
+                }`}>
+                  {fundType === 'partner' ? (language === 'kh' ? '🤝 លុយដៃគូរ' : 'Partner Funds') : (language === 'kh' ? '💼 លុយផ្ទាល់ខ្លួន' : 'Personal Funds')}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFundType('personal')}
+                  className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                    fundType === 'personal'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-500/30'
+                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="font-extrabold text-xs flex items-center gap-1.5">
+                    💼 {language === 'kh' ? 'លុយផ្ទាល់ខ្លួន' : 'Personal Funds'}
+                  </span>
+                  <span className={`text-[10px] mt-0.5 font-medium ${fundType === 'personal' ? 'text-blue-100' : 'text-slate-500'}`}>
+                    {language === 'kh' ? 'រក្សាការប្រាក់ 100% ម្នាក់ឯង' : 'Keep 100% interest'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFundType('partner')}
+                  className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                    fundType === 'partner'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-500/30'
+                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="font-extrabold text-xs flex items-center gap-1.5">
+                    🤝 {language === 'kh' ? 'លុយដៃគូរ' : 'Partner Funds'}
+                  </span>
+                  <span className={`text-[10px] mt-0.5 font-medium ${fundType === 'partner' ? 'text-emerald-100' : 'text-slate-500'}`}>
+                    {language === 'kh' ? 'ចែកការប្រាក់ 50% / 50%' : 'Split interest 50% / 50%'}
+                  </span>
+                </button>
+              </div>
+
+              {/* When Partner Funds is selected, display partner dropdown and live profit split preview */}
+              {fundType === 'partner' && (
+                <div className="mt-2.5 p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2.5 animate-in fade-in duration-200">
+                  <div>
+                    <label className="block text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider mb-1">
+                      {language === 'kh' ? 'ជ្រើសរើសដៃគូរភាគហ៊ុន (Select Partner):' : 'Select Partner Shareholder:'}
+                    </label>
+                    <select
+                      value={selectedShareholderId}
+                      onChange={(e) => setSelectedShareholderId(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    >
+                      {shareholders.length > 0 ? (
+                        shareholders.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name} ({s.username || 'partner'}) — 50% Split
+                          </option>
+                        ))
+                      ) : (
+                        <option value="sh_dalypoa">Daly Poa (dalypoa) — 50% Split</option>
+                      )}
+                    </select>
+                  </div>
+
+                  <div className="p-2.5 bg-white border border-emerald-200 rounded-lg space-y-1 text-xs">
+                    <div className="flex items-center justify-between font-bold text-emerald-900 border-b border-emerald-100 pb-1">
+                      <span>💡 {language === 'kh' ? 'ការបែងចែកផលចំណេញប្រចាំថ្ងៃ (50%/50% Split):' : '50%/50% Interest Revenue Split:'}</span>
+                      <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[10px]">50% / 50%</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pt-1 text-[11px] font-bold">
+                      <div className="bg-blue-50 p-1.5 rounded border border-blue-100 text-blue-900">
+                        <span className="block text-[10px] text-blue-600 uppercase font-black">👨‍💼 ម្ចាស់បំណុល (Main)</span>
+                        <span className="text-xs font-mono font-black">
+                          ${(((parseFloat(totalToPay) - parseFloat(principal)) || 4) / 2 / (parseInt(duration) || 1)).toFixed(2)} / ថ្ងៃ
+                        </span>
+                      </div>
+                      <div className="bg-emerald-100/70 p-1.5 rounded border border-emerald-200 text-emerald-900">
+                        <span className="block text-[10px] text-emerald-700 uppercase font-black">🤝 ដៃគូរ (Partner)</span>
+                        <span className="text-xs font-mono font-black">
+                          ${(((parseFloat(totalToPay) - parseFloat(principal)) || 4) / 2 / (parseInt(duration) || 1)).toFixed(2)} / ថ្ងៃ
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-emerald-700/90 font-medium italic pt-1">
+                      {language === 'kh'
+                        ? 'ដៃគូរអាច Login ចូលគណនី (Username: dalypoa | Pass: 1234) ដើម្បីមើលទិន្នន័យ និងលំហូរសាច់ប្រាក់របស់គាត់បាន!'
+                        : 'Partner can log in to view their dashboard and track daily cashflow.'}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Loan Type Selector Box (កម្ចីលុយឆក់ vs កម្ចីលុយរាប់) */}

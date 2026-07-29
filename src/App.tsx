@@ -1,11 +1,29 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest } from './types';
+import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest, Shareholder } from './types';
 import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound, backfillShortIds, formatMoney } from './utils';
 import Header from './components/Header';
 import BorrowerCard from './components/BorrowerCard';
 import BorrowerDetail from './components/BorrowerDetail';
 import AddBorrowerModal from './components/AddBorrowerModal';
 import BorrowerPortal from './components/BorrowerPortal';
+import ShareholderDashboard from './components/ShareholderDashboard';
+import ShareholderManagementModal from './components/ShareholderManagementModal';
+
+const DEFAULT_SHAREHOLDERS: Shareholder[] = [
+  {
+    id: 'sh_dalypoa',
+    name: 'Daly Poa',
+    phone: '012 345 678',
+    username: 'dalypoa',
+    password: '1234',
+    capitalUSD: 1000,
+    sharePercent: 50,
+    calculationType: 'percent',
+    dailyProfitUSD: 2.0,
+    notes: 'ដៃគូរភាគហ៊ុន 50%/50%',
+    createdAt: new Date().toISOString(),
+  },
+];
 import AdminMembersDashboard from './components/AdminMembersDashboard';
 import PricingPanel from './components/PricingPanel';
 import NotificationBell, { playNotificationSound } from './components/NotificationBell';
@@ -191,6 +209,48 @@ export default function App() {
     return safeStorage.getItem(`luypay_avatar_frame_${currentUser}`) || 'kbach_gold';
   });
   const [isAvatarFrameModalOpen, setIsAvatarFrameModalOpen] = useState<boolean>(false);
+
+  // Shareholder & Partner Portal States
+  const [shareholders, setShareholders] = useState<Shareholder[]>(() => {
+    try {
+      const raw = safeStorage.getItem('luypay_shareholders_global');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading shareholders:', e);
+    }
+    return DEFAULT_SHAREHOLDERS;
+  });
+
+  const [isShareholderModalOpen, setIsShareholderModalOpen] = useState<boolean>(false);
+  const [isPartnerLoggedIn, setIsPartnerLoggedIn] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('partner')) return true;
+    const activeId = safeStorage.getItem('luypay_authenticated_partner_id');
+    return !!activeId;
+  });
+  const [activePartner, setActivePartner] = useState<Shareholder | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const partnerParam = params.get('partner');
+    if (partnerParam) {
+      const found = shareholders.find((s) => s.id === partnerParam || s.username?.toLowerCase() === partnerParam.toLowerCase());
+      if (found) return found;
+    }
+    const activeId = safeStorage.getItem('luypay_authenticated_partner_id');
+    if (activeId) {
+      const found = shareholders.find((s) => s.id === activeId);
+      if (found) return found;
+    }
+    return shareholders[0] || DEFAULT_SHAREHOLDERS[0];
+  });
+
+  const handleSaveShareholders = (updated: Shareholder[]) => {
+    setShareholders(updated);
+    safeStorage.setItem('luypay_shareholders_global', JSON.stringify(updated));
+    showToast('បានរក្សាទុកព័ត៌មានភាគហ៊ុនជោគជ័យ!');
+  };
 
   const handleBlockScreenImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1148,6 +1208,22 @@ export default function App() {
         showToast('បានចូលប្រើប្រាស់គណនីអ្នកគ្រប់គ្រងដោយជោគជ័យ!');
         return;
       }
+    }
+
+    // 1.5 Check Partner / Shareholder login (e.g. dalypoa / 1234)
+    const matchedPartner = shareholders.find((s) => {
+      const u = (s.username || 'admin').trim().toLowerCase();
+      const p = (s.password || 'admin').trim();
+      return u === cleanUsername && p === passwordInput;
+    });
+
+    if (matchedPartner) {
+      safeStorage.setItem(`luypay_partner_auth_${matchedPartner.id}`, 'true');
+      safeStorage.setItem('luypay_authenticated_partner_id', matchedPartner.id);
+      setActivePartner(matchedPartner);
+      setIsPartnerLoggedIn(true);
+      showToast(`សូមស្វាគមន៍ដៃគូរភាគហ៊ុន៖ ${matchedPartner.name}!`);
+      return;
     }
 
     // 2. Check Firestore members collection
@@ -3886,6 +3962,22 @@ export default function App() {
     );
   }
 
+  if (isPartnerLoggedIn) {
+    const partnerToUse = activePartner || shareholders[0] || DEFAULT_SHAREHOLDERS[0];
+    return (
+      <ShareholderDashboard
+        shareholder={partnerToUse}
+        allShareholders={shareholders}
+        borrowers={borrowers}
+        language={language}
+        onBackToMain={() => {
+          setIsPartnerLoggedIn(false);
+          safeStorage.removeItem('luypay_authenticated_partner_id');
+        }}
+      />
+    );
+  }
+
   const renderMobileAppUi = () => {
     const currentThemeConfig = THEMES[appTheme] || THEMES.slate;
     const isDarkTheme = theme === 'dark';
@@ -6268,6 +6360,17 @@ export default function App() {
         }}
         onSave={handleAddNewBorrower}
         prefilledData={prefilledData}
+        shareholders={shareholders}
+      />
+
+      {/* Shareholder Management Modal */}
+      <ShareholderManagementModal
+        isOpen={isShareholderModalOpen}
+        onClose={() => setIsShareholderModalOpen(false)}
+        shareholders={shareholders}
+        onSaveShareholders={handleSaveShareholders}
+        borrowers={borrowers}
+        language={language}
       />
 
       {/* Detail & Card-Checkboard Overlay */}
@@ -6823,6 +6926,47 @@ export default function App() {
                     )}
                   </button>
                 </form>
+              </div>
+
+              {/* Shareholder Partner Management Section */}
+              <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-emerald-500" />
+                  <span>{language === 'kh' ? 'ការគ្រប់គ្រងដៃគូរភាគហ៊ុន' : 'Partner Shareholder Management'}</span>
+                </h4>
+
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSettingsOpen(false);
+                      setIsShareholderModalOpen(true);
+                    }}
+                    className="w-full p-3 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-extrabold rounded-2xl text-xs flex items-center justify-between transition cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>🤝</span>
+                      <span>{language === 'kh' ? 'គ្រប់គ្រងដៃគូរភាគហ៊ុន និងការចែកផល' : 'Manage Shareholder Accounts & Profit Split'}</span>
+                    </span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSettingsOpen(false);
+                      setIsPartnerLoggedIn(true);
+                      setActivePartner(shareholders[0] || DEFAULT_SHAREHOLDERS[0]);
+                    }}
+                    className="w-full p-3 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 font-extrabold rounded-2xl text-xs flex items-center justify-between transition cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>📊</span>
+                      <span>{language === 'kh' ? 'មើលផ្ទាំង Dashboard របស់ដៃគូរ (Partner View)' : 'View Partner Dashboard UI'}</span>
+                    </span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Cache Clear & Force Update Section */}
