@@ -115,10 +115,12 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
     );
   };
 
-  // Automatically request GPS location on mount
+  // Automatically request GPS location on mount ONLY if requireGps is enabled
   useEffect(() => {
-    requestGpsLocation();
-  }, []);
+    if (requireGps) {
+      requestGpsLocation();
+    }
+  }, [requireGps]);
 
   // Clean up camera stream when component unmounts or view changes
   useEffect(() => {
