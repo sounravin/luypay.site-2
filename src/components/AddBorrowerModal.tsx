@@ -78,7 +78,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
 
   // Partner / Personal Fund Option State
   const [fundType, setFundType] = useState<'personal' | 'partner'>('personal');
-  const [selectedShareholderId, setSelectedShareholderId] = useState<string>('sh_dalypoa');
+  const [selectedShareholderId, setSelectedShareholderId] = useState<string>('');
   const [installmentAmount, setInstallmentAmount] = useState<string>('');
   const [frequency, setFrequency] = useState<FrequencyType>('daily');
   const [loanDate, setLoanDate] = useState(getTodayDateString());
@@ -105,6 +105,11 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
 
   useEffect(() => {
     if (isOpen) {
+      if (shareholders.length > 0) {
+        if (!selectedShareholderId || !shareholders.some((s) => s.id === selectedShareholderId)) {
+          setSelectedShareholderId(shareholders[0].id);
+        }
+      }
       if (prefilledData) {
         setName(prefilledData.name || '');
         setPhone(prefilledData.phone || '');
@@ -365,12 +370,21 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
 
 
 
-    const selectedPartner = shareholders.find((s) => s.id === selectedShareholderId) || {
-      id: 'sh_dalypoa',
-      name: 'Daly Poa',
-    };
-    const shId = fundType === 'partner' ? selectedPartner.id : undefined;
-    const shName = fundType === 'partner' ? selectedPartner.name : undefined;
+    if (fundType === 'partner') {
+      if (!shareholders || shareholders.length === 0) {
+        return alert(language === 'kh' ? 'មិនទាន់មានដៃគូរភាគហ៊ុនទេ! សូមបង្កើត ឬបន្ថែមព័ត៌មានដៃគូរភាគហ៊ុនជាមុនសិន!' : 'No partner shareholders created yet! Please add a shareholder first.');
+      }
+    }
+
+    const selectedPartner = fundType === 'partner'
+      ? (shareholders.find((s) => s.id === selectedShareholderId) || shareholders[0])
+      : undefined;
+
+    const shId = selectedPartner ? selectedPartner.id : undefined;
+    const shName = selectedPartner ? selectedPartner.name : undefined;
+    const shPct = selectedPartner ? (selectedPartner.sharePercent ?? 50) : undefined;
+    const shCalc = selectedPartner ? (selectedPartner.calculationType ?? 'percent') : undefined;
+    const shDaily = selectedPartner ? (selectedPartner.dailyProfitUSD ?? 1.0) : undefined;
 
     onSave({
       name: name.trim(),
@@ -405,8 +419,9 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
       gpsCapturedAt,
       shareholderId: shId,
       shareholderName: shName,
-      shareholderSharePercent: fundType === 'partner' ? 50 : undefined,
-      shareholderCalculationType: fundType === 'partner' ? 'percent' : undefined,
+      shareholderSharePercent: shPct,
+      shareholderCalculationType: shCalc,
+      shareholderDailyUSD: shDaily,
     });
 
     // Reset fields
@@ -690,21 +705,23 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     <label className="block text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider mb-1">
                       {language === 'kh' ? 'ជ្រើសរើសដៃគូរភាគហ៊ុន (Select Partner):' : 'Select Partner Shareholder:'}
                     </label>
-                    <select
-                      value={selectedShareholderId}
-                      onChange={(e) => setSelectedShareholderId(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                    >
-                      {shareholders.length > 0 ? (
-                        shareholders.map((s) => (
+                    {shareholders.length > 0 ? (
+                      <select
+                        value={selectedShareholderId}
+                        onChange={(e) => setSelectedShareholderId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+                      >
+                        {shareholders.map((s) => (
                           <option key={s.id} value={s.id}>
-                            {s.name} ({s.username || 'partner'}) — 50% Split
+                            {s.name} ({s.username || 'partner'}) — {s.calculationType === 'daily_usd' ? `$${s.dailyProfitUSD || 1}/ថ្ងៃ` : `${s.sharePercent || 50}% Split`}
                           </option>
-                        ))
-                      ) : (
-                        <option value="sh_dalypoa">Daly Poa (dalypoa) — 50% Split</option>
-                      )}
-                    </select>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="p-2.5 bg-amber-100 border border-amber-300 text-amber-900 rounded-lg text-[11px] font-bold flex items-center justify-between">
+                        <span>{language === 'kh' ? '⚠️ មិនទាន់មានដៃគូរភាគហ៊ុនទេ! សូមបង្កើតដៃគូរជាមុនសិន' : '⚠️ No shareholders available! Please add a partner first.'}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-2.5 bg-white border border-emerald-200 rounded-lg space-y-1 text-xs">

@@ -108,6 +108,14 @@ export default function BorrowerDetail({
   const [editInterestOnlyExtensionNote, setEditInterestOnlyExtensionNote] = useState<string>(borrower.interestOnlyExtensionNote || '');
   const [editInterestOnlyExtensionReason, setEditInterestOnlyExtensionReason] = useState<string>(borrower.interestOnlyExtensionReason || '');
   const [extensionActive, setExtensionActive] = useState<boolean>(!!borrower.interestOnlyExtension);
+
+  // Partner Fund Source Edit States
+  const [editFundType, setEditFundType] = useState<'personal' | 'partner'>(
+    Boolean(borrower.shareholderId || borrower.shareholderName) ? 'partner' : 'personal'
+  );
+  const [editShareholderId, setEditShareholderId] = useState<string>(
+    borrower.shareholderId || (shareholders[0]?.id || '')
+  );
   const [extensionNote, setExtensionNote] = useState<string>(borrower.interestOnlyExtensionNote || '');
   const [extensionReason, setExtensionReason] = useState<string>(borrower.interestOnlyExtensionReason || '');
 
@@ -164,6 +172,10 @@ export default function BorrowerDetail({
       setQuickTopUpSeparate(borrower.topUpSeparate !== false);
       setQuickTopUpNotes(borrower.topUpNotes || '');
       setQuickTopUpDate(borrower.topUpDate || '');
+
+      const isPartner = Boolean(borrower.shareholderId || borrower.shareholderName);
+      setEditFundType(isPartner ? 'partner' : 'personal');
+      setEditShareholderId(borrower.shareholderId || (shareholders[0]?.id || ''));
     }
   }, [borrower.id, isEditing]);
 
@@ -434,6 +446,16 @@ export default function BorrowerDetail({
       setEditTopUpDate('');
     }
 
+    const selectedPartner = editFundType === 'partner'
+      ? (shareholders.find((s) => s.id === editShareholderId) || shareholders[0])
+      : undefined;
+
+    const shId = selectedPartner ? selectedPartner.id : undefined;
+    const shName = selectedPartner ? selectedPartner.name : undefined;
+    const shPct = selectedPartner ? (selectedPartner.sharePercent ?? 50) : undefined;
+    const shCalc = selectedPartner ? (selectedPartner.calculationType ?? 'percent') : undefined;
+    const shDaily = selectedPartner ? (selectedPartner.dailyProfitUSD ?? 1.0) : undefined;
+
     if (onEditBorrower) {
       onEditBorrower(borrower.id, {
         name: editName.trim(),
@@ -463,6 +485,11 @@ export default function BorrowerDetail({
         topUpSeparate: finalTopUpSeparate,
         topUpNotes: finalTopUpNotes,
         topUpDate: finalTopUpDate,
+        shareholderId: shId,
+        shareholderName: shName,
+        shareholderSharePercent: shPct,
+        shareholderCalculationType: shCalc,
+        shareholderDailyUSD: shDaily,
       });
     }
     setIsEditing(false);
@@ -1525,6 +1552,82 @@ export default function BorrowerDetail({
                   )}
                 </div>
 
+                {/* Edit Fund Source / Shareholder Partner */}
+                <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="block text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <Wallet className="w-4 h-4 text-emerald-600" />
+                        <span>{language === 'kh' ? 'ប្រភពដើមទុនកម្ចី & ដៃគូរភាគហ៊ុន' : 'Fund Source & Shareholder Partner'}</span>
+                      </span>
+                      <p className="text-[10px] text-emerald-700 font-semibold mt-0.5">
+                        {language === 'kh' ? 'ជ្រើសរើសប្រភេទប្រភពដើមទុន និងភ្ជាប់ទៅកាន់គណនីដៃគូរភាគហ៊ុន' : 'Select fund source type and link to partner account'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditFundType('personal')}
+                      className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                        editFundType === 'personal'
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-500/30'
+                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="font-extrabold text-xs flex items-center gap-1.5">
+                        💼 {language === 'kh' ? 'លុយផ្ទាល់ខ្លួន' : 'Personal Funds'}
+                      </span>
+                      <span className={`text-[10px] mt-0.5 font-medium ${editFundType === 'personal' ? 'text-blue-100' : 'text-slate-500'}`}>
+                        {language === 'kh' ? 'រក្សាការប្រាក់ 100% ម្នាក់ឯង' : 'Keep 100% interest'}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditFundType('partner')}
+                      className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                        editFundType === 'partner'
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-500/30'
+                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="font-extrabold text-xs flex items-center gap-1.5">
+                        🤝 {language === 'kh' ? 'លុយដៃគូរ' : 'Partner Funds'}
+                      </span>
+                      <span className={`text-[10px] mt-0.5 font-medium ${editFundType === 'partner' ? 'text-emerald-100' : 'text-slate-500'}`}>
+                        {language === 'kh' ? 'ចែកការប្រាក់ជាមួយដៃគូរ' : 'Split interest with partner'}
+                      </span>
+                    </button>
+                  </div>
+
+                  {editFundType === 'partner' && (
+                    <div className="space-y-2 pt-1">
+                      <label className="block text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider">
+                        {language === 'kh' ? 'ជ្រើសរើសដៃគូរភាគហ៊ុន (Select Partner):' : 'Select Shareholder Partner:'}
+                      </label>
+                      {shareholders.length > 0 ? (
+                        <select
+                          value={editShareholderId}
+                          onChange={(e) => setEditShareholderId(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+                        >
+                          {shareholders.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} ({s.username || 'partner'}) — {s.calculationType === 'daily_usd' ? `$${s.dailyProfitUSD || 1}/ថ្ងៃ` : `${s.sharePercent || 50}% Split`}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="p-2.5 bg-amber-100 border border-amber-300 text-amber-900 rounded-lg text-[11px] font-bold">
+                          {language === 'kh' ? '⚠️ មិនទាន់មានដៃគូរភាគហ៊ុនទេ! សូមបង្កើតដៃគូរភាគហ៊ុនជាមុនសិន' : '⚠️ No shareholders available! Please add a partner first.'}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Edit Digital Top-up Loan Section */}
                 <div className="p-4 bg-indigo-50/50 border border-indigo-200 rounded-2xl space-y-4">
                   <div>
@@ -1719,6 +1822,17 @@ export default function BorrowerDetail({
                         : 'bg-blue-100 text-blue-800 border border-blue-200'
                     }`}>
                       {borrower.statusTag}
+                    </span>
+                  )}
+                  {isLinkedToShareholder ? (
+                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-xs">
+                      <span>🤝</span>
+                      <span>{language === 'kh' ? `លុយដៃគូរ (${borrower.shareholderName || 'Partner'})` : `Partner (${borrower.shareholderName || 'Partner'})`}</span>
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1">
+                      <span>💼</span>
+                      <span>{language === 'kh' ? 'លុយផ្ទាល់ខ្លួន' : 'Personal Funds'}</span>
                     </span>
                   )}
                 </div>
