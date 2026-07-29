@@ -1042,8 +1042,8 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
             </div>
           </div>
 
-          {/* GPS Location Status & Requirement Card */}
-          {(() => {
+          {/* GPS Location Status & Requirement Card - Only show if GPS is required */}
+          {requireGps && (() => {
             const currentStatus = gpsStatus as 'idle' | 'requesting' | 'captured' | 'denied' | 'error';
             const isGpsCaptured = currentStatus === 'captured' && latitude !== null && longitude !== null;
             const isRequestingGps = currentStatus === 'requesting';
