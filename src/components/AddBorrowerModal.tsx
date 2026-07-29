@@ -462,28 +462,31 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
   const selectedPartner = shareholders.find((s) => s.id === selectedShareholderId) || shareholders[0];
 
   return (
-    <div id="add-borrower-modal" className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 flex flex-col my-8">
+    <div id="add-borrower-modal" className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 flex flex-col my-auto overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-200">
-          <h2 className="text-lg font-extrabold text-slate-900">{t('addBorrowerTitle')}</h2>
+        <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between border-b border-slate-800 shrink-0">
+          <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+            <span className="p-1 bg-blue-600/30 text-blue-400 rounded-lg text-sm">👤</span>
+            <span>{t('addBorrowerTitle')}</span>
+          </h2>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-slate-100 active:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-lg transition cursor-pointer"
+            className="p-1.5 bg-slate-800/80 hover:bg-slate-700 active:bg-slate-600 text-slate-300 hover:text-white rounded-xl transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto max-h-[calc(100vh-12rem)]">
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto max-h-[calc(100vh-8rem)] bg-slate-50/40">
           {/* Section 1: Borrower Information */}
           <div className="space-y-3">
             {/* Profile & Cover Photo Upload */}
-            <div className="grid grid-cols-2 gap-4 pb-3 border-b border-slate-100 mb-2">
+            <div className="grid grid-cols-2 gap-3 pb-3 border-b border-slate-200/80 mb-2">
               {/* Profile Photo */}
-              <div className="flex flex-col items-center justify-center p-3 bg-slate-50/50 border border-slate-150 rounded-2xl relative">
-                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 self-start">
+              <div className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200/90 rounded-2xl relative shadow-2xs">
+                <span className="block text-[10px] font-black text-slate-600 uppercase tracking-wider mb-2 self-start">
                   {language === 'kh' ? 'រូបថតកូនបំណុល' : 'Profile Photo'}
                 </span>
                 <div className="relative group">
@@ -496,7 +499,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <User className="w-8 h-8 sm:w-10 sm:h-10 text-slate-300" />
+                      <User className="w-8 h-8 sm:w-10 sm:h-10 text-slate-400" />
                     )}
                     
                     {profilePhoto && (
@@ -529,8 +532,8 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
               </div>
 
               {/* Cover Photo */}
-              <div className="flex flex-col items-center justify-center p-3 bg-slate-50/50 border border-slate-150 rounded-2xl relative">
-                <span className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 self-start">
+              <div className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200/90 rounded-2xl relative shadow-2xs">
+                <span className="block text-[10px] font-black text-slate-600 uppercase tracking-wider mb-2 self-start">
                   {language === 'kh' ? 'រូបថតគម្រប' : 'Cover Photo'}
                 </span>
                 <div className="w-full relative">
@@ -543,7 +546,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <Image className="w-6 h-6 text-slate-300" />
+                      <Image className="w-6 h-6 text-slate-400" />
                     )}
                     
                     {coverPhoto && (
@@ -577,7 +580,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+              <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
                 {language === 'kh' ? 'ឈ្មោះអ្នកខ្ចី *' : 'Borrower Name *'}
               </label>
               <input
@@ -585,14 +588,14 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={language === 'kh' ? 'ឧ. សុខ ជា' : 'e.g. John Doe'}
-                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-bold text-slate-900 placeholder:text-slate-400 shadow-2xs"
                 required
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
                   {language === 'kh' ? 'លេខទូរស័ព្ទ' : 'Phone Number'}
                 </label>
                 <input
@@ -600,43 +603,43 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder={language === 'kh' ? 'ឧ. 012 345 678' : 'e.g. 012 345 678'}
-                  className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-bold text-slate-900 placeholder:text-slate-400 shadow-2xs"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
                   {language === 'kh' ? 'កាលបរិច្ឆេទខ្ចី' : 'Loan Date'}
                 </label>
                 <input
                   type="date"
                   value={loanDate}
                   onChange={(e) => setLoanDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-bold text-slate-900 shadow-2xs"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
                   {language === 'kh' ? 'ម៉ោងត្រូវបង់ប្រាក់' : 'Due Time'}
                 </label>
                 <input
                   type="time"
                   value={dueTime}
                   onChange={(e) => setDueTime(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-bold text-slate-900 shadow-2xs"
                 />
               </div>
             </div>
           </div>
 
-          <hr className="border-slate-100" />
+          <hr className="border-slate-200/80 my-2" />
 
           {/* Section 2: Loan Calculation Details */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <span className="text-xs font-black text-slate-700 uppercase tracking-wider">
                 {language === 'kh' ? 'ព័ត៌មានប្រាក់កម្ចី & ការគណនា' : 'Loan Info & Calculations'}
               </span>
-              <div className="inline-flex bg-slate-100 p-0.5 rounded-lg">
+              <div className="inline-flex bg-slate-200/80 p-0.5 rounded-xl border border-slate-200">
                 <button
                   type="button"
                   onClick={() => {
@@ -644,7 +647,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     setIsTotalToPayManuallyEdited(false);
                     setIsInstallmentManuallyEdited(false);
                   }}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition cursor-pointer ${currency === 'USD' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`px-3 py-1 text-xs font-extrabold rounded-lg transition cursor-pointer ${currency === 'USD' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
                 >
                   USD ($)
                 </button>
@@ -655,7 +658,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     setIsTotalToPayManuallyEdited(false);
                     setIsInstallmentManuallyEdited(false);
                   }}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition cursor-pointer ${currency === 'KHR' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                  className={`px-3 py-1 text-xs font-extrabold rounded-lg transition cursor-pointer ${currency === 'KHR' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
                 >
                   KHR (៛)
                 </button>
@@ -663,14 +666,14 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
             </div>
 
             {/* Fund Source Selector Box (លុយផ្ទាល់ខ្លួន vs លុយដៃគូរ) */}
-            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
               <div className="flex items-center justify-between">
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                   <Wallet className="w-3.5 h-3.5 text-blue-600" />
                   <span>{language === 'kh' ? 'ប្រភពដើមទុនកម្ចី (Fund Source)' : 'Fund Source'}</span>
                 </label>
-                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
-                  fundType === 'partner' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-blue-100 text-blue-800'
+                <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-md ${
+                  fundType === 'partner' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300/80' : 'bg-blue-100 text-blue-900 border border-blue-200/80'
                 }`}>
                   {fundType === 'partner' ? (language === 'kh' ? '🤝 លុយដៃគូរ' : 'Partner Funds') : (language === 'kh' ? '💼 លុយផ្ទាល់ខ្លួន' : 'Personal Funds')}
                 </span>
@@ -683,7 +686,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                   className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
                     fundType === 'personal'
                       ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-500/30'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   <span className="font-extrabold text-xs flex items-center gap-1.5">
@@ -700,7 +703,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                   className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
                     fundType === 'partner'
                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-500/30'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   <span className="font-extrabold text-xs flex items-center gap-1.5">
@@ -714,9 +717,9 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
 
               {/* When Partner Funds is selected, display partner dropdown and live profit split preview */}
               {fundType === 'partner' && (
-                <div className="mt-2.5 p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2.5 animate-in fade-in duration-200">
+                <div className="mt-2.5 p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-2.5 animate-in fade-in duration-200">
                   <div>
-                    <label className="block text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-black text-emerald-900 uppercase tracking-wider mb-1">
                       {language === 'kh' ? 'ជ្រើសរើសដៃគូរភាគហ៊ុន (Select Partner):' : 'Select Partner Shareholder:'}
                     </label>
                     {(() => {
@@ -733,7 +736,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                         <select
                           value={selectedShareholderId || displayPartners[0].id}
                           onChange={(e) => setSelectedShareholderId(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+                          className="w-full px-3 py-2 bg-white border border-emerald-300/90 rounded-lg text-xs font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer shadow-2xs"
                         >
                           {displayPartners.map((s) => (
                             <option key={s.id} value={s.id}>
@@ -761,30 +764,30 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     const mainLenderDailyProfit = Math.max(0, (tVal / dVal) - partnerDailyProfit);
 
                     return (
-                      <div className="p-2.5 bg-white border border-emerald-200 rounded-lg space-y-1 text-xs">
-                        <div className="flex items-center justify-between font-bold text-emerald-900 border-b border-emerald-100 pb-1">
+                      <div className="p-2.5 bg-white border border-emerald-200 rounded-lg space-y-1 text-xs shadow-2xs">
+                        <div className="flex items-center justify-between font-extrabold text-emerald-950 border-b border-emerald-100 pb-1">
                           <span>💡 {language === 'kh' ? 'ការបែងចែកផលចំណេញប្រចាំថ្ងៃ (Profit Split):' : 'Daily Profit Split Preview:'}</span>
-                          <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[10px] font-mono font-bold">
+                          <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-900 rounded text-[10px] font-mono font-black">
                             {isDailyMode
                               ? `💵 $${(activeSelectedPartner?.dailyProfitUSD ?? 1.0).toFixed(2)} / ថ្ងៃ`
                               : `📊 ${activeSelectedPartner?.sharePercent ?? 50}% Split`}
                           </span>
                         </div>
                         <div className="grid grid-cols-2 gap-2 pt-1 text-[11px] font-bold">
-                          <div className="bg-blue-50 p-1.5 rounded border border-blue-100 text-blue-900">
-                            <span className="block text-[10px] text-blue-600 uppercase font-black">👨‍💼 ម្ចាស់បំណុល (Main)</span>
+                          <div className="bg-blue-50/80 p-1.5 rounded border border-blue-100 text-blue-950">
+                            <span className="block text-[10px] text-blue-700 uppercase font-black">👨‍💼 ម្ចាស់បំណុល (Main)</span>
                             <span className="text-xs font-mono font-black">
                               ${mainLenderDailyProfit.toFixed(2)} / ថ្ងៃ
                             </span>
                           </div>
-                          <div className="bg-emerald-100/70 p-1.5 rounded border border-emerald-200 text-emerald-900">
-                            <span className="block text-[10px] text-emerald-700 uppercase font-black">🤝 ដៃគូរ ({activeSelectedPartner?.name || 'Partner'})</span>
+                          <div className="bg-emerald-100/70 p-1.5 rounded border border-emerald-200 text-emerald-950">
+                            <span className="block text-[10px] text-emerald-800 uppercase font-black">🤝 ដៃគូរ ({activeSelectedPartner?.name || 'Partner'})</span>
                             <span className="text-xs font-mono font-black">
                               ${partnerDailyProfit.toFixed(2)} / ថ្ងៃ
                             </span>
                           </div>
                         </div>
-                        <p className="text-[10px] text-emerald-700/90 font-medium italic pt-1">
+                        <p className="text-[10px] text-emerald-800 font-semibold italic pt-1">
                           {language === 'kh'
                             ? `ដៃគូរ "${activeSelectedPartner?.name || 'ភាគហ៊ុន'}" អាច Login ចូលគណនី (Username: ${activeSelectedPartner?.username || '...'}) ដើម្បីមើលទិន្នន័យ និងលំហូរសាច់ប្រាក់របស់គាត់បាន!`
                             : `Partner "${activeSelectedPartner?.name || 'Shareholder'}" can log in (Username: ${activeSelectedPartner?.username || '...'}) to view their dashboard.`}
@@ -797,11 +800,11 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
             </div>
 
             {/* Loan Type Selector Box (កម្ចីលុយឆក់ vs កម្ចីលុយរាប់) */}
-            <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 space-y-1.5">
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
+              <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider flex justify-between items-center">
                 <span>{language === 'kh' ? 'ប្រភេទកម្ចី (Loan Type)' : 'Loan Type'}</span>
-                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
-                  loanType === 'luy_rab' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
+                  loanType === 'luy_rab' ? 'bg-purple-100 text-purple-900 border border-purple-200/80' : 'bg-amber-100 text-amber-900 border border-amber-200/80'
                 }`}>
                   {loanType === 'luy_rab' ? (language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab') : (language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok')}
                 </span>
@@ -816,14 +819,14 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                   }}
                   className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
                     loanType === 'luy_chok'
-                      ? 'bg-amber-500/10 border-amber-500 text-amber-900 shadow-xs ring-1 ring-amber-500/30'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-950 shadow-xs ring-2 ring-amber-500/20'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   <span className="font-extrabold text-xs flex items-center gap-1">
                     ⚡️ {language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok'}
                   </span>
-                  <span className="text-[10px] text-slate-500 mt-0.5">
+                  <span className="text-[10px] text-slate-600 font-medium mt-0.5">
                     {language === 'kh' ? '$100 ការប្រាក់ 4$ ក្នុង 1ថ្ងៃ' : '$100 = $4/day interest'}
                   </span>
                 </button>
@@ -837,14 +840,14 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                   }}
                   className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
                     loanType === 'luy_rab'
-                      ? 'bg-purple-500/10 border-purple-500 text-purple-900 shadow-xs ring-1 ring-purple-500/30'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                      ? 'bg-purple-500/15 border-purple-500 text-purple-950 shadow-xs ring-2 ring-purple-500/20'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
                   <span className="font-extrabold text-xs flex items-center gap-1">
                     🔢 {language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab'}
                   </span>
-                  <span className="text-[10px] text-slate-500 mt-0.5">
+                  <span className="text-[10px] text-slate-600 font-medium mt-0.5">
                     {language === 'kh' ? '$100 1ខែ (30ថ្ងៃ) ការ $60' : '$100 30d = $60 interest'}
                   </span>
                 </button>
@@ -852,16 +855,16 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
             </div>
 
             {/* Payment Mode Choice Option */}
-            <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 space-y-1">
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
+              <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center justify-between">
                 <span>{language === 'kh' ? 'ប្រភេទនៃការបង់ប្រាក់' : 'Payment Mode'}</span>
                 {loanType === 'luy_rab' && (
-                  <span className="text-[10px] text-purple-700 bg-purple-100 px-2 py-0.5 rounded font-extrabold">
+                  <span className="text-[10px] text-purple-800 bg-purple-100 px-2 py-0.5 rounded font-black border border-purple-200">
                     🔒 {language === 'kh' ? 'កម្ចីលុយរាប់៖ មានតែបង់ទាំងដើមទាំងការ' : 'Luy Rab: Principal + Interest Only'}
                   </span>
                 )}
               </label>
-              <div className="inline-flex w-full bg-slate-200/60 p-0.5 rounded-xl h-[38px] items-center">
+              <div className="inline-flex w-full bg-slate-200/70 p-1 rounded-xl h-[40px] items-center">
                 <button
                   type="button"
                   onClick={() => {
@@ -869,10 +872,10 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     setIsTotalToPayManuallyEdited(false);
                     setIsInstallmentManuallyEdited(false);
                   }}
-                  className={`flex-1 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 h-full ${
+                  className={`flex-1 py-1.5 text-xs font-black rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 h-full ${
                     paymentMode === 'all' 
-                      ? 'bg-blue-600 text-white shadow-sm' 
-                      : 'text-slate-600 hover:text-slate-800'
+                      ? 'bg-blue-600 text-white shadow-xs' 
+                      : 'text-slate-700 hover:text-slate-900'
                   }`}
                 >
                   💵 {language === 'kh' ? 'បង់ទាំងដើមទាំងការ' : 'Principal + Interest'}
@@ -885,10 +888,10 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                       setIsTotalToPayManuallyEdited(false);
                       setIsInstallmentManuallyEdited(false);
                     }}
-                    className={`flex-1 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 h-full ${
+                    className={`flex-1 py-1.5 text-xs font-black rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 h-full ${
                       paymentMode === 'interest-only' 
-                        ? 'bg-blue-600 text-white shadow-sm' 
-                        : 'text-slate-600 hover:text-slate-800'
+                        ? 'bg-blue-600 text-white shadow-xs' 
+                        : 'text-slate-700 hover:text-slate-900'
                     }`}
                   >
                     📈 {language === 'kh' ? 'បង់តែការសុទ្ធ' : 'Interest-Only'}
@@ -898,16 +901,16 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
             </div>
 
             {/* Interest Calculation Method Option */}
-            <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-100 space-y-1">
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+            <div className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
+              <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center justify-between">
                 <span>{language === 'kh' ? 'របៀបគណនាការប្រាក់' : 'Interest Calculation'}</span>
                 {loanType === 'luy_rab' && (
-                  <span className="text-[10px] text-purple-700 bg-purple-100 px-2 py-0.5 rounded font-extrabold">
+                  <span className="text-[10px] text-purple-800 bg-purple-100 px-2 py-0.5 rounded font-black border border-purple-200">
                     🔒 {language === 'kh' ? 'កម្ចីលុយរាប់៖ ការប្រាក់ប្រចាំថ្ងៃ' : 'Luy Rab: Daily Interest'}
                   </span>
                 )}
               </label>
-              <div className="inline-flex w-full bg-slate-200/60 p-0.5 rounded-xl h-[38px] items-center">
+              <div className="inline-flex w-full bg-slate-200/70 p-1 rounded-xl h-[40px] items-center">
                 <button
                   type="button"
                   onClick={() => {
@@ -915,10 +918,10 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     setIsTotalToPayManuallyEdited(false);
                     setIsInstallmentManuallyEdited(false);
                   }}
-                  className={`flex-1 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 h-full ${
+                  className={`flex-1 py-1.5 text-xs font-black rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 h-full ${
                     interestCalculation === 'per-period' 
-                      ? 'bg-blue-600 text-white shadow-sm' 
-                      : 'text-slate-600 hover:text-slate-800'
+                      ? 'bg-blue-600 text-white shadow-xs' 
+                      : 'text-slate-700 hover:text-slate-900'
                   }`}
                 >
                   🔄 {language === 'kh' ? 'ការប្រាក់ប្រចាំថ្ងៃ/វគ្គ' : 'Per Day/Period'}
@@ -931,10 +934,10 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                       setIsTotalToPayManuallyEdited(false);
                       setIsInstallmentManuallyEdited(false);
                     }}
-                    className={`flex-1 py-1 text-xs font-bold rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 h-full ${
+                    className={`flex-1 py-1.5 text-xs font-black rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 h-full ${
                       interestCalculation === 'flat' 
-                        ? 'bg-blue-600 text-white shadow-sm' 
-                        : 'text-slate-600 hover:text-slate-800'
+                        ? 'bg-blue-600 text-white shadow-xs' 
+                        : 'text-slate-700 hover:text-slate-900'
                     }`}
                   >
                     🎯 {language === 'kh' ? 'ការប្រាក់សរុប' : 'Flat/Total Rate'}
@@ -945,7 +948,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
                   {language === 'kh' ? 'ប្រាក់ខ្ចីដើម' : 'Principal Amount'}
                 </label>
                 <div className="relative">
@@ -954,29 +957,29 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     value={principal}
                     onChange={(e) => setPrincipal(e.target.value)}
                     placeholder={currency === 'USD' ? '100' : '400000'}
-                    className="w-full pl-3.5 pr-8 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                    className="w-full pl-3.5 pr-8 py-2.5 text-sm bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-black text-slate-900 shadow-2xs"
                     min="0"
                     step="any"
                     required
                   />
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-bold">
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-extrabold">
                     {currency === 'USD' ? '$' : '៛'}
                   </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
                   {language === 'kh' ? 'របៀបគណនាការប្រាក់' : 'Interest Type'}
                 </label>
-                <div className="inline-flex w-full bg-slate-100 p-0.5 rounded-xl border border-slate-200 h-[42px] items-center">
+                <div className="inline-flex w-full bg-slate-200/70 p-1 rounded-xl h-[42px] items-center">
                   <button
                     type="button"
                     onClick={() => {
                       setInterestType('percent');
                       setIsTotalToPayManuallyEdited(false);
                     }}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${interestType === 'percent' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                    className={`flex-1 py-1.5 text-xs font-black rounded-lg transition cursor-pointer ${interestType === 'percent' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-700 hover:text-slate-900'}`}
                   >
                     {language === 'kh' ? 'ភាគរយ (%)' : 'Percentage (%)'}
                   </button>
@@ -986,7 +989,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                       setInterestType('fixed');
                       setIsTotalToPayManuallyEdited(false);
                     }}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${interestType === 'fixed' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                    className={`flex-1 py-1.5 text-xs font-black rounded-lg transition cursor-pointer ${interestType === 'fixed' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-700 hover:text-slate-900'}`}
                   >
                     ចំនួនថេរ ({currency === 'USD' ? '$' : '៛'})
                   </button>
@@ -996,7 +999,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
                   តម្លៃការប្រាក់ (Interest)
                 </label>
                 <div className="relative">
@@ -1008,11 +1011,11 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                       setIsTotalToPayManuallyEdited(false);
                     }}
                     placeholder={interestType === 'percent' ? '4' : '4'}
-                    className="w-full pl-3.5 pr-8 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                    className="w-full pl-3.5 pr-8 py-2.5 text-sm bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-black text-slate-900 shadow-2xs"
                     min="0"
                     step="any"
                   />
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-bold">
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-extrabold">
                     {interestType === 'percent' ? '%' : (currency === 'USD' ? '$' : '៛')}
                   </span>
                 </div>
@@ -1027,10 +1030,10 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                         setInterestValue(preset);
                         setIsTotalToPayManuallyEdited(false);
                       }}
-                      className={`text-[10px] font-bold px-2 py-1 rounded-lg transition cursor-pointer border ${
+                      className={`text-[10px] font-extrabold px-2 py-1 rounded-lg transition cursor-pointer border ${
                         interestValue === preset
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                          : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 hover:text-slate-800'
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                     >
                       {interestType === 'percent' 
@@ -1045,17 +1048,17 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
+                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
                   <span>{language === 'kh' ? 'ប្រាក់ត្រូវសងសរុប' : 'Total Expected Amount'}</span>
                   {!isTotalToPayManuallyEdited ? (
-                    <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md font-bold">
+                    <span className="text-[10px] text-blue-700 bg-blue-100/80 px-1.5 py-0.5 rounded-md font-extrabold">
                       {language === 'kh' ? 'ស្វ័យប្រវត្ត' : 'Auto'} ({interestType === 'percent' ? `+${interestValue || 0}%` : `+${interestValue || 0}${currency === 'USD' ? '$' : '៛'}`})
                     </span>
                   ) : (
                     <button
                       type="button"
                       onClick={() => setIsTotalToPayManuallyEdited(false)}
-                      className="text-[10px] text-rose-500 hover:underline font-bold bg-transparent border-none cursor-pointer"
+                      className="text-[10px] text-rose-600 hover:underline font-extrabold bg-transparent border-none cursor-pointer"
                     >
                       {language === 'kh' ? 'កំណត់ឡើងវិញ' : 'Reset'}
                     </button>
@@ -1070,12 +1073,12 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                       setIsTotalToPayManuallyEdited(true);
                     }}
                     placeholder={currency === 'USD' ? '104' : '416000'}
-                    className="w-full pl-3.5 pr-8 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-bold text-slate-800"
+                    className="w-full pl-3.5 pr-8 py-2.5 text-sm bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-black text-slate-900 shadow-2xs"
                     min="0"
                     step="any"
                     required
                   />
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-bold">
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-extrabold">
                     {currency === 'USD' ? '$' : '៛'}
                   </span>
                 </div>
@@ -1084,14 +1087,14 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
 
             {/* Live Formula Explanation / Breakdown Card */}
             {pValNum > 0 && (
-              <div className="p-3.5 bg-blue-50/50 border border-blue-100 rounded-2xl space-y-2.5 text-xs animate-fadeIn">
-                <div className="font-extrabold text-blue-950 flex items-center justify-between">
+              <div className="p-3.5 bg-gradient-to-br from-blue-50/90 via-indigo-50/40 to-blue-50/90 border border-blue-200/90 rounded-2xl space-y-2.5 text-xs shadow-2xs">
+                <div className="font-black text-blue-950 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <Info className="w-4 h-4 text-blue-600 shrink-0" />
                     <span>{language === 'kh' ? 'សេចក្តីលម្អិតនៃការគណនា (Calculation Details)' : 'Calculation Details'}</span>
                   </div>
                   {loanType === 'luy_rab' && (
-                    <span className="text-[10px] font-black bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md">
+                    <span className="text-[10px] font-black bg-purple-100 text-purple-900 px-2 py-0.5 rounded-md border border-purple-200">
                       🔢 {language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab Loan'}
                     </span>
                   )}
@@ -1099,94 +1102,94 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                 
                 {loanType === 'luy_rab' ? (
                   <>
-                    <div className="grid grid-cols-2 gap-2 text-slate-600 font-semibold pt-1">
-                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                    <div className="grid grid-cols-2 gap-2 text-slate-700 font-bold pt-1">
+                      <div className="flex justify-between border-b border-blue-200/60 pb-1.5">
                         <span>{language === 'kh' ? 'ប្រាក់ខ្ចីដើម៖' : 'Principal:'}</span>
-                        <span className="font-bold text-slate-800">
+                        <span className="font-extrabold text-slate-900">
                           {pValNum.toLocaleString('en-US')} {currency === 'USD' ? '$' : '៛'}
                         </span>
                       </div>
-                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                      <div className="flex justify-between border-b border-blue-200/60 pb-1.5">
                         <span>{language === 'kh' ? 'ការប្រាក់រាប់ (1ខែ/30ថ្ងៃ)៖' : 'Monthly Rate:'}</span>
-                        <span className="font-bold text-purple-700">
+                        <span className="font-extrabold text-purple-800">
                           $60 / $100 ({currency === 'USD' ? '$' : '៛'}{(pValNum * 0.02).toFixed(2)}/{language === 'kh' ? 'ថ្ងៃ' : 'day'})
                         </span>
                       </div>
-                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                      <div className="flex justify-between border-b border-blue-200/60 pb-1.5">
                         <span>{language === 'kh' ? 'ការប្រាក់សរុប (' + (duration || '30') + ' ថ្ងៃ)៖' : 'Total Interest:'}</span>
-                        <span className="font-bold text-amber-600">
+                        <span className="font-extrabold text-amber-700">
                           +{(pValNum * 0.02 * dValNum).toLocaleString('en-US')} {currency === 'USD' ? '$' : '៛'}
                         </span>
                       </div>
-                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                      <div className="flex justify-between border-b border-blue-200/60 pb-1.5">
                         <span>{language === 'kh' ? 'ប្រាក់បង់ប្រចាំថ្ងៃ៖' : 'Daily Installment:'}</span>
-                        <span className="font-extrabold text-blue-700">
+                        <span className="font-black text-blue-700">
                           {(computedCalculatedTotal / dValNum).toFixed(2)} {currency === 'USD' ? '$' : '៛'}/{language === 'kh' ? 'ថ្ងៃ' : 'd'}
                         </span>
                       </div>
                     </div>
-                    <div className="flex justify-between text-blue-900 font-extrabold pt-2 text-sm border-t border-blue-100">
+                    <div className="flex justify-between text-blue-950 font-black pt-2 text-sm border-t border-blue-200/80">
                       <span>{language === 'kh' ? 'ប្រាក់សរុបត្រូវសង (ដើម + ការ)៖' : 'Total to Pay (Principal + Interest):'}</span>
-                      <span className="text-purple-700 font-black">
+                      <span className="text-purple-800 font-black">
                         {computedCalculatedTotal.toLocaleString('en-US')} {currency === 'USD' ? '$' : '៛'}
                       </span>
                     </div>
                   </>
                 ) : paymentMode === 'all' ? (
                   <>
-                    <div className="grid grid-cols-2 gap-3 text-slate-600 font-semibold pt-1">
-                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                    <div className="grid grid-cols-2 gap-3 text-slate-700 font-bold pt-1">
+                      <div className="flex justify-between border-b border-blue-200/60 pb-1.5">
                         <span>{language === 'kh' ? 'ប្រាក់ខ្ចីដើម៖' : 'Principal:'}</span>
-                        <span className="font-bold text-slate-800">
+                        <span className="font-extrabold text-slate-900">
                           {pValNum.toLocaleString('en-US')} {currency === 'USD' ? '$' : '៛'}
                         </span>
                       </div>
-                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                      <div className="flex justify-between border-b border-blue-200/60 pb-1.5">
                         <span>{language === 'kh' ? 'ប្រាក់ការខ្ចី៖' : 'Interest Amount:'}</span>
-                        <span className="font-bold text-amber-600">
+                        <span className="font-extrabold text-amber-700">
                           +{computedInterestAmount.toLocaleString('en-US')}{currency === 'USD' ? '$' : '៛'} 
                           {interestType === 'percent' && ` (${iValNum}%)`}
                         </span>
                       </div>
                     </div>
-                    <div className="flex justify-between text-blue-900 font-extrabold pt-2 text-sm border-t border-blue-100">
+                    <div className="flex justify-between text-blue-950 font-black pt-2 text-sm border-t border-blue-200/80">
                       <span>{language === 'kh' ? 'ប្រាក់សរុបត្រូវសង (ដើម+ការ)៖' : 'Total to Pay (Principal+Interest):'}</span>
-                      <span className="text-blue-600">
+                      <span className="text-blue-700 font-black">
                         {computedCalculatedTotal.toLocaleString('en-US')} {currency === 'USD' ? '$' : '៛'}
                       </span>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 gap-3 text-slate-600 font-semibold pt-1">
-                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                    <div className="grid grid-cols-2 gap-3 text-slate-700 font-bold pt-1">
+                      <div className="flex justify-between border-b border-blue-200/60 pb-1.5">
                         <span>{language === 'kh' ? 'ប្រាក់ខ្ចីដើម៖' : 'Principal:'}</span>
-                        <span className="font-bold text-slate-800">
+                        <span className="font-extrabold text-slate-900">
                           {pValNum.toLocaleString('en-US')} {currency === 'USD' ? '$' : '៛'}
                         </span>
                       </div>
-                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5 col-span-2">
-                        <span className="text-[10px] text-blue-600 font-bold bg-blue-100/40 px-1.5 py-0.5 rounded-md">
+                      <div className="flex justify-between border-b border-blue-200/60 pb-1.5 col-span-2">
+                        <span className="text-[10px] text-blue-700 font-extrabold bg-blue-100/60 px-1.5 py-0.5 rounded-md">
                           * {language === 'kh' ? 'ប្រាក់ដើមរក្សាទុកសងចុងក្រោយបង្អស់ (Principal remains unpaid)' : 'Principal remains unpaid until final maturity'}
                         </span>
                       </div>
-                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                      <div className="flex justify-between border-b border-blue-200/60 pb-1.5">
                         <span>{language === 'kh' ? 'ការប្រាក់ក្នុង១ដង៖' : 'Interest per Installment:'}</span>
-                        <span className="font-bold text-amber-600">
+                        <span className="font-extrabold text-amber-700">
                           {computedInterestAmount.toLocaleString('en-US')}{currency === 'USD' ? '$' : '៛'}
                           {interestType === 'percent' && ` (${iValNum}%)`}
                         </span>
                       </div>
-                      <div className="flex justify-between border-b border-blue-100/50 pb-1.5">
+                      <div className="flex justify-between border-b border-blue-200/60 pb-1.5">
                         <span>{language === 'kh' ? 'ចំនួនដងត្រូវបង់ការ៖' : 'Maturity Periods:'}</span>
-                        <span className="font-bold text-slate-800">
+                        <span className="font-extrabold text-slate-900">
                           {duration || '0'} {language === 'kh' ? 'ដង' : 'periods'}
                         </span>
                       </div>
                     </div>
-                    <div className="flex justify-between text-blue-900 font-extrabold pt-2 text-sm border-t border-blue-100">
+                    <div className="flex justify-between text-blue-950 font-black pt-2 text-sm border-t border-blue-200/80">
                       <span>{language === 'kh' ? 'ប្រាក់ការសរុប (បង់តែការសុទ្ធ)៖' : 'Total Interest Amount:'}</span>
-                      <span className="text-blue-600">
+                      <span className="text-blue-700 font-black">
                         {computedCalculatedTotal.toLocaleString('en-US')} {currency === 'USD' ? '$' : '៛'}
                       </span>
                     </div>
@@ -1197,17 +1200,17 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
                   {language === 'kh' ? 'វគ្គបង់ប្រាក់' : 'Payment Frequency'}
                 </label>
                 <select
                   disabled={loanType === 'luy_rab'}
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value as FrequencyType)}
-                  className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none transition font-medium ${
+                  className={`w-full px-3 py-2.5 text-sm border rounded-xl focus:outline-none transition font-black text-slate-900 shadow-2xs ${
                     loanType === 'luy_rab' 
-                      ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed'
-                      : 'bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                      ? 'bg-slate-100/90 border-slate-200 text-slate-500 cursor-not-allowed'
+                      : 'bg-white border-slate-200/90 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600'
                   }`}
                 >
                   <option value="daily">{language === 'kh' ? 'ជារៀងរាល់ថ្ងៃ (Daily)' : 'Daily'}</option>
@@ -1221,7 +1224,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
                   {language === 'kh' ? 'ចំនួនដងត្រូវសង (ចំនួនថ្ងៃ)' : 'Installments Duration (Days)'}
                 </label>
                 <input
@@ -1229,7 +1232,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
                   placeholder="30"
-                  className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-black text-slate-900 shadow-2xs"
                   min="1"
                   required
                 />
@@ -1244,10 +1247,10 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                         setIsTotalToPayManuallyEdited(false);
                         setIsInstallmentManuallyEdited(false);
                       }}
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded border cursor-pointer transition ${
+                      className={`text-[10px] font-extrabold px-2 py-0.5 rounded border cursor-pointer transition ${
                         duration === d.toString()
-                          ? 'bg-purple-600 text-white border-purple-600'
-                          : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                          ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                     >
                       {d} {language === 'kh' ? 'ថ្ងៃ' : 'd'}
@@ -1258,10 +1261,10 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
+              <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
                 <span>{t('installmentAmountLabel')}</span>
                 {!isInstallmentManuallyEdited && (
-                  <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md font-bold">
+                  <span className="text-[10px] text-blue-700 bg-blue-100/80 px-1.5 py-0.5 rounded-md font-extrabold">
                     {language === 'kh' ? 'ស្វ័យប្រវត្ត (សរុប / ចំនួនដង)' : 'Auto (Total / Terms)'}
                   </span>
                 )}
@@ -1275,12 +1278,12 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     setIsInstallmentManuallyEdited(true);
                   }}
                   placeholder={currency === 'USD' ? '5' : '20000'}
-                  className="w-full pl-3.5 pr-8 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-bold text-blue-600"
+                  className="w-full pl-3.5 pr-8 py-2.5 text-sm bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition font-black text-blue-700 shadow-2xs"
                   min="0"
                   step="any"
                   required
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-bold">
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-500 font-extrabold">
                   {currency === 'USD' ? '$' : '៛'}
                 </span>
               </div>
@@ -1288,18 +1291,18 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
           </div>
 
           {/* Borrower Standing Rating Selection */}
-          <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-2">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+          <div className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
+            <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">
               {t('standingTitle')}
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setStatusTag('good')}
-                className={`py-2 px-3 text-xs font-bold rounded-xl transition cursor-pointer border flex flex-col items-center justify-center gap-1.5 ${
+                className={`py-2 px-3 text-xs font-extrabold rounded-xl transition cursor-pointer border flex flex-col items-center justify-center gap-1.5 ${
                   statusTag === 'good'
-                    ? 'bg-emerald-50 border-emerald-500 text-emerald-800 shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-emerald-50 border-emerald-500 text-emerald-900 shadow-xs ring-2 ring-emerald-500/20'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                 }`}
               >
                 <span className="text-base">🟢</span>
@@ -1308,10 +1311,10 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
               <button
                 type="button"
                 onClick={() => setStatusTag('regular')}
-                className={`py-2 px-3 text-xs font-bold rounded-xl transition cursor-pointer border flex flex-col items-center justify-center gap-1.5 ${
+                className={`py-2 px-3 text-xs font-extrabold rounded-xl transition cursor-pointer border flex flex-col items-center justify-center gap-1.5 ${
                   statusTag === 'regular'
-                    ? 'bg-amber-50 border-amber-500 text-amber-800 shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-amber-50 border-amber-500 text-amber-900 shadow-xs ring-2 ring-amber-500/20'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                 }`}
               >
                 <span className="text-base">🟡</span>
@@ -1320,10 +1323,10 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
               <button
                 type="button"
                 onClick={() => setStatusTag('late')}
-                className={`py-2 px-3 text-xs font-bold rounded-xl transition cursor-pointer border flex flex-col items-center justify-center gap-1.5 ${
+                className={`py-2 px-3 text-xs font-extrabold rounded-xl transition cursor-pointer border flex flex-col items-center justify-center gap-1.5 ${
                   statusTag === 'late'
-                    ? 'bg-rose-50 border-rose-500 text-rose-800 shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-rose-50 border-rose-500 text-rose-900 shadow-xs ring-2 ring-rose-500/20'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                 }`}
               >
                 <span className="text-base">🔴</span>
@@ -1333,12 +1336,12 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
           </div>
 
           {/* Auto Check-In Toggle Option */}
-          <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 flex items-center justify-between gap-4">
+          <div className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-4">
             <div className="space-y-0.5">
-              <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <label className="block text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                 <span>🔄</span> {t('toggleAutoCheckInLabel')}
               </label>
-              <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+              <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
                 {t('toggleAutoCheckInDesc')}
               </p>
             </div>
@@ -1346,7 +1349,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
               type="button"
               onClick={() => setAutoCheckIn(!autoCheckIn)}
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                autoCheckIn ? 'bg-blue-600' : 'bg-slate-200'
+                autoCheckIn ? 'bg-blue-600' : 'bg-slate-300'
               }`}
             >
               <span
@@ -1357,32 +1360,30 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
             </button>
           </div>
 
-
-
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+            <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1">
               {language === 'kh' ? 'កំណត់សម្គាល់ផ្សេងៗ' : 'Additional Notes'}
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={language === 'kh' ? 'ព័ត៌មានលម្អិតបន្ថែម ដូចជា ទីកន្លែង ឬលក្ខខណ្ឌផ្សេងៗ...' : 'Additional notes, details or location...'}
-              className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition h-20 resize-none font-medium"
+              className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition h-20 resize-none font-bold text-slate-900 placeholder:text-slate-400 shadow-2xs"
             />
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200/90">
             <button
               type="button"
               onClick={onClose}
-              className="px-4.5 py-2.5 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-50 active:bg-slate-100 rounded-xl transition font-bold cursor-pointer"
+              className="px-5 py-2.5 text-sm text-slate-700 hover:text-slate-900 hover:bg-slate-200/60 active:bg-slate-200 rounded-xl transition font-extrabold cursor-pointer"
             >
               {t('cancel')}
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 text-sm bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-bold transition shadow-lg shadow-blue-600/25 cursor-pointer"
+              className="px-6 py-2.5 text-sm bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-extrabold transition shadow-lg shadow-blue-600/25 cursor-pointer"
             >
               {language === 'kh' ? 'រក្សាទុក' : 'Save'}
             </button>

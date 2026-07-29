@@ -975,14 +975,14 @@ export default function AdminMembersDashboard({
                     className="fixed inset-0 z-10" 
                     onClick={() => setIsSettingsMenuOpen(false)} 
                   />
-                  <div className="absolute left-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-1.5 z-20 animate-in fade-in slide-in-from-top-2 duration-150">
                     <button
                       onClick={() => {
                         setActiveTab('qr_settings');
                         setIsSettingsMenuOpen(false);
                       }}
-                      className={`w-full px-4 py-2.5 text-left text-xs font-bold transition flex items-center gap-2 hover:bg-slate-50 ${
-                        activeTab === 'qr_settings' ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'
+                      className={`w-full px-4 py-2.5 text-left text-xs font-bold transition flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                        activeTab === 'qr_settings' ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/40' : 'text-slate-600 dark:text-slate-300'
                       }`}
                     >
                       <QrCode className="w-4 h-4 text-amber-500 shrink-0" />
@@ -993,8 +993,8 @@ export default function AdminMembersDashboard({
                         setActiveTab('logo_settings');
                         setIsSettingsMenuOpen(false);
                       }}
-                      className={`w-full px-4 py-2.5 text-left text-xs font-bold transition flex items-center gap-2 hover:bg-slate-50 ${
-                        activeTab === 'logo_settings' ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'
+                      className={`w-full px-4 py-2.5 text-left text-xs font-bold transition flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                        activeTab === 'logo_settings' ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/40' : 'text-slate-600 dark:text-slate-300'
                       }`}
                     >
                       <Settings className="w-4 h-4 text-blue-500 shrink-0" />
@@ -1005,8 +1005,8 @@ export default function AdminMembersDashboard({
                         setActiveTab('sponsor_settings');
                         setIsSettingsMenuOpen(false);
                       }}
-                      className={`w-full px-4 py-2.5 text-left text-xs font-bold transition flex items-center gap-2 hover:bg-slate-50 ${
-                        activeTab === 'sponsor_settings' ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'
+                      className={`w-full px-4 py-2.5 text-left text-xs font-bold transition flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                        activeTab === 'sponsor_settings' ? 'text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/40' : 'text-slate-600 dark:text-slate-300'
                       }`}
                     >
                       <Image className="w-4 h-4 text-purple-500 shrink-0" />
@@ -1017,8 +1017,8 @@ export default function AdminMembersDashboard({
                         setActiveTab('portal_settings');
                         setIsSettingsMenuOpen(false);
                       }}
-                      className={`w-full px-4 py-2.5 text-left text-xs font-bold transition flex items-center gap-2 hover:bg-slate-50 ${
-                        activeTab === 'portal_settings' ? 'text-rose-600 bg-rose-50/50' : 'text-slate-600'
+                      className={`w-full px-4 py-2.5 text-left text-xs font-bold transition flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                        activeTab === 'portal_settings' ? 'text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-950/40' : 'text-slate-600 dark:text-slate-300'
                       }`}
                     >
                       <Settings className="w-4 h-4 text-rose-500 shrink-0" />

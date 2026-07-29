@@ -6537,19 +6537,19 @@ export default function App() {
 
       {/* Settings Modal (Language, Theme, and Profile Photo Selection) */}
       {isSettingsOpen && (
-        <div id="settings-modal" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-250 text-slate-800 dark:text-slate-100">
+        <div id="settings-modal" className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col my-auto max-h-[90vh] text-slate-900 dark:text-slate-100">
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850">
+            <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between border-b border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
-                <Key className="w-5 h-5 text-amber-500" />
-                <h3 className="font-extrabold text-base">
+                <span className="p-1.5 bg-blue-600/30 text-blue-400 rounded-xl text-sm flex items-center justify-center">⚙️</span>
+                <h3 className="font-extrabold text-base text-white">
                   {language === 'kh' ? 'ការកំណត់ប្រព័ន្ធ' : 'System Settings'}
                 </h3>
               </div>
               <button
                 onClick={() => setIsSettingsOpen(false)}
-                className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition text-slate-500 dark:text-slate-400 border-transparent cursor-pointer animate-none"
+                className="p-1.5 bg-slate-800/80 hover:bg-slate-700 active:bg-slate-600 text-slate-300 hover:text-white rounded-xl transition cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -6558,15 +6558,15 @@ export default function App() {
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 space-y-6 overflow-y-auto max-h-[80vh]">
+            <div className="p-4 sm:p-6 space-y-5 overflow-y-auto max-h-[80vh] bg-slate-50/70 dark:bg-slate-950/90">
               {/* Profile Photo Selection Section */}
-              <div className="space-y-3.5">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                  <Camera className="w-4 h-4 text-blue-500" />
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                   <span>{language === 'kh' ? 'រូបថតកម្រងព័ត៌មាន' : 'Profile Photo'}</span>
                 </h4>
                 
-                <div className="flex flex-col items-center gap-4 bg-slate-50 dark:bg-slate-850 p-4.5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <div className="flex flex-col items-center gap-4 bg-white dark:bg-slate-900 p-4.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
                   <div className="relative group">
                     {memberProfile?.photoURL ? (
                       <img
@@ -6687,45 +6687,47 @@ export default function App() {
 
               {/* Khmer Traditional Theme Picker Section */}
               <div className="space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                   <span>{language === 'kh' ? 'សោភ័ណភាពខ្មែរ (Khmer Art Theme)' : 'Traditional Khmer Theme'}</span>
                 </h4>
-                <div className="grid grid-cols-2 gap-3 text-[11px]">
+                <div className="grid grid-cols-2 gap-2.5 text-[11px]">
                   {[
-                    { id: 'slate', nameKh: 'លំនាំថ្មភក់', nameEn: 'Classic Slate', icon: '⛰️', colorClass: 'from-slate-600 to-slate-800 text-slate-100' },
-                    { id: 'angkor', nameKh: 'រាជវាំងអង្គរមាស', nameEn: 'Royal Angkor', icon: '🔱', colorClass: 'from-[#dfb035] to-[#b37e1b] text-white font-black shadow-amber-500/15' },
-                    { id: 'apsara', nameKh: 'រាត្រីទេពអប្សរា', nameEn: 'Celestial Apsara', icon: '✨', colorClass: 'from-[#100a25] to-[#251754] text-[#ebdcfc] shadow-purple-500/15' },
-                    { id: 'emerald', nameKh: 'មេគង្គមរកត', nameEn: 'Mekong Emerald', icon: '🌾', colorClass: 'from-[#031d12] to-[#053c25] text-[#cbfce2] shadow-emerald-500/15' }
-                  ].map((tPreset) => (
-                    <button
-                      key={tPreset.id}
-                      type="button"
-                      onClick={() => setAppTheme(tPreset.id as AppThemeType)}
-                      className={`p-3 rounded-2xl border text-left flex flex-col gap-1.5 transition duration-150 cursor-pointer shadow-xs ${
-                        appTheme === tPreset.id
-                          ? 'border-amber-500 ring-2 ring-amber-500/20 bg-gradient-to-br font-black ' + tPreset.colorClass
-                          : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'
-                      }`}
-                    >
-                      <span className="text-base">{tPreset.icon}</span>
-                      <div>
-                        <span className="block font-extrabold text-[11px]">
-                          {language === 'kh' ? tPreset.nameKh : tPreset.nameEn}
-                        </span>
-                        <span className="text-[9px] opacity-60 font-medium block">
-                          {tPreset.nameEn}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
+                    { id: 'slate', nameKh: 'លំនាំថ្មភក់', nameEn: 'Classic Slate', icon: '⛰️', colorClass: 'from-slate-700 to-slate-900 text-white border-slate-800 shadow-slate-900/20' },
+                    { id: 'angkor', nameKh: 'រាជវាំងអង្គរមាស', nameEn: 'Royal Angkor', icon: '🔱', colorClass: 'from-[#dfb035] to-[#b37e1b] text-white border-amber-600 shadow-amber-500/20' },
+                    { id: 'apsara', nameKh: 'រាត្រីទេពអប្សរា', nameEn: 'Celestial Apsara', icon: '✨', colorClass: 'from-[#100a25] to-[#251754] text-[#ebdcfc] border-purple-700 shadow-purple-500/20' },
+                    { id: 'emerald', nameKh: 'មេគង្គមរកត', nameEn: 'Mekong Emerald', icon: '🌾', colorClass: 'from-[#031d12] to-[#053c25] text-[#cbfce2] border-emerald-700 shadow-emerald-500/20' }
+                  ].map((tPreset) => {
+                    const isSelected = appTheme === tPreset.id;
+                    return (
+                      <button
+                        key={tPreset.id}
+                        type="button"
+                        onClick={() => { setAppTheme(tPreset.id as AppThemeType); playClickSound(); }}
+                        className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition duration-150 cursor-pointer shadow-2xs relative overflow-hidden ${
+                          isSelected
+                            ? 'ring-2 ring-blue-500/40 border-transparent bg-gradient-to-br font-black ' + tPreset.colorClass
+                            : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <span className="text-xl shrink-0">{tPreset.icon}</span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs sm:text-sm font-black leading-tight truncate">{language === 'kh' ? tPreset.nameKh : tPreset.nameEn}</span>
+                          <span className={`text-[10px] font-medium opacity-70 ${isSelected ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>{tPreset.nameEn}</span>
+                        </div>
+                        {isSelected && (
+                          <span className="ml-auto w-2 h-2 rounded-full bg-white shadow-xs shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Button Style Selector Section */}
               <div className="space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                  <Award className="w-4 h-4 text-blue-500" />
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                   <span>{language === 'kh' ? 'រចនាប័ទ្មប៊ូតុង (Button Style)' : 'Button Interface Style'}</span>
                 </h4>
                 <div className="grid grid-cols-3 gap-2 text-[10px]">
@@ -6740,8 +6742,8 @@ export default function App() {
                       onClick={() => setButtonStyle(btnPreset.id as ButtonStyleType)}
                       className={`p-2.5 rounded-xl border text-center flex flex-col items-center justify-center gap-1 transition duration-150 cursor-pointer ${
                         buttonStyle === btnPreset.id
-                          ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-400 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
-                          : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-700'
+                          ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-400 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-extrabold shadow-2xs'
+                          : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
                       <span>{btnPreset.icon}</span>
@@ -6755,15 +6757,15 @@ export default function App() {
 
               {/* Animations ON/OFF Selector Section */}
               <div className="space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                  <Activity className="w-4 h-4 text-emerald-500" />
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                   <span>{language === 'kh' ? 'ចលនារស់រវើក (Live Animations)' : 'Interface Animations'}</span>
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setEnableAnimations(true)}
-                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${enableAnimations ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800 text-emerald-600 font-black' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600'}`}
+                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${enableAnimations ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-black shadow-2xs' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                   >
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
                     <span>{language === 'kh' ? 'បើកចលនា (ON)' : 'Animations ON'}</span>
@@ -6771,7 +6773,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setEnableAnimations(false)}
-                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${!enableAnimations ? 'bg-slate-100 dark:bg-slate-850 border-slate-350 dark:border-slate-700 text-slate-600 font-black' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600'}`}
+                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${!enableAnimations ? 'bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-black shadow-2xs' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                   >
                     <span className="w-2 h-2 rounded-full bg-slate-400"></span>
                     <span>{language === 'kh' ? 'បិទចលនា (OFF)' : 'Animations OFF'}</span>
@@ -6781,15 +6783,15 @@ export default function App() {
 
               {/* Khmer Art Decoration Toggle */}
               <div className="space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-purple-500" />
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-purple-500"></span>
                   <span>{language === 'kh' ? 'គ្រឿងលម្អសោភ័ណភាពខ្មែរ (Khmer Art Ornaments)' : 'Khmer Art & Ornaments'}</span>
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => { setEnableKhmerArt(true); playClickSound(); }}
-                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${enableKhmerArt ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-300 dark:border-purple-800 text-purple-600 dark:text-purple-400 font-black' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600'}`}
+                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${enableKhmerArt ? 'bg-purple-50 dark:bg-purple-950/50 border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-black shadow-2xs' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                   >
                     <span className="w-2 h-2 rounded-full bg-purple-500"></span>
                     <span>{language === 'kh' ? 'បើកគ្រឿងលម្អ (ON)' : 'Ornaments ON'}</span>
@@ -6797,7 +6799,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => { setEnableKhmerArt(false); playClickSound(); }}
-                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${!enableKhmerArt ? 'bg-slate-100 dark:bg-slate-850 border-slate-350 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-black' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600'}`}
+                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${!enableKhmerArt ? 'bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-black shadow-2xs' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                   >
                     <span className="w-2 h-2 rounded-full bg-slate-400"></span>
                     <span>{language === 'kh' ? 'បិទទៅលំនាំដើម (OFF)' : 'Ornaments OFF (Default)'}</span>
@@ -6807,15 +6809,15 @@ export default function App() {
 
               {/* Sponsor Banner Toggle */}
               <div className="space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                  <Info className="w-4 h-4 text-indigo-500" />
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
                   <span>{language === 'kh' ? 'ផ្ទាំងផ្សាយពាណិជ្ជកម្ម (Sponsor Banner)' : 'Sponsor Banner'}</span>
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => { setIsSponsorDismissed(false); playClickSound(); }}
-                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${!isSponsorDismissed ? 'bg-indigo-50 dark:bg-indigo-950/20 border-indigo-300 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 font-black' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600'}`}
+                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${!isSponsorDismissed ? 'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-300 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 font-black shadow-2xs' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                   >
                     <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
                     <span>{language === 'kh' ? 'បង្ហាញផ្ទាំង (Show)' : 'Show Banner'}</span>
@@ -6823,7 +6825,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => { setIsSponsorDismissed(true); playClickSound(); }}
-                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${isSponsorDismissed ? 'bg-slate-100 dark:bg-slate-850 border-slate-350 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-black' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-600'}`}
+                    className={`p-3 rounded-2xl border text-xs font-extrabold flex items-center justify-center gap-2 transition cursor-pointer ${isSponsorDismissed ? 'bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-black shadow-2xs' : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                   >
                     <span className="w-2 h-2 rounded-full bg-slate-400"></span>
                     <span>{language === 'kh' ? 'បិទផ្ទាំង (Hide)' : 'Hide Banner'}</span>
@@ -6832,21 +6834,21 @@ export default function App() {
               </div>
 
               {/* Telegram Bot Integration Section */}
-              <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                  <span className="text-base leading-none">🤖</span>
+              <div className="space-y-3 pt-2 border-t border-slate-200/80 dark:border-slate-800">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-sky-500"></span>
                   <span>{language === 'kh' ? 'ការតភ្ជាប់ Telegram Bot (ABA Merchant)' : 'Telegram Bot API Integration'}</span>
                 </h4>
                 
-                <div className="bg-slate-50 dark:bg-slate-850 p-4.5 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
-                  <p className="text-[10px] text-slate-500 font-bold leading-relaxed">
+                <div className="bg-white dark:bg-slate-900 p-4.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-4">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
                     {language === 'kh' 
                       ? 'បញ្ចូល Bot Token របស់អ្នក ដើម្បីឱ្យប្រព័ន្ធឆែកការបង់លុយពី ABA Merchant Group automatically តាមរយៈ Unique ID (KH-xxxx)។' 
                       : 'Enter your Telegram Bot Token to automatically monitor and auto-approve payments matching Unique IDs (KH-xxxx).'}
                   </p>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    <label className="text-xs font-black text-slate-700 dark:text-slate-300 block">
                       {language === 'kh' ? 'លេខកូដ Bot Token' : 'Telegram Bot Token'}
                     </label>
                     <input
@@ -6863,17 +6865,17 @@ export default function App() {
                         }
                       }}
                       placeholder="8601041249:AAH4dR6MTdji1o2YKm-0wM23sTGiHN1DOzk"
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      <label className="text-xs font-black text-slate-700 dark:text-slate-300 block">
                         {language === 'kh' ? 'លេខ Telegram Chat ID / Group ID' : 'Telegram Chat / Group ID'}
                       </label>
                       {telegramChatId && (
-                        <span className="text-[9px] font-bold text-emerald-500 dark:text-emerald-400">
+                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400">
                           {language === 'kh' ? '✓ បានកំណត់' : '✓ Configured'}
                         </span>
                       )}
@@ -6893,7 +6895,7 @@ export default function App() {
                           }
                         }}
                         placeholder={language === 'kh' ? 'ឧទាហរណ៍: -100123456789 ឬ ឆាតទៅ Bot ជាមុន' : 'e.g. -100123456789 or send a msg to bot'}
-                        className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        className="flex-1 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       />
                       <button
                         type="button"
@@ -6909,7 +6911,7 @@ export default function App() {
                             showToast(language === 'kh' ? 'បរាជ័យ! សូមផ្ញើសារ /start ទៅកាន់ Bot ក្នុង Telegram ជាមុនសិន' : 'Failed! Send /start to the bot in Telegram first.', 'error');
                           }
                         }}
-                        className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[10px] rounded-xl cursor-pointer whitespace-nowrap transition flex items-center gap-1 shadow-sm"
+                        className="px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-extrabold text-xs rounded-xl cursor-pointer whitespace-nowrap transition flex items-center gap-1.5 shadow-2xs"
                       >
                         <span>{language === 'kh' ? 'ផ្ញើសារសាកល្បង' : 'Test Notification'}</span>
                       </button>
@@ -6917,7 +6919,7 @@ export default function App() {
                   </div>
 
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-xs font-extrabold text-slate-600 dark:text-slate-400">
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-200">
                       {language === 'kh' ? 'ស្ថានភាពដំណើរការ' : 'Service Status'}
                     </span>
                     <button
@@ -6933,10 +6935,10 @@ export default function App() {
                           });
                         }
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer border ${
                         telegramPollingEnabled 
-                          ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-300' 
-                          : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 shadow-2xs' 
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                       }`}
                     >
                       {telegramPollingEnabled ? (language === 'kh' ? '● កំពុងដំណើរការ (ON)' : 'Active (ON)') : (language === 'kh' ? '● ផ្អាកដំណើរការ (OFF)' : 'Paused (OFF)')}
@@ -6944,16 +6946,16 @@ export default function App() {
                   </div>
 
                   {telegramPollingEnabled && telegramError && (
-                    <div className="p-2.5 bg-rose-50 dark:bg-rose-950/10 border border-rose-100 dark:border-rose-950/20 rounded-xl text-[10px] font-bold text-rose-600 dark:text-rose-400 flex flex-col gap-0.5 animate-in fade-in duration-200">
-                      <span className="uppercase tracking-wider font-black">{language === 'kh' ? 'បញ្ហាប្រព័ន្ធភ្ជាប់ Telegram:' : 'Telegram Connection Alert:'}</span>
-                      <span className="font-mono text-[9px] break-all">{telegramError}</span>
+                    <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-xs font-bold text-rose-700 dark:text-rose-300 flex flex-col gap-0.5 animate-in fade-in duration-200">
+                      <span className="uppercase tracking-wider font-black text-[10px]">{language === 'kh' ? 'បញ្ហាប្រព័ន្ធភ្ជាប់ Telegram:' : 'Telegram Connection Alert:'}</span>
+                      <span className="font-mono text-[10px] break-all">{telegramError}</span>
                     </div>
                   )}
 
                   {/* Telegram logs */}
-                  <div className="pt-2 border-t border-slate-200/50 dark:border-slate-800/60">
+                  <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      <span className="text-xs font-black text-slate-700 dark:text-slate-300">
                         {language === 'kh' ? 'របាយការណ៍បាញ់លុយចុងក្រោយ' : 'Recent Transaction Logs'}
                       </span>
                       {telegramLogs.length > 0 && (
@@ -6963,7 +6965,7 @@ export default function App() {
                             setTelegramLogs([]);
                             safeStorage.setItem('luypay_telegram_logs', JSON.stringify([]));
                           }}
-                          className="text-[9px] font-extrabold text-rose-500 hover:underline cursor-pointer"
+                          className="text-[10px] font-extrabold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
                         >
                           {language === 'kh' ? 'សម្អាត' : 'Clear'}
                         </button>
@@ -6972,25 +6974,25 @@ export default function App() {
 
                     <div className="max-h-32 overflow-y-auto space-y-1.5 scrollbar-thin">
                       {telegramLogs.length === 0 ? (
-                        <div className="text-center py-4 text-[10px] text-slate-400 font-bold bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <div className="text-center py-4 text-xs text-slate-500 dark:text-slate-400 font-bold bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200/80 dark:border-slate-800">
                           {language === 'kh' ? 'មិនទាន់មានទិន្នន័យ (រង់ចាំការបាញ់លុយ)' : 'No recent transactions logged yet.'}
                         </div>
                       ) : (
                         telegramLogs.map((log, index) => (
                           <div 
                             key={index} 
-                            className={`p-2 rounded-xl text-[10px] border flex flex-col gap-0.5 ${
+                            className={`p-2.5 rounded-xl text-xs border flex flex-col gap-0.5 ${
                               log.status === 'success' 
-                                ? 'bg-emerald-500/5 border-emerald-200/40 text-emerald-800 dark:text-emerald-400' 
-                                : 'bg-slate-500/5 border-slate-200/40 text-slate-600 dark:text-slate-400'
+                                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200' 
+                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                             }`}
                           >
                             <div className="flex items-center justify-between font-extrabold">
                               <span>{log.message}</span>
-                              <span className="text-[8px] opacity-70">{log.time.split(',')[1] || log.time}</span>
+                              <span className="text-[10px] opacity-70">{log.time.split(',')[1] || log.time}</span>
                             </div>
                             {log.details && (
-                              <p className="text-[9px] opacity-80 bg-black/5 dark:bg-white/5 p-1 rounded font-mono break-all line-clamp-1">
+                              <p className="text-[10px] opacity-80 bg-slate-100 dark:bg-slate-900 p-1 rounded font-mono break-all line-clamp-1">
                                 {log.details}
                               </p>
                             )}
@@ -7003,15 +7005,15 @@ export default function App() {
               </div>
 
               {/* Change Password Section */}
-              <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
-                  <Key className="w-4 h-4 text-amber-500" />
+              <div className="space-y-3 pt-2 border-t border-slate-200/80 dark:border-slate-800">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                   <span>{language === 'kh' ? 'ប្តូរលេខកូដសម្ងាត់គណនី' : 'Change Account Password'}</span>
                 </h4>
                 
-                <form onSubmit={handleChangePassword} className="bg-slate-50 dark:bg-slate-850 p-4.5 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-3.5">
+                <form onSubmit={handleChangePassword} className="bg-white dark:bg-slate-900 p-4.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-3.5">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                    <label className="text-xs font-black text-slate-700 dark:text-slate-300 block">
                       {language === 'kh' ? 'លេខកូដសម្ងាត់បច្ចុប្បន្ន' : 'Current Password'}
                     </label>
                     <input
@@ -7019,12 +7021,12 @@ export default function App() {
                       value={settingOldPassword}
                       onChange={(e) => setSettingOldPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                    <label className="text-xs font-black text-slate-700 dark:text-slate-300 block">
                       {language === 'kh' ? 'លេខកូដសម្ងាត់ថ្មី' : 'New Password'}
                     </label>
                     <input
@@ -7032,12 +7034,12 @@ export default function App() {
                       value={settingNewPassword}
                       onChange={(e) => setSettingNewPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                    <label className="text-xs font-black text-slate-700 dark:text-slate-300 block">
                       {language === 'kh' ? 'បញ្ជាក់លេខកូដសម្ងាត់ថ្មី' : 'Confirm New Password'}
                     </label>
                     <input
@@ -7045,12 +7047,12 @@ export default function App() {
                       value={settingConfirmNewPassword}
                       onChange={(e) => setSettingConfirmNewPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
                     />
                   </div>
 
                   {passwordChangeStatus && (
-                    <div className={`p-2.5 rounded-xl text-[10px] font-bold border ${passwordChangeStatus.type === 'success' ? 'bg-emerald-500/5 border-emerald-200 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/5 border-rose-200 text-rose-600 dark:text-rose-400'}`}>
+                    <div className={`p-2.5 rounded-xl text-xs font-bold border ${passwordChangeStatus.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300' : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'}`}>
                       {passwordChangeStatus.message}
                     </div>
                   )}
@@ -7058,7 +7060,7 @@ export default function App() {
                   <button
                     type="submit"
                     disabled={isPasswordUpdating}
-                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 active:bg-blue-800 text-white text-xs font-black rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer border-transparent"
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 active:bg-blue-800 text-white text-xs font-black rounded-xl shadow-2xs transition flex items-center justify-center gap-2 cursor-pointer border-transparent"
                   >
                     {isPasswordUpdating ? (
                       <span>{language === 'kh' ? 'កំពុងរក្សាទុក...' : 'Updating...'}</span>
