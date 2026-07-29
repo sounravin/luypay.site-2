@@ -43,27 +43,15 @@ export default function LoanApplicationsControlPanel({
     return saved !== null ? saved === 'true' : true;
   });
 
-  // GPS Location Requirement option state
-  const [requireGps, setRequireGps] = useState<boolean>(() => {
-    const saved = localStorage.getItem('loan_app_require_gps');
-    return saved !== null ? saved === 'true' : true;
-  });
+  // GPS Location Requirement option state (Locked Mandatory)
+  const [requireGps] = useState<boolean>(true);
 
-  const toggleRequireGps = () => {
-    const next = !requireGps;
-    setRequireGps(next);
-    localStorage.setItem('loan_app_require_gps', String(next));
-    if (next) {
-      showToast(
-        language === 'kh' ? '📍 បានបើកការកំណត់៖ តម្រូវអោយបើកទីតាំង GPS (Require Location)' : '📍 Required GPS Location Enabled',
-        'info'
-      );
-    } else {
-      showToast(
-        language === 'kh' ? '🔓 បានបិទការកំណត់៖ មិនទាមទារទីតាំង GPS (Optional Location)' : '🔓 GPS Location Requirement Disabled',
-        'info'
-      );
-    }
+  const handleAttemptToggleGps = () => {
+    localStorage.setItem('loan_app_require_gps', 'true');
+    showToast(
+      language === 'kh' ? '🔒 ការកំណត់ទីតាំង GPS ត្រូវតែបើកជាដាច់ខាត (មិនអាចបិទបានទេ)' : '🔒 GPS Location requirement is mandatory and cannot be disabled',
+      'info'
+    );
   };
 
   const isInitialLoad = React.useRef(true);
@@ -435,7 +423,7 @@ export default function LoanApplicationsControlPanel({
         {/* GPS Location Requirement Option Control Card */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800/90 p-4 rounded-2xl shadow-xl">
           <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-2xl border ${requireGps ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>
+            <div className="p-2.5 rounded-2xl border bg-emerald-500/10 border-emerald-500/30 text-emerald-400">
               <MapPin className="w-5 h-5" />
             </div>
             <div className="space-y-0.5">
@@ -443,12 +431,12 @@ export default function LoanApplicationsControlPanel({
                 <span className="text-xs font-black text-slate-100 flex items-center gap-1.5">
                   📍 {language === 'kh' ? 'តម្រូវអោយបើកទីតាំង GPS' : 'Require GPS Location'}
                 </span>
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${requireGps ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' : 'bg-amber-500/15 border-amber-500/30 text-amber-300'}`}>
-                  {requireGps ? (language === 'kh' ? '● ទាមទារ GPS (Required)' : '● REQUIRED') : (language === 'kh' ? '○ មិនទាមទារ (Optional)' : '○ OPTIONAL')}
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-black border bg-emerald-500/15 border-emerald-500/30 text-emerald-400">
+                  {language === 'kh' ? '● ទាមទារជាចាំបាច់ (Required)' : '● MANDATORY'}
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 font-medium">
-                {language === 'kh' ? 'កំណត់អោយកូនបំណុលតម្រូវតែបើក Location/GPS ជាចាំបាច់នៅពេលសុំកម្ចី' : 'Mandate borrowers to enable GPS location when requesting a loan'}
+                {language === 'kh' ? 'តម្រូវអោយកូនបំណុលបើក Location/GPS ជាចាំបាច់នៅពេលសុំកម្ចីរហ័ស (មិនអាចបិទបាន)' : 'Mandate borrowers to enable GPS location when requesting quick loans (Locked)'}
               </p>
             </div>
           </div>
@@ -456,24 +444,12 @@ export default function LoanApplicationsControlPanel({
           <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 justify-end">
             <button
               type="button"
-              onClick={toggleRequireGps}
-              className={`w-full sm:w-auto px-4 py-2 text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-95 ${
-                requireGps 
-                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20' 
-                  : 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300'
-              }`}
+              onClick={handleAttemptToggleGps}
+              className="w-full sm:w-auto px-4 py-2 text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md bg-emerald-600/90 hover:bg-emerald-600 text-white shadow-emerald-600/20 active:scale-95 border border-emerald-500/40"
+              title={language === 'kh' ? 'ទីតាំង GPS ត្រូវតែបើកជាចាំបាច់ (មិនអាចបិទបាន)' : 'GPS Location is mandatory'}
             >
-              {requireGps ? (
-                <>
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>{language === 'kh' ? 'បើកដំណើរការ (ទាមទារ GPS)' : 'ON (Required)'}</span>
-                </>
-              ) : (
-                <>
-                  <Navigation className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{language === 'kh' ? 'បានបិទ (មិនទាមទារ GPS)' : 'OFF (Optional)'}</span>
-                </>
-              )}
+              <Lock className="w-3.5 h-3.5 text-emerald-200" />
+              <span>{language === 'kh' ? '🔒 មិនអាចបិទបាន (ទាមទារ GPS)' : '🔒 Locked (GPS Required)'}</span>
             </button>
           </div>
         </div>
