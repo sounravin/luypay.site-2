@@ -2008,78 +2008,80 @@ export default function BorrowerDetail({
               </div>
             )}
 
-            {/* Elegant Tabs switcher */}
-            <div className="px-6 border-b border-slate-100 bg-white flex gap-6 shrink-0">
-              <button
-                type="button"
-                onClick={() => setDetailTab('schedule')}
-                className={`py-3.5 text-xs sm:text-sm font-extrabold relative transition-colors duration-200 cursor-pointer ${
-                  detailTab === 'schedule' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-b-2 border-transparent'
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  <span>🗓️</span>
+            {/* Mobile App Segmented Control Tabs */}
+            <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-200/80 shrink-0 overflow-x-auto no-scrollbar scrollbar-none">
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-max bg-slate-200/60 p-1.5 rounded-2xl border border-slate-200/90 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => setDetailTab('schedule')}
+                  className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                    detailTab === 'schedule'
+                      ? 'bg-white text-blue-600 shadow-md shadow-slate-300/50 border border-slate-200/60 ring-1 ring-black/5'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                  }`}
+                >
+                  <span className="text-base leading-none">🗓️</span>
                   <span>{language === 'kh' ? 'តារាងបង់ប្រាក់' : 'Payment Schedule & Logs'}</span>
-                </span>
-              </button>
+                </button>
 
-              {!isReadOnlyShareholder && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('statement')}
-                    className={`py-3.5 text-xs sm:text-sm font-extrabold relative transition-colors duration-200 cursor-pointer ${
-                      detailTab === 'statement' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-b-2 border-transparent'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span>📄</span>
-                      <span>{language === 'kh' ? 'លិខិតសងប្រាក់អេឡិចត្រូនិច' : 'Digital Debt Statement'}</span>
+                {!isReadOnlyShareholder && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setDetailTab('statement')}
+                      className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                        detailTab === 'statement'
+                          ? 'bg-white text-blue-600 shadow-md shadow-slate-300/50 border border-slate-200/60 ring-1 ring-black/5'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                      }`}
+                    >
+                      <span className="text-base leading-none">📄</span>
+                      <span>{language === 'kh' ? 'លិខិតអេឡិចត្រូនិច' : 'E-Statement'}</span>
                       {isOnline ? (
-                        <span className="flex h-2.5 w-2.5 relative">
+                        <span className="flex h-2.5 w-2.5 relative ml-0.5">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                         </span>
                       ) : (
                         borrower.lastActive && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-300 ml-0.5" />
                         )
                       )}
-                    </span>
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('personal')}
-                    className={`py-3.5 text-xs sm:text-sm font-extrabold relative transition-colors duration-200 cursor-pointer ${
-                      detailTab === 'personal' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-b-2 border-transparent'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span>👤</span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setDetailTab('personal')}
+                      className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                        detailTab === 'personal'
+                          ? 'bg-white text-blue-600 shadow-md shadow-slate-300/50 border border-slate-200/60 ring-1 ring-black/5'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                      }`}
+                    >
+                      <span className="text-base leading-none">👤</span>
                       <span>{language === 'kh' ? 'ព័ត៌មានផ្ទាល់ខ្លួន' : 'Personal & Loan Info'}</span>
-                    </span>
-                  </button>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setDetailTab('verification')}
-                    className={`py-3.5 text-xs sm:text-sm font-extrabold relative transition-colors duration-200 cursor-pointer ${
-                      detailTab === 'verification' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600 border-b-2 border-transparent'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <span>✨</span>
+                    <button
+                      type="button"
+                      onClick={() => setDetailTab('verification')}
+                      className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all duration-200 cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                        detailTab === 'verification'
+                          ? 'bg-white text-blue-600 shadow-md shadow-slate-300/50 border border-slate-200/60 ring-1 ring-black/5'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                      }`}
+                    >
+                      <span className="text-base leading-none">✨</span>
                       <span>{language === 'kh' ? 'ផ្ទៀងផ្ទាត់ការបង់' : 'Verify Payments'}</span>
                       {Array.isArray(borrower.reportedPayments) && borrower.reportedPayments.filter(r => r.status === 'pending').length > 0 && (
                         <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-bounce">
                           {borrower.reportedPayments.filter(r => r.status === 'pending').length}
                         </span>
                       )}
-                    </span>
-                  </button>
-                </>
-              )}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Tab Contents with Framer Motion Transition */}
