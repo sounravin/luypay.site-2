@@ -75,8 +75,10 @@ export function calculateShareholderStats(
   // Do NOT include self capital loans (where shareholderId is missing or empty)
   const linkedBorrowers = borrowers.filter(
     (b) =>
-      (b.shareholderId && b.shareholderId === shareholder.id) ||
-      (b.shareholderName && shareholder.name && b.shareholderName.trim().toLowerCase() === shareholder.name.trim().toLowerCase())
+      b.shareholderId !== 'sh_dalypoa' &&
+      ((b.shareholderId && b.shareholderId === shareholder.id) ||
+       (b.shareholderName && shareholder.name && b.shareholderName.trim().toLowerCase() === shareholder.name.trim().toLowerCase()) ||
+       (b.shareholderName && shareholder.username && b.shareholderName.trim().toLowerCase() === shareholder.username.trim().toLowerCase()))
   );
 
   let activeCapitalDeployed = 0;

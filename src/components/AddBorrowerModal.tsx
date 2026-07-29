@@ -745,8 +745,8 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     </div>
                     <p className="text-[10px] text-emerald-700/90 font-medium italic pt-1">
                       {language === 'kh'
-                        ? 'ដៃគូរអាច Login ចូលគណនី (Username: dalypoa | Pass: 1234) ដើម្បីមើលទិន្នន័យ និងលំហូរសាច់ប្រាក់របស់គាត់បាន!'
-                        : 'Partner can log in to view their dashboard and track daily cashflow.'}
+                        ? `ដៃគូរ "${selectedPartner?.name || 'ភាគហ៊ុន'}" អាច Login ចូលគណនី (Username: ${selectedPartner?.username || '...'}) ដើម្បីមើលទិន្នន័យ និងលំហូរសាច់ប្រាក់របស់គាត់បាន!`
+                        : `Partner "${selectedPartner?.name || 'Shareholder'}" can log in (Username: ${selectedPartner?.username || '...'}) to view their dashboard.`}
                     </p>
                   </div>
                 </div>

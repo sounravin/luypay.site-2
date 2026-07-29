@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest, Shareholder } from './types';
-import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound, backfillShortIds, formatMoney } from './utils';
+import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound, backfillShortIds, formatMoney, sanitizeBorrowersShareholders } from './utils';
 import Header from './components/Header';
 import BorrowerCard from './components/BorrowerCard';
 import BorrowerDetail from './components/BorrowerDetail';
@@ -243,6 +243,13 @@ export default function App() {
     } catch (e) {
       console.error('Error saving shareholders to Firestore:', e);
     }
+
+    // Re-sanitize borrowers to update or clear any partner references
+    const sanitizeRes = sanitizeBorrowersShareholders(borrowers, cleaned);
+    if (sanitizeRes.hasChanges) {
+      saveBorrowers(sanitizeRes.list);
+    }
+
     showToast('បានរក្សាទុកព័ត៌មានភាគហ៊ុនជោគជ័យ!');
   };
 
@@ -1743,12 +1750,16 @@ export default function App() {
           setCloudSyncStatus('synced');
         }
       } else {
-        const { updatedList, hasChanges } = runAutoCheckInForBorrowers(fbBorrowers);
-        if (hasChanges) {
-          saveBorrowers(updatedList);
+        const autoCheckRes = runAutoCheckInForBorrowers(fbBorrowers);
+        const sanitizeRes = sanitizeBorrowersShareholders(autoCheckRes.updatedList, shareholders);
+        const finalBorrowers = sanitizeRes.list;
+        const needsSave = autoCheckRes.hasChanges || sanitizeRes.hasChanges;
+
+        if (needsSave) {
+          saveBorrowers(finalBorrowers);
         } else {
-          setBorrowers(fbBorrowers);
-          safeStorage.setItem(userStorageKey, JSON.stringify(fbBorrowers));
+          setBorrowers(finalBorrowers);
+          safeStorage.setItem(userStorageKey, JSON.stringify(finalBorrowers));
           setCloudSyncStatus('synced');
         }
       }
@@ -2843,6 +2854,13 @@ export default function App() {
         if (updatedFields.topUpLoanAmount === undefined) delete (updated as any).topUpLoanAmount;
         if (updatedFields.topUpNotes === undefined) delete (updated as any).topUpNotes;
         if (updatedFields.topUpDate === undefined) delete (updated as any).topUpDate;
+        if (updatedFields.shareholderId === undefined) {
+          delete (updated as any).shareholderId;
+          delete (updated as any).shareholderName;
+          delete (updated as any).shareholderSharePercent;
+          delete (updated as any).shareholderCalculationType;
+          delete (updated as any).shareholderDailyUSD;
+        }
         return updated;
       }
       return b;

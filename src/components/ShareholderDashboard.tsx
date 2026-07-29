@@ -121,8 +121,10 @@ export default function ShareholderDashboard({
   const stats = calculateShareholderStats(shareholder, borrowers);
   const linkedBorrowers = borrowers.filter(
     (b) =>
-      (b.shareholderId && b.shareholderId === shareholder.id) ||
-      (b.shareholderName && shareholder.name && b.shareholderName.trim().toLowerCase() === shareholder.name.trim().toLowerCase())
+      b.shareholderId !== 'sh_dalypoa' &&
+      ((b.shareholderId && b.shareholderId === shareholder.id) ||
+       (b.shareholderName && shareholder.name && b.shareholderName.trim().toLowerCase() === shareholder.name.trim().toLowerCase()) ||
+       (b.shareholderName && shareholder.username && b.shareholderName.trim().toLowerCase() === shareholder.username.trim().toLowerCase()))
   );
 
   // Collect notifications for linked borrowers & payments

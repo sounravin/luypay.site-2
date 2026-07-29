@@ -446,9 +446,11 @@ export default function BorrowerDetail({
       setEditTopUpDate('');
     }
 
-    const selectedPartner = editFundType === 'partner'
-      ? (shareholders.find((s) => s.id === editShareholderId) || shareholders[0])
-      : undefined;
+  const validShareholders = shareholders.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+
+  const selectedPartner = editFundType === 'partner'
+    ? (validShareholders.find((s) => s.id === editShareholderId) || validShareholders[0])
+    : undefined;
 
     const shId = selectedPartner ? selectedPartner.id : undefined;
     const shName = selectedPartner ? selectedPartner.name : undefined;
@@ -1607,17 +1609,19 @@ export default function BorrowerDetail({
                       <label className="block text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider">
                         {language === 'kh' ? 'ជ្រើសរើសដៃគូរភាគហ៊ុន (Select Partner):' : 'Select Shareholder Partner:'}
                       </label>
-                      {shareholders.length > 0 ? (
+                      {shareholders.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa').length > 0 ? (
                         <select
                           value={editShareholderId}
                           onChange={(e) => setEditShareholderId(e.target.value)}
                           className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
                         >
-                          {shareholders.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name} ({s.username || 'partner'}) — {s.calculationType === 'daily_usd' ? `$${s.dailyProfitUSD || 1}/ថ្ងៃ` : `${s.sharePercent || 50}% Split`}
-                            </option>
-                          ))}
+                          {shareholders
+                            .filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa')
+                            .map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name} ({s.username || 'partner'}) — {s.calculationType === 'daily_usd' ? `$${s.dailyProfitUSD || 1}/ថ្ងៃ` : `${s.sharePercent || 50}% Split`}
+                              </option>
+                            ))}
                         </select>
                       ) : (
                         <div className="p-2.5 bg-amber-100 border border-amber-300 text-amber-900 rounded-lg text-[11px] font-bold">

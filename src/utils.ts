@@ -1,4 +1,4 @@
-import { CurrencyType, FrequencyType } from './types';
+import { CurrencyType, FrequencyType, Borrower, Shareholder } from './types';
 
 export function formatMoney(amount: number, currency: CurrencyType): string {
   if (currency === 'USD') {
@@ -295,6 +295,60 @@ export function backfillShortIds(borrowersList: Borrower[]): { list: Borrower[];
   });
 
   return { list: listWithIds, hasChanges };
+}
+
+export function sanitizeBorrowersShareholders(borrowersList: Borrower[], shareholdersList: Shareholder[]): { list: Borrower[]; hasChanges: boolean } {
+  let hasChanges = false;
+  const validPartners = (shareholdersList || []).filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+  const firstPartner = validPartners[0] || null;
+
+  const list = (borrowersList || []).map((b) => {
+    let updated = { ...b };
+    let changedThis = false;
+
+    // Check if borrower points to the deleted dalypoa account
+    if (
+      b.shareholderId === 'sh_dalypoa' ||
+      (b.shareholderName &&
+        (b.shareholderName.toLowerCase().includes('daly poa') || b.shareholderName.toLowerCase() === 'dalypoa'))
+    ) {
+      changedThis = true;
+      if (firstPartner) {
+        updated.shareholderId = firstPartner.id;
+        updated.shareholderName = firstPartner.name;
+        updated.shareholderSharePercent = firstPartner.sharePercent ?? 50;
+        updated.shareholderCalculationType = firstPartner.calculationType ?? 'percent';
+        updated.shareholderDailyUSD = firstPartner.dailyProfitUSD ?? 1.0;
+      } else {
+        delete updated.shareholderId;
+        delete updated.shareholderName;
+        delete updated.shareholderSharePercent;
+        delete updated.shareholderCalculationType;
+        delete updated.shareholderDailyUSD;
+      }
+    } else if (b.shareholderId && !validPartners.some((s) => s.id === b.shareholderId)) {
+      // Points to an ID no longer present in shareholders list
+      changedThis = true;
+      if (firstPartner) {
+        updated.shareholderId = firstPartner.id;
+        updated.shareholderName = firstPartner.name;
+      } else {
+        delete updated.shareholderId;
+        delete updated.shareholderName;
+        delete updated.shareholderSharePercent;
+        delete updated.shareholderCalculationType;
+        delete updated.shareholderDailyUSD;
+      }
+    }
+
+    if (changedThis) {
+      hasChanges = true;
+      return updated;
+    }
+    return b;
+  });
+
+  return { list, hasChanges };
 }
 
 
