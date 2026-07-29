@@ -9,21 +9,7 @@ import BorrowerPortal from './components/BorrowerPortal';
 import ShareholderDashboard from './components/ShareholderDashboard';
 import ShareholderManagementModal from './components/ShareholderManagementModal';
 
-const DEFAULT_SHAREHOLDERS: Shareholder[] = [
-  {
-    id: 'sh_dalypoa',
-    name: 'Daly Poa',
-    phone: '012 345 678',
-    username: 'dalypoa',
-    password: '1234',
-    capitalUSD: 1000,
-    sharePercent: 50,
-    calculationType: 'percent',
-    dailyProfitUSD: 2.0,
-    notes: 'ដៃគូរភាគហ៊ុន 50%/50%',
-    createdAt: new Date().toISOString(),
-  },
-];
+const DEFAULT_SHAREHOLDERS: Shareholder[] = [];
 import AdminMembersDashboard from './components/AdminMembersDashboard';
 import PricingPanel from './components/PricingPanel';
 import NotificationBell, { playNotificationSound } from './components/NotificationBell';
@@ -216,12 +202,14 @@ export default function App() {
       const raw = safeStorage.getItem('luypay_shareholders_global');
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+        }
       }
     } catch (e) {
       console.error('Error loading shareholders:', e);
     }
-    return DEFAULT_SHAREHOLDERS;
+    return [];
   });
 
   const [isShareholderModalOpen, setIsShareholderModalOpen] = useState<boolean>(false);
@@ -243,12 +231,18 @@ export default function App() {
       const found = shareholders.find((s) => s.id === activeId);
       if (found) return found;
     }
-    return shareholders[0] || DEFAULT_SHAREHOLDERS[0];
+    return shareholders[0] || null;
   });
 
-  const handleSaveShareholders = (updated: Shareholder[]) => {
-    setShareholders(updated);
-    safeStorage.setItem('luypay_shareholders_global', JSON.stringify(updated));
+  const handleSaveShareholders = async (updated: Shareholder[]) => {
+    const cleaned = updated.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+    setShareholders(cleaned);
+    safeStorage.setItem('luypay_shareholders_global', JSON.stringify(cleaned));
+    try {
+      await setDoc(doc(db, 'settings', 'shareholders_config'), { shareholders: cleaned }, { merge: true });
+    } catch (e) {
+      console.error('Error saving shareholders to Firestore:', e);
+    }
     showToast('បានរក្សាទុកព័ត៌មានភាគហ៊ុនជោគជ័យ!');
   };
 
@@ -751,6 +745,19 @@ export default function App() {
       console.warn('Unable to subscribe to settings/layout_config in real-time (using default offline values):', err.message || err);
     });
 
+    const unsubscribeShareholders = onSnapshot(doc(db, 'settings', 'shareholders_config'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (Array.isArray(data?.shareholders)) {
+          const cleaned = data.shareholders.filter((s: Shareholder) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+          setShareholders(cleaned);
+          safeStorage.setItem('luypay_shareholders_global', JSON.stringify(cleaned));
+        }
+      }
+    }, (err) => {
+      console.warn('Unable to subscribe to settings/shareholders_config in real-time:', err.message || err);
+    });
+
     const handleLayoutUpdated = (e: any) => {
       if (e.detail) {
         setLayoutConfig((prev: any) => ({ ...prev, ...e.detail }));
@@ -763,6 +770,7 @@ export default function App() {
       unsubscribeLogo();
       unsubscribeSponsor();
       unsubscribeLayout();
+      unsubscribeShareholders();
       window.removeEventListener('layout_config_updated', handleLayoutUpdated);
     };
   }, []);
@@ -1210,15 +1218,20 @@ export default function App() {
       }
     }
 
-    // 1.5 Check Partner / Shareholder login (e.g. dalypoa / 1234)
-    const combinedShareholders = [...shareholders];
-    DEFAULT_SHAREHOLDERS.forEach((def) => {
-      if (!combinedShareholders.some((s) => (s.username || '').toLowerCase() === (def.username || '').toLowerCase())) {
-        combinedShareholders.push(def);
+    // 1.5 Check Partner / Shareholder login
+    let partnerList = shareholders.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+    if (partnerList.length === 0) {
+      try {
+        const shSnap = await getDoc(doc(db, 'settings', 'shareholders_config'));
+        if (shSnap.exists() && Array.isArray(shSnap.data()?.shareholders)) {
+          partnerList = shSnap.data()?.shareholders.filter((s: Shareholder) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+        }
+      } catch (e) {
+        console.error('Error fetching shareholders config for login check:', e);
       }
-    });
+    }
 
-    const matchedPartner = combinedShareholders.find((s) => {
+    const matchedPartner = partnerList.find((s) => {
       const u = (s.username || '').trim().toLowerCase();
       const p = (s.password || '').trim();
       return u === cleanUsername && p === passwordInput.trim();
@@ -1230,6 +1243,7 @@ export default function App() {
       safeStorage.setItem('luypay_authenticated_partner_id', matchedPartner.id);
       setActivePartner(matchedPartner);
       setIsPartnerLoggedIn(true);
+      setShowLoginModal(false);
       showToast(`សូមស្វាគមន៍ដៃគូរភាគហ៊ុន៖ ${matchedPartner.name}!`);
       return;
     }
@@ -3026,20 +3040,25 @@ export default function App() {
   const isExpired = isSubscriptionExpired(memberProfile);
 
   if (isPartnerLoggedIn) {
-    const partnerToUse = activePartner || shareholders[0] || DEFAULT_SHAREHOLDERS[0];
-    return (
-      <ShareholderDashboard
-        shareholder={partnerToUse}
-        allShareholders={shareholders}
-        borrowers={borrowers}
-        language={language}
-        onBackToMain={() => {
-          setIsPartnerLoggedIn(false);
-          setActivePartner(null);
-          safeStorage.removeItem('luypay_authenticated_partner_id');
-        }}
-      />
-    );
+    const partnerToUse = activePartner || shareholders[0];
+    if (!partnerToUse) {
+      setIsPartnerLoggedIn(false);
+      safeStorage.removeItem('luypay_authenticated_partner_id');
+    } else {
+      return (
+        <ShareholderDashboard
+          shareholder={partnerToUse}
+          allShareholders={shareholders}
+          borrowers={borrowers}
+          language={language}
+          onBackToMain={() => {
+            setIsPartnerLoggedIn(false);
+            setActivePartner(null);
+            safeStorage.removeItem('luypay_authenticated_partner_id');
+          }}
+        />
+      );
+    }
   }
 
   if (!isLoggedIn) {
@@ -6993,9 +7012,14 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => {
-                      setIsSettingsOpen(false);
-                      setIsPartnerLoggedIn(true);
-                      setActivePartner(shareholders[0] || DEFAULT_SHAREHOLDERS[0]);
+                      if (shareholders.length > 0) {
+                        setIsSettingsOpen(false);
+                        setIsPartnerLoggedIn(true);
+                        setActivePartner(shareholders[0]);
+                      } else {
+                        setIsSettingsOpen(false);
+                        setIsShareholderModalOpen(true);
+                      }
                     }}
                     className="w-full p-3 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 font-extrabold rounded-2xl text-xs flex items-center justify-between transition cursor-pointer"
                   >

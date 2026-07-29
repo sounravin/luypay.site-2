@@ -59,8 +59,8 @@ export default function ShareholderManagementModal({
     setEditingId(s.id);
     setName(s.name);
     setPhone(s.phone || '');
-    setUsername(s.username || 'admin');
-    setPassword(s.password || 'admin');
+    setUsername(s.username || '');
+    setPassword(s.password || '');
     setCapitalUSD(s.capitalUSD.toString());
     setCalculationType(s.calculationType || 'daily_usd');
     setDailyProfitUSD((s.dailyProfitUSD ?? 1.0).toString());
@@ -77,6 +77,8 @@ export default function ShareholderManagementModal({
     const cap = parseFloat(capitalUSD) || 0;
     const dailyProfit = parseFloat(dailyProfitUSD) || 1.0;
     const split = parseFloat(sharePercent) || 50;
+    const cleanUsername = username.trim() || `partner${Math.floor(100 + Math.random() * 900)}`;
+    const cleanPassword = password.trim() || '123456';
 
     if (editingId) {
       const updated = shareholders.map((s) =>
@@ -85,8 +87,8 @@ export default function ShareholderManagementModal({
               ...s,
               name: name.trim(),
               phone: phone.trim(),
-              username: username.trim() || 'admin',
-              password: password.trim() || 'admin',
+              username: cleanUsername,
+              password: cleanPassword,
               capitalUSD: cap,
               calculationType,
               dailyProfitUSD: dailyProfit,
@@ -102,8 +104,8 @@ export default function ShareholderManagementModal({
         id: `sh_${Date.now()}`,
         name: name.trim(),
         phone: phone.trim(),
-        username: username.trim() || 'admin',
-        password: password.trim() || 'admin',
+        username: cleanUsername,
+        password: cleanPassword,
         capitalUSD: cap,
         calculationType,
         dailyProfitUSD: dailyProfit,
@@ -118,8 +120,8 @@ export default function ShareholderManagementModal({
     setEditingId(null);
     setName('');
     setPhone('');
-    setUsername('admin');
-    setPassword('admin');
+    setUsername('');
+    setPassword('');
     setCapitalUSD('500');
     setCalculationType('daily_usd');
     setDailyProfitUSD('1.00');
@@ -491,7 +493,7 @@ export default function ShareholderManagementModal({
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="admin"
+                    placeholder="e.g. partner1"
                     className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
@@ -504,7 +506,7 @@ export default function ShareholderManagementModal({
                     type="text"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="admin"
+                    placeholder="e.g. 123456"
                     className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
