@@ -315,7 +315,7 @@ export function sanitizeBorrowersShareholders(borrowersList: Borrower[], shareho
         updated.shareholderId = firstPartner.id;
         updated.shareholderName = firstPartner.name;
         updated.shareholderSharePercent = firstPartner.sharePercent ?? 50;
-        updated.shareholderCalculationType = firstPartner.calculationType ?? 'percent';
+        updated.shareholderCalculationType = firstPartner.calculationType ?? 'daily_usd';
         updated.shareholderDailyUSD = firstPartner.dailyProfitUSD ?? 1.0;
       } else {
         delete updated.shareholderId;
@@ -330,12 +330,47 @@ export function sanitizeBorrowersShareholders(borrowersList: Borrower[], shareho
       if (firstPartner) {
         updated.shareholderId = firstPartner.id;
         updated.shareholderName = firstPartner.name;
+        updated.shareholderSharePercent = firstPartner.sharePercent ?? 50;
+        updated.shareholderCalculationType = firstPartner.calculationType ?? 'daily_usd';
+        updated.shareholderDailyUSD = firstPartner.dailyProfitUSD ?? 1.0;
       } else {
         delete updated.shareholderId;
         delete updated.shareholderName;
         delete updated.shareholderSharePercent;
         delete updated.shareholderCalculationType;
         delete updated.shareholderDailyUSD;
+      }
+    } else if (b.shareholderId) {
+      // Points to an active shareholder: Sync updated shareholder fields (name, rates, mode)
+      const matchingSh = validPartners.find((s) => s.id === b.shareholderId);
+      if (matchingSh) {
+        if (
+          b.shareholderName !== matchingSh.name ||
+          b.shareholderSharePercent !== (matchingSh.sharePercent ?? 50) ||
+          b.shareholderCalculationType !== (matchingSh.calculationType ?? 'daily_usd') ||
+          b.shareholderDailyUSD !== (matchingSh.dailyProfitUSD ?? 1.0)
+        ) {
+          changedThis = true;
+          updated.shareholderName = matchingSh.name;
+          updated.shareholderSharePercent = matchingSh.sharePercent ?? 50;
+          updated.shareholderCalculationType = matchingSh.calculationType ?? 'daily_usd';
+          updated.shareholderDailyUSD = matchingSh.dailyProfitUSD ?? 1.0;
+        }
+      }
+    } else if (!b.shareholderId && b.shareholderName && b.shareholderName.trim()) {
+      // Unlinked shareholderId but has shareholderName: Try auto-linking by name/username
+      const matchByName = validPartners.find(
+        (s) =>
+          s.name.trim().toLowerCase() === b.shareholderName!.trim().toLowerCase() ||
+          (s.username && s.username.trim().toLowerCase() === b.shareholderName!.trim().toLowerCase())
+      );
+      if (matchByName) {
+        changedThis = true;
+        updated.shareholderId = matchByName.id;
+        updated.shareholderName = matchByName.name;
+        updated.shareholderSharePercent = matchByName.sharePercent ?? 50;
+        updated.shareholderCalculationType = matchByName.calculationType ?? 'daily_usd';
+        updated.shareholderDailyUSD = matchByName.dailyProfitUSD ?? 1.0;
       }
     }
 

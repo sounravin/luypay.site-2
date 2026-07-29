@@ -72,13 +72,30 @@ export default function ShareholderManagementModal({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      alert(language === 'kh' ? 'សូមបញ្ចូលឈ្មោះម្ចាស់ភាគហ៊ុន!' : 'Please enter shareholder name!');
+      return;
+    }
+
+    const cleanUsername = username.trim() || `partner${Math.floor(100 + Math.random() * 900)}`;
+    const cleanPassword = password.trim() || '123456';
+
+    // Duplicate username check
+    const isDuplicateUser = shareholders.some(
+      (s) => s.id !== editingId && s.username.trim().toLowerCase() === cleanUsername.toLowerCase()
+    );
+    if (isDuplicateUser) {
+      alert(
+        language === 'kh'
+          ? `ឈ្មោះគណនី (Username) "${cleanUsername}" មានរួចហើយ! សូមប្រើ Username ដទៃទៀត។`
+          : `Username "${cleanUsername}" is already taken! Please choose another.`
+      );
+      return;
+    }
 
     const cap = parseFloat(capitalUSD) || 0;
     const dailyProfit = parseFloat(dailyProfitUSD) || 1.0;
     const split = parseFloat(sharePercent) || 50;
-    const cleanUsername = username.trim() || `partner${Math.floor(100 + Math.random() * 900)}`;
-    const cleanPassword = password.trim() || '123456';
 
     if (editingId) {
       const updated = shareholders.map((s) =>

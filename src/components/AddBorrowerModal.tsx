@@ -384,7 +384,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
     const shId = selectedPartner ? selectedPartner.id : undefined;
     const shName = selectedPartner ? selectedPartner.name : undefined;
     const shPct = selectedPartner ? (selectedPartner.sharePercent ?? 50) : undefined;
-    const shCalc = selectedPartner ? (selectedPartner.calculationType ?? 'percent') : undefined;
+    const shCalc = selectedPartner ? (selectedPartner.calculationType ?? 'daily_usd') : undefined;
     const shDaily = selectedPartner ? (selectedPartner.dailyProfitUSD ?? 1.0) : undefined;
 
     onSave({
@@ -727,31 +727,53 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                     )}
                   </div>
 
-                  <div className="p-2.5 bg-white border border-emerald-200 rounded-lg space-y-1 text-xs">
-                    <div className="flex items-center justify-between font-bold text-emerald-900 border-b border-emerald-100 pb-1">
-                      <span>💡 {language === 'kh' ? 'ការបែងចែកផលចំណេញប្រចាំថ្ងៃ (50%/50% Split):' : '50%/50% Interest Revenue Split:'}</span>
-                      <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[10px]">50% / 50%</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 pt-1 text-[11px] font-bold">
-                      <div className="bg-blue-50 p-1.5 rounded border border-blue-100 text-blue-900">
-                        <span className="block text-[10px] text-blue-600 uppercase font-black">👨‍💼 ម្ចាស់បំណុល (Main)</span>
-                        <span className="text-xs font-mono font-black">
-                          ${(((parseFloat(totalToPay) - parseFloat(principal)) || 4) / 2 / (parseInt(duration) || 1)).toFixed(2)} / ថ្ងៃ
-                        </span>
+                  {(() => {
+                    const activeSelectedPartner = shareholders.find((s) => s.id === selectedShareholderId) || shareholders[0];
+                    const isDailyMode = activeSelectedPartner?.calculationType === 'daily_usd';
+                    const dVal = parseInt(duration) || 1;
+                    const pVal = parseFloat(principal) || 0;
+                    const tVal = parseFloat(totalToPay) || 0;
+                    const totalInterest = Math.max(0, tVal - pVal);
+                    const dailyTotalInterest = dVal > 0 ? totalInterest / dVal : 0;
+
+                    const partnerDailyProfit = isDailyMode
+                      ? (activeSelectedPartner?.dailyProfitUSD ?? 1.0)
+                      : (dailyTotalInterest * ((activeSelectedPartner?.sharePercent ?? 50) / 100));
+
+                    const mainLenderDailyProfit = Math.max(0, (tVal / dVal) - partnerDailyProfit);
+
+                    return (
+                      <div className="p-2.5 bg-white border border-emerald-200 rounded-lg space-y-1 text-xs">
+                        <div className="flex items-center justify-between font-bold text-emerald-900 border-b border-emerald-100 pb-1">
+                          <span>💡 {language === 'kh' ? 'ការបែងចែកផលចំណេញប្រចាំថ្ងៃ (Profit Split):' : 'Daily Profit Split Preview:'}</span>
+                          <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[10px] font-mono font-bold">
+                            {isDailyMode
+                              ? `💵 $${(activeSelectedPartner?.dailyProfitUSD ?? 1.0).toFixed(2)} / ថ្ងៃ`
+                              : `📊 ${activeSelectedPartner?.sharePercent ?? 50}% Split`}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 pt-1 text-[11px] font-bold">
+                          <div className="bg-blue-50 p-1.5 rounded border border-blue-100 text-blue-900">
+                            <span className="block text-[10px] text-blue-600 uppercase font-black">👨‍💼 ម្ចាស់បំណុល (Main)</span>
+                            <span className="text-xs font-mono font-black">
+                              ${mainLenderDailyProfit.toFixed(2)} / ថ្ងៃ
+                            </span>
+                          </div>
+                          <div className="bg-emerald-100/70 p-1.5 rounded border border-emerald-200 text-emerald-900">
+                            <span className="block text-[10px] text-emerald-700 uppercase font-black">🤝 ដៃគូរ ({activeSelectedPartner?.name || 'Partner'})</span>
+                            <span className="text-xs font-mono font-black">
+                              ${partnerDailyProfit.toFixed(2)} / ថ្ងៃ
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-emerald-700/90 font-medium italic pt-1">
+                          {language === 'kh'
+                            ? `ដៃគូរ "${activeSelectedPartner?.name || 'ភាគហ៊ុន'}" អាច Login ចូលគណនី (Username: ${activeSelectedPartner?.username || '...'}) ដើម្បីមើលទិន្នន័យ និងលំហូរសាច់ប្រាក់របស់គាត់បាន!`
+                            : `Partner "${activeSelectedPartner?.name || 'Shareholder'}" can log in (Username: ${activeSelectedPartner?.username || '...'}) to view their dashboard.`}
+                        </p>
                       </div>
-                      <div className="bg-emerald-100/70 p-1.5 rounded border border-emerald-200 text-emerald-900">
-                        <span className="block text-[10px] text-emerald-700 uppercase font-black">🤝 ដៃគូរ (Partner)</span>
-                        <span className="text-xs font-mono font-black">
-                          ${(((parseFloat(totalToPay) - parseFloat(principal)) || 4) / 2 / (parseInt(duration) || 1)).toFixed(2)} / ថ្ងៃ
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-emerald-700/90 font-medium italic pt-1">
-                      {language === 'kh'
-                        ? `ដៃគូរ "${selectedPartner?.name || 'ភាគហ៊ុន'}" អាច Login ចូលគណនី (Username: ${selectedPartner?.username || '...'}) ដើម្បីមើលទិន្នន័យ និងលំហូរសាច់ប្រាក់របស់គាត់បាន!`
-                        : `Partner "${selectedPartner?.name || 'Shareholder'}" can log in (Username: ${selectedPartner?.username || '...'}) to view their dashboard.`}
-                    </p>
-                  </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

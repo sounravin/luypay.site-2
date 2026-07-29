@@ -56,12 +56,21 @@ export default function ShareholderDashboard({
 }: ShareholderDashboardProps) {
   const [activeShareholder, setActiveShareholder] = useState<Shareholder>(initialShareholder);
 
-  // Sync activeShareholder if initialShareholder prop updates
+  // Sync activeShareholder if initialShareholder or allShareholders prop updates
   useEffect(() => {
-    if (initialShareholder && initialShareholder.id !== activeShareholder.id) {
+    if (initialShareholder) {
       setActiveShareholder(initialShareholder);
     }
   }, [initialShareholder]);
+
+  useEffect(() => {
+    if (allShareholders.length > 0 && activeShareholder) {
+      const refreshed = allShareholders.find((s) => s.id === activeShareholder.id);
+      if (refreshed) {
+        setActiveShareholder(refreshed);
+      }
+    }
+  }, [allShareholders]);
 
   const listToSearch = allShareholders.length > 0 ? allShareholders : [activeShareholder];
 

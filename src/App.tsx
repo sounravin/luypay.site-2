@@ -222,17 +222,63 @@ export default function App() {
   const [activePartner, setActivePartner] = useState<Shareholder | null>(() => {
     const params = new URLSearchParams(window.location.search);
     const partnerParam = params.get('partner');
+    const raw = safeStorage.getItem('luypay_shareholders_global');
+    let currentShs: Shareholder[] = [];
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          currentShs = parsed.filter((s: any) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+        }
+      } catch (e) {}
+    }
     if (partnerParam) {
-      const found = shareholders.find((s) => s.id === partnerParam || s.username?.toLowerCase() === partnerParam.toLowerCase());
+      const found = currentShs.find((s) => s.id === partnerParam || s.username?.toLowerCase() === partnerParam.toLowerCase());
       if (found) return found;
     }
     const activeId = safeStorage.getItem('luypay_authenticated_partner_id');
     if (activeId) {
-      const found = shareholders.find((s) => s.id === activeId);
+      const found = currentShs.find((s) => s.id === activeId);
       if (found) return found;
     }
-    return shareholders[0] || null;
+    return currentShs[0] || null;
   });
+
+  // Keep activePartner state in sync whenever shareholders list loads or updates
+  useEffect(() => {
+    if (shareholders.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const partnerParam = params.get('partner');
+      const activeId = safeStorage.getItem('luypay_authenticated_partner_id');
+
+      if (partnerParam) {
+        const found = shareholders.find((s) => s.id === partnerParam || s.username?.toLowerCase() === partnerParam.toLowerCase());
+        if (found) {
+          setActivePartner(found);
+          setIsPartnerLoggedIn(true);
+          safeStorage.setItem('luypay_authenticated_partner_id', found.id);
+          safeStorage.setItem(`luypay_partner_auth_${found.id}`, 'true');
+          return;
+        }
+      }
+
+      if (activeId) {
+        const found = shareholders.find((s) => s.id === activeId);
+        if (found) {
+          setActivePartner(found);
+          setIsPartnerLoggedIn(true);
+          return;
+        }
+      }
+
+      if (activePartner) {
+        const refreshed = shareholders.find((s) => s.id === activePartner.id);
+        if (refreshed) {
+          setActivePartner(refreshed);
+        }
+      }
+    }
+  }, [shareholders]);
 
   const handleSaveShareholders = async (updated: Shareholder[]) => {
     const cleaned = updated.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
