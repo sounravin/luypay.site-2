@@ -55,6 +55,8 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
   const [locationAccuracy, setLocationAccuracy] = useState<number | null>(null);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'requesting' | 'captured' | 'denied' | 'error'>('idle');
   const [gpsErrorMessage, setGpsErrorMessage] = useState('');
+  const [showGpsModal, setShowGpsModal] = useState(false);
+  const [showSettingsHelp, setShowSettingsHelp] = useState(false);
   
   // GPS Location Requirement configuration state
   const [requireGps, setRequireGps] = useState<boolean>(() => {
@@ -108,6 +110,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
         setLocationAccuracy(position.coords.accuracy);
         setGpsStatus('captured');
         setGpsErrorMessage('');
+        setShowGpsModal(false);
       },
       (err) => {
         console.warn("GPS Location error:", err);
@@ -134,12 +137,10 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
     );
   };
 
-  // Automatically request GPS location on mount ONLY if requireGps is enabled
+  // Automatically request GPS location on mount in background
   useEffect(() => {
-    if (requireGps) {
-      requestGpsLocation();
-    }
-  }, [requireGps]);
+    requestGpsLocation();
+  }, []);
 
   // Clean up camera stream when component unmounts or view changes
   useEffect(() => {
@@ -384,11 +385,12 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
     // Check GPS Location Requirement
     if (requireGps && (!latitude || !longitude || gpsStatus !== 'captured')) {
       const errAlert = language === 'kh'
-        ? 'តម្រូវអោយបើកទីតាំង GPS (Location Service) លើទូរស័ព្ទរបស់អ្នក និងអនុញ្ញាត (Allow Location) ជាចាំបាច់! សូមចុចលើប៊ូតុង "ស្វែងរកទីតាំង GPS សារថ្មី" បន្ទាប់ពីបើក GPS រួច។'
-        : 'GPS Location is strictly required! Please turn on Location Services on your device and tap "Fetch GPS Location".';
+        ? 'សូមអនុញ្ញាតសិទ្ធិចូលមើលទីតាំង (Allow Location Permission) លើ Browser/ទូរស័ព្ទរបស់អ្នកដើម្បីបន្ត!'
+        : 'Please allow Location permission on your browser/device settings to proceed.';
       setSubmitStatus('error');
       setErrorMessage(errAlert);
-      alert(errAlert);
+      setShowGpsModal(true);
+      requestGpsLocation();
       return;
     }
 
@@ -1042,107 +1044,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
             </div>
           </div>
 
-          {/* GPS Location Status & Requirement Card - Only show if GPS is required */}
-          {requireGps && (() => {
-            const currentStatus = gpsStatus as 'idle' | 'requesting' | 'captured' | 'denied' | 'error';
-            const isGpsCaptured = currentStatus === 'captured' && latitude !== null && longitude !== null;
-            const isRequestingGps = currentStatus === 'requesting';
 
-            return (
-              <div className={`p-4 rounded-2xl border transition space-y-2.5 ${
-                isGpsCaptured
-                  ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
-                  : requireGps
-                  ? 'bg-rose-950/30 border-rose-500/40 text-rose-300'
-                  : 'bg-slate-950 border-slate-800 text-slate-300'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 font-black text-xs">
-                    <MapPin className={`w-4 h-4 ${isGpsCaptured ? 'text-emerald-400' : 'text-rose-400'}`} />
-                    <span>{language === 'kh' ? 'ទីតាំង GPS (GPS Location Service)' : 'GPS Location Service'}</span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${
-                      requireGps
-                        ? 'bg-rose-500/20 border-rose-500/30 text-rose-300'
-                        : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
-                    }`}>
-                      {requireGps
-                        ? (language === 'kh' ? '🔒 ទាមទារ GPS' : '🔒 Required')
-                        : (language === 'kh' ? '🔓 មិនទាមទារ GPS' : '🔓 Optional')}
-                    </span>
-
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${
-                      isGpsCaptured
-                        ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
-                        : isRequestingGps
-                        ? 'bg-amber-500/20 border-amber-500/30 text-amber-300 animate-pulse'
-                        : requireGps
-                        ? 'bg-rose-500/20 border-rose-500/30 text-rose-400'
-                        : 'bg-slate-800 border-slate-700 text-slate-400'
-                    }`}>
-                      {isGpsCaptured ? (language === 'kh' ? '✓ បានស្វែងរក' : '✓ Captured') :
-                       isRequestingGps ? (language === 'kh' ? '⌛ កំពុងរក...' : '⌛ Requesting') :
-                       requireGps ? (language === 'kh' ? '❌ គ្មានទីតាំង' : '❌ No Location') :
-                       (language === 'kh' ? 'ℹ️ មិនទាមទារ' : 'ℹ️ Optional')}
-                    </span>
-                  </div>
-                </div>
-
-                {/* GPS Details / Message */}
-                {isGpsCaptured ? (
-                  <div className="text-[11px] font-mono bg-slate-950/80 p-2.5 rounded-xl border border-emerald-500/20 space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">{language === 'kh' ? 'កូអរដោនេ (Coordinates):' : 'Coordinates:'}</span>
-                      <span className="font-bold text-emerald-400">{latitude?.toFixed(5)}, {longitude?.toFixed(5)}</span>
-                    </div>
-                    {locationAccuracy && (
-                      <div className="flex justify-between items-center text-[10px]">
-                        <span className="text-slate-400">{language === 'kh' ? 'ភាពច្បាស់ (Accuracy):' : 'Accuracy:'}</span>
-                        <span className="text-slate-300">±{Math.round(locationAccuracy)}m</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-1.5 text-xs">
-                    <p className="text-[11px] text-slate-300 leading-relaxed font-medium">
-                      {requireGps ? (
-                        language === 'kh' 
-                          ? '⚠️ កម្មវិធីតម្រូវអោយលោកអ្នកបើកសេវាទីតាំង GPS (Location Service) លើទូរស័ព្ទដើម្បីផ្ញើសំណើសុំកម្ចី។'
-                          : '⚠️ GPS Location is required to submit your quick loan request.'
-                      ) : (
-                        language === 'kh'
-                          ? 'ℹ️ ទីតាំង GPS មិនត្រួវបានទាមទារជាចាំបាច់ទេ ប៉ុន្តែលោកអ្នកអាចបើកដើម្បីជួយអោយការពិនិត្យសំណើលឿនជាងមុន។'
-                          : 'ℹ️ GPS Location is optional for this loan request.'
-                      )}
-                    </p>
-
-                    {gpsErrorMessage && (
-                      <p className="text-[11px] text-rose-400 font-bold bg-rose-950/50 p-2 rounded-xl border border-rose-500/20">
-                        {gpsErrorMessage}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Fetch Location Action Button */}
-                <button
-                  type="button"
-                  onClick={requestGpsLocation}
-                  disabled={isRequestingGps}
-                  className="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 text-cyan-300 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 border border-slate-700 cursor-pointer active:scale-98"
-                >
-                  <Navigation className={`w-3.5 h-3.5 ${isRequestingGps ? 'animate-spin text-cyan-400' : 'text-cyan-400'}`} />
-                  <span>
-                    {isRequestingGps
-                      ? (language === 'kh' ? 'កំពុងស្វែងរកទីតាំង...' : 'Fetching GPS Location...')
-                      : (language === 'kh' ? '🔄 ស្វែងរកទីតាំង GPS សារថ្មី' : 'Fetch GPS Location')}
-                  </span>
-                </button>
-              </div>
-            );
-          })()}
 
           {/* Hidden Canvas for compression */}
           <canvas ref={canvasRef} className="hidden" />
@@ -1244,6 +1146,115 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                   className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-lg"
                 />
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      {/* GPS Location Requirement Popup Modal */}
+      <AnimatePresence>
+        {showGpsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 text-center relative overflow-hidden"
+            >
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setShowGpsModal(false)}
+                className="absolute top-4 right-4 p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-full transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {/* Icon */}
+              <div className="w-16 h-16 bg-amber-500/20 border border-amber-500/40 rounded-full flex items-center justify-center mx-auto text-amber-400 shadow-lg shadow-amber-500/10 animate-pulse">
+                <MapPin className="w-8 h-8" />
+              </div>
+
+              {/* Title & Description */}
+              <div className="space-y-2">
+                <h3 className="text-base font-black text-white uppercase tracking-wide">
+                  {language === 'kh' ? '📍 តម្រូវអោយបើកទីតាំង GPS (Location Service)' : '📍 GPS Location Service Required'}
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                  {language === 'kh'
+                    ? 'ដើម្បីបន្តការស្នើសុំកម្ចីរហ័ស លោកអ្នកតម្រូវអោយបើកទីតាំង GPS (Location Service) លើទូរស័ព្ទរបស់អ្នក និងអនុញ្ញាតសិទ្ធិ (Allow Location)!'
+                    : 'To proceed with your quick loan application, please enable Location Service and grant Location Permission on your device.'}
+                </p>
+              </div>
+
+              {/* Error Message if Denied */}
+              {gpsErrorMessage && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-300 text-xs font-semibold text-left flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <span>{gpsErrorMessage}</span>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="space-y-3 pt-2">
+                {/* User Requested Main Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    requestGpsLocation();
+                  }}
+                  disabled={gpsStatus === 'requesting'}
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm rounded-2xl shadow-lg shadow-emerald-600/30 transition cursor-pointer active:scale-98 flex items-center justify-center gap-2"
+                >
+                  <Navigation className={`w-4 h-4 ${gpsStatus === 'requesting' ? 'animate-spin text-white' : ''}`} />
+                  <span>
+                    {gpsStatus === 'requesting'
+                      ? (language === 'kh' ? 'កំពុងស្វែងរកទីតាំង GPS...' : 'Fetching GPS Location...')
+                      : (language === 'kh' ? '📍 ចុចទីនេះដើម្បីបើកទីតាំង GPS (Allow Location)' : '📍 Click here to Allow Location GPS')}
+                  </span>
+                </button>
+
+                {/* Device Settings Link Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                        window.location.href = 'app-settings:';
+                      } else if (/Android/i.test(navigator.userAgent)) {
+                        window.location.href = 'intent:#Intent;action=android.settings.LOCATION_SOURCE_SETTINGS;end';
+                      }
+                    } catch (e) {
+                      console.log("Settings scheme error", e);
+                    }
+                    setShowSettingsHelp(!showSettingsHelp);
+                  }}
+                  className="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Lock className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>
+                    {language === 'kh' ? '⚙️ ចូលទៅកាន់ Device Settings (របៀបបើក GPS)' : '⚙️ Go to Device Settings (How to Enable)'}
+                  </span>
+                </button>
+              </div>
+
+              {/* Step-by-Step Settings Guide */}
+              {showSettingsHelp && (
+                <div className="mt-3 p-3.5 bg-slate-950 border border-cyan-500/30 rounded-2xl text-left space-y-2 text-xs text-slate-300">
+                  <div className="font-bold text-cyan-400 flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>{language === 'kh' ? 'របៀបបើកសិទ្ធិទីតាំងក្នុង Settings:' : 'How to allow Location in Settings:'}</span>
+                  </div>
+                  <div className="space-y-1.5 text-[11px] leading-relaxed">
+                    <p className="font-semibold text-amber-300">📱 iPhone / iPad (Safari):</p>
+                    <p className="pl-2 text-slate-400">1. ចុចលើអក្សរ <span className="text-white font-bold">aA</span> ឬរូប <span className="text-white font-bold">🔒</span> លើអាសយដ្ឋាន URL</p>
+                    <p className="pl-2 text-slate-400">2. ជ្រើសរើស <span className="text-emerald-400 font-bold">Website Settings</span> ➔ <span className="text-emerald-400 font-bold">Location</span> ➔ <span className="text-emerald-400 font-bold">Allow</span></p>
+
+                    <p className="font-semibold text-emerald-300 pt-1">🤖 Android (Chrome / Brave / Opera):</p>
+                    <p className="pl-2 text-slate-400">1. ចុចលើរូប <span className="text-white font-bold">🔒 (Lock)</span> ខាងឆ្វេងរបារ Search</p>
+                    <p className="pl-2 text-slate-400">2. ចុច <span className="text-emerald-400 font-bold">Permissions</span> ➔ បើក <span className="text-emerald-400 font-bold">Location Access</span></p>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
         )}
