@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { LoanApplication, DEFAULT_LENDER_INFO } from '../types';
 import { useLanguage } from '../i18n';
 import { motion, AnimatePresence } from 'motion/react';
@@ -46,14 +46,34 @@ export default function LoanApplicationsControlPanel({
   // GPS Location Requirement option state
   const [requireGps, setRequireGps] = useState<boolean>(() => {
     const saved = localStorage.getItem('loan_app_require_gps');
-    return saved !== null ? saved === 'true' : true;
+    return saved !== null ? saved === 'true' : false;
   });
 
-  const toggleRequireGps = () => {
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'gps_config'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && typeof data.requireGps === 'boolean') {
+          setRequireGps(data.requireGps);
+          localStorage.setItem('loan_app_require_gps', String(data.requireGps));
+        }
+      }
+    }, (err) => {
+      console.warn("Error subscribing to gps_config:", err);
+    });
+    return () => unsub();
+  }, []);
+
+  const toggleRequireGps = async () => {
     const next = !requireGps;
     setRequireGps(next);
     localStorage.setItem('loan_app_require_gps', String(next));
     window.dispatchEvent(new Event('storage'));
+    try {
+      await setDoc(doc(db, 'settings', 'gps_config'), { requireGps: next, updatedAt: new Date().toISOString() }, { merge: true });
+    } catch (err) {
+      console.warn("Error saving gps_config to Firestore:", err);
+    }
     if (next) {
       showToast(
         language === 'kh' ? '🔒 បានបើកការកំណត់៖ ទាមទារទីតាំង GPS (Require Location)' : '🔒 Required GPS Location Enabled',

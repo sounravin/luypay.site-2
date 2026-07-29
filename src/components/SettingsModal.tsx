@@ -1,5 +1,7 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { X, Moon, Sun, Camera, FileText } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import type { AppThemeType, ButtonStyleType } from '../utils/theme';
 
 interface SettingsModalProps {
@@ -41,6 +43,37 @@ export default function SettingsModal({
   systemLogo, triggerSystemLogoUpload, handleSystemLogoUpload,
   systemLogoInputRef, isAdmin
 }: SettingsModalProps) {
+  const [gpsRequired, setGpsRequired] = useState<boolean>(() => {
+    const saved = localStorage.getItem('loan_app_require_gps');
+    return saved !== null ? saved === 'true' : false;
+  });
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'gps_config'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && typeof data.requireGps === 'boolean') {
+          setGpsRequired(data.requireGps);
+          localStorage.setItem('loan_app_require_gps', String(data.requireGps));
+        }
+      }
+    }, (err) => {
+      console.warn("Error listening to gps_config in SettingsModal:", err);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleToggleGps = async (checked: boolean) => {
+    setGpsRequired(checked);
+    localStorage.setItem('loan_app_require_gps', String(checked));
+    window.dispatchEvent(new Event('storage'));
+    try {
+      await setDoc(doc(db, 'settings', 'gps_config'), { requireGps: checked, updatedAt: new Date().toISOString() }, { merge: true });
+    } catch (err) {
+      console.warn("Error updating gps_config in SettingsModal:", err);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -175,11 +208,8 @@ export default function SettingsModal({
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input 
                       type="checkbox" 
-                      defaultChecked={localStorage.getItem('loan_app_require_gps') !== 'false'}
-                      onChange={(e) => {
-                        localStorage.setItem('loan_app_require_gps', String(e.target.checked));
-                        window.dispatchEvent(new Event('storage'));
-                      }}
+                      checked={gpsRequired}
+                      onChange={(e) => handleToggleGps(e.target.checked)}
                       className="sr-only peer" 
                     />
                     <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600"></div>

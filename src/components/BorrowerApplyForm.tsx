@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { useLanguage } from '../i18n';
 import { motion, AnimatePresence } from 'motion/react';
 import { Upload, Camera, CheckCircle, AlertCircle, Phone, User, DollarSign, RefreshCw, ChevronLeft, Eye, X, ZoomIn, FileText, ShieldAlert, Sparkles, AlertTriangle, MapPin, Navigation, Calendar, CreditCard, Lock, Unlock } from 'lucide-react';
@@ -59,16 +59,35 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
   // GPS Location Requirement configuration state
   const [requireGps, setRequireGps] = useState<boolean>(() => {
     const saved = localStorage.getItem('loan_app_require_gps');
-    return saved !== null ? saved === 'true' : true;
+    return saved !== null ? saved === 'true' : false;
   });
 
   useEffect(() => {
     const syncGpsSetting = () => {
       const saved = localStorage.getItem('loan_app_require_gps');
-      setRequireGps(saved !== null ? saved === 'true' : true);
+      if (saved !== null) {
+        setRequireGps(saved === 'true');
+      }
     };
     window.addEventListener('storage', syncGpsSetting);
-    return () => window.removeEventListener('storage', syncGpsSetting);
+
+    // Sync with Firestore in real-time
+    const unsub = onSnapshot(doc(db, 'settings', 'gps_config'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && typeof data.requireGps === 'boolean') {
+          setRequireGps(data.requireGps);
+          localStorage.setItem('loan_app_require_gps', String(data.requireGps));
+        }
+      }
+    }, (err) => {
+      console.warn("Error subscribing to gps_config in BorrowerApplyForm:", err);
+    });
+
+    return () => {
+      window.removeEventListener('storage', syncGpsSetting);
+      unsub();
+    };
   }, []);
 
   // Request GPS Location from Browser / Mobile device
