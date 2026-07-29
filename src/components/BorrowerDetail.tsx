@@ -460,7 +460,7 @@ export default function BorrowerDetail({
     const shId = selectedPartner ? selectedPartner.id : undefined;
     const shName = selectedPartner ? selectedPartner.name : undefined;
     const shPct = selectedPartner ? (selectedPartner.sharePercent ?? 50) : undefined;
-    const shCalc = selectedPartner ? (selectedPartner.calculationType ?? 'percent') : undefined;
+    const shCalc = selectedPartner ? (selectedPartner.calculationType ?? 'daily_usd') : undefined;
     const shDaily = selectedPartner ? (selectedPartner.dailyProfitUSD ?? 1.0) : undefined;
 
     if (onEditBorrower) {
@@ -1593,7 +1593,15 @@ export default function BorrowerDetail({
 
                     <button
                       type="button"
-                      onClick={() => setEditFundType('partner')}
+                      onClick={() => {
+                        setEditFundType('partner');
+                        const validShs = shareholders.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+                        if (!editShareholderId || !validShs.some((s) => s.id === editShareholderId)) {
+                          if (validShs.length > 0) {
+                            setEditShareholderId(validShs[0].id);
+                          }
+                        }
+                      }}
                       className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
                         editFundType === 'partner'
                           ? 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-500/30'
@@ -1609,32 +1617,86 @@ export default function BorrowerDetail({
                     </button>
                   </div>
 
-                  {editFundType === 'partner' && (
-                    <div className="space-y-2 pt-1">
-                      <label className="block text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider">
-                        {language === 'kh' ? 'ជ្រើសរើសដៃគូរភាគហ៊ុន (Select Partner):' : 'Select Shareholder Partner:'}
-                      </label>
-                      {shareholders.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa').length > 0 ? (
-                        <select
-                          value={editShareholderId}
-                          onChange={(e) => setEditShareholderId(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
-                        >
-                          {shareholders
-                            .filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa')
-                            .map((s) => (
-                              <option key={s.id} value={s.id}>
-                                {s.name} ({s.username || 'partner'}) — {s.calculationType === 'daily_usd' ? `$${s.dailyProfitUSD || 1}/ថ្ងៃ` : `${s.sharePercent || 50}% Split`}
-                              </option>
-                            ))}
-                        </select>
-                      ) : (
-                        <div className="p-2.5 bg-amber-100 border border-amber-300 text-amber-900 rounded-lg text-[11px] font-bold">
-                          {language === 'kh' ? '⚠️ មិនទាន់មានដៃគូរភាគហ៊ុនទេ! សូមបង្កើតដៃគូរភាគហ៊ុនជាមុនសិន' : '⚠️ No shareholders available! Please add a partner first.'}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {editFundType === 'partner' && (() => {
+                    const activeValidShareholders = shareholders.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+                    return (
+                      <div className="space-y-2 pt-1">
+                        <label className="block text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider">
+                          {language === 'kh' ? 'ជ្រើសរើសដៃគូរភាគហ៊ុន (Select Shareholder Partner):' : 'Select Shareholder Partner:'}
+                        </label>
+                        {activeValidShareholders.length > 0 ? (
+                          <>
+                            <select
+                              value={editShareholderId || activeValidShareholders[0]?.id}
+                              onChange={(e) => setEditShareholderId(e.target.value)}
+                              className="w-full px-3 py-2 bg-white border border-emerald-300 rounded-lg text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 cursor-pointer"
+                            >
+                              {activeValidShareholders.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                  {s.name} ({s.username || 'partner'}) — {s.calculationType === 'daily_usd' ? `$${(s.dailyProfitUSD ?? 1.0).toFixed(2)}/ថ្ងៃ` : `${s.sharePercent ?? 50}% Split`}
+                                </option>
+                              ))}
+                            </select>
+
+                            {/* Live Profit Split Preview Card */}
+                            {(() => {
+                              const activeSh = activeValidShareholders.find((s) => s.id === (editShareholderId || activeValidShareholders[0]?.id)) || activeValidShareholders[0];
+                              if (!activeSh) return null;
+
+                              const isDailyMode = activeSh.calculationType === 'daily_usd';
+                              const dVal = parseInt(editDuration) || 1;
+                              const pVal = parseFloat(editPrincipal) || 0;
+                              const tVal = parseFloat(editTotalToPay) || 0;
+                              const totalInterest = Math.max(0, tVal - pVal);
+                              const dailyTotalInterest = dVal > 0 ? totalInterest / dVal : 0;
+
+                              const partnerDailyProfit = isDailyMode
+                                ? (activeSh.dailyProfitUSD ?? 1.0)
+                                : (dailyTotalInterest * ((activeSh.sharePercent ?? 50) / 100));
+
+                              const mainLenderDailyProfit = Math.max(0, (tVal / dVal) - partnerDailyProfit);
+
+                              return (
+                                <div className="p-2.5 bg-white border border-emerald-200 rounded-xl space-y-1 text-xs shadow-xs">
+                                  <div className="flex items-center justify-between font-bold text-emerald-900 border-b border-emerald-100 pb-1">
+                                    <span>💡 {language === 'kh' ? 'ការបែងចែកផលចំណេញប្រចាំថ្ងៃ (Profit Split):' : 'Daily Profit Split Preview:'}</span>
+                                    <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[10px] font-mono font-bold">
+                                      {isDailyMode
+                                        ? `💵 $${(activeSh.dailyProfitUSD ?? 1.0).toFixed(2)} / ថ្ងៃ`
+                                        : `📊 ${activeSh.sharePercent ?? 50}% Split`}
+                                    </span>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 pt-1 text-[11px] font-bold">
+                                    <div className="bg-blue-50 p-1.5 rounded border border-blue-100 text-blue-900">
+                                      <span className="block text-[10px] text-blue-600 uppercase font-black">👨‍💼 ម្ចាស់បំណុល (Main)</span>
+                                      <span className="text-xs font-mono font-black">
+                                        ${mainLenderDailyProfit.toFixed(2)} / ថ្ងៃ
+                                      </span>
+                                    </div>
+                                    <div className="bg-emerald-100/80 p-1.5 rounded border border-emerald-200 text-emerald-900">
+                                      <span className="block text-[10px] text-emerald-700 uppercase font-black">🤝 ដៃគូរ ({activeSh.name})</span>
+                                      <span className="text-xs font-mono font-black">
+                                        ${partnerDailyProfit.toFixed(2)} / ថ្ងៃ
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <p className="text-[10px] text-emerald-700/90 font-medium italic pt-1">
+                                    {language === 'kh'
+                                      ? `ដៃគូរ "${activeSh.name}" អាច Login ចូល (Username: ${activeSh.username || '...'}) ដើម្បីមើលទិន្នន័យបាន។`
+                                      : `Partner "${activeSh.name}" can log in (Username: ${activeSh.username || '...'}) to view details.`}
+                                  </p>
+                                </div>
+                              );
+                            })()}
+                          </>
+                        ) : (
+                          <div className="p-2.5 bg-amber-100 border border-amber-300 text-amber-900 rounded-lg text-[11px] font-bold">
+                            {language === 'kh' ? '⚠️ មិនទាន់មានដៃគូរភាគហ៊ុនទេ! សូមបង្កើតដៃគូរភាគហ៊ុនជាមុនសិន' : '⚠️ No shareholders available! Please add a partner first.'}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Edit Digital Top-up Loan Section */}

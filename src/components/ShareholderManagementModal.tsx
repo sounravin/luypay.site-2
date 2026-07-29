@@ -189,18 +189,18 @@ export default function ShareholderManagementModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col text-slate-800 dark:text-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col text-slate-800 dark:text-slate-100">
         
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-850">
-          <div className="flex items-center gap-2.5">
-            <span className="p-2.5 bg-emerald-500/10 text-emerald-500 rounded-2xl text-xl">🤝</span>
+        <div className="p-5 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-700 text-white border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 bg-white/15 backdrop-blur-md text-white rounded-2xl text-2xl shadow-inner">🤝</span>
             <div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                {language === 'kh' ? 'គ្រប់គ្រងម្ចាស់ភាគហ៊ុន (Shareholders)' : 'Shareholder Partners Management'}
+              <h3 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                <span>{language === 'kh' ? 'គ្រប់គ្រងម្ចាស់ភាគហ៊ុន (Shareholders)' : 'Shareholder Partners Management'}</span>
               </h3>
-              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs font-semibold text-emerald-100/90 mt-0.5">
                 {language === 'kh'
                   ? 'គ្រប់គ្រងដើមទុន ភាគលាភ និងបង្កើត Link ចូលមើលសម្រាប់ដៃគូវិនិយោគ'
                   : 'Manage capital investments, profit share & partner login links'}
@@ -213,7 +213,7 @@ export default function ShareholderManagementModal({
                 href={`${window.location.origin}${window.location.pathname}?partner=${shareholders[0].id}`}
                 target="_blank"
                 rel="noreferrer"
-                className="px-3.5 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 text-xs font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-sm border border-amber-300"
+                className="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-md border border-amber-300/60 active:scale-95"
               >
                 <span>🌐</span>
                 <span>{language === 'kh' ? 'បើក Link ដៃគូភាគហ៊ុន' : 'Open Partner Link'}</span>
@@ -221,7 +221,7 @@ export default function ShareholderManagementModal({
             )}
             <button
               onClick={onClose}
-              className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition text-slate-500 hover:text-slate-700 dark:text-slate-400 cursor-pointer"
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition cursor-pointer"
             >
               ✕
             </button>
@@ -229,12 +229,12 @@ export default function ShareholderManagementModal({
         </div>
 
         {/* Content Area */}
-        <div className="p-5 overflow-y-auto space-y-5 flex-1">
+        <div className="p-5 overflow-y-auto space-y-5 flex-1 bg-slate-50/60 dark:bg-slate-900/60">
 
           {isEditing ? (
             /* Add/Edit Form */
-            <form onSubmit={handleSave} className="space-y-4 bg-slate-50 dark:bg-slate-850 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800">
-              <h4 className="text-sm font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
+            <form onSubmit={handleSave} className="space-y-4 bg-white dark:bg-slate-800/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-xs">
+              <h4 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5 border-b border-slate-200 dark:border-slate-700 pb-2.5">
                 <span>📝</span> {editingId ? (language === 'kh' ? 'កែប្រែព័ត៌មានភាគហ៊ុន' : 'Edit Shareholder') : (language === 'kh' ? 'បន្ថែមម្ចាស់ភាគហ៊ុនថ្មី' : 'Add New Shareholder')}
               </h4>
 
@@ -591,9 +591,9 @@ export default function ShareholderManagementModal({
                     return (
                       <div
                         key={s.id}
-                        className="bg-slate-50 dark:bg-slate-850 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3 hover:border-emerald-500/40 transition"
+                        className="bg-white dark:bg-slate-800/90 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-xs space-y-3.5 hover:border-emerald-500/50 transition"
                       >
-                        <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-2.5">
+                        <div className="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-700/80 pb-3">
                           <div className="flex items-center gap-3">
                             <div className="w-11 h-11 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
                               {s.profilePhoto ? (
@@ -779,13 +779,13 @@ export default function ShareholderManagementModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-50 dark:bg-slate-850 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs">
+        <div className="p-4 bg-white dark:bg-slate-800/90 border-t border-slate-200 dark:border-slate-700/80 flex justify-between items-center text-xs shrink-0">
           <span className="text-slate-500 dark:text-slate-400 font-bold">
             {language === 'kh' ? '💡 កូនបំណុលដែលភ្ជាប់ជាមួយភាគហ៊ុន នឹងបង្ហាញការបែងចែកប្រាក់ចំណេញដោយស្វ័យប្រវត្តិ' : '💡 Linked borrowers automatically split profit on each payment'}
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-bold transition cursor-pointer"
+            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 rounded-xl font-extrabold transition cursor-pointer"
           >
             {language === 'kh' ? 'បិទ' : 'Close'}
           </button>
