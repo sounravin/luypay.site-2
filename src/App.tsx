@@ -4299,6 +4299,22 @@ export default function App() {
                     {language === 'kh' ? 'គ្រប់គ្រង' : 'Admin'}
                   </span>
                 </button>
+
+                {/* Shareholder / Partner Management Button */}
+                <button 
+                  onClick={() => { 
+                    setIsShareholderModalOpen(true);
+                    playClickSound(); 
+                  }}
+                  className="flex flex-col items-center gap-1.5 text-center cursor-pointer group border-none bg-transparent"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-all shadow-3xs border border-emerald-200 dark:border-emerald-800">
+                    <Users className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <span className="text-[9px] font-extrabold text-emerald-700 dark:text-emerald-400 leading-none group-hover:text-emerald-500">
+                    {language === 'kh' ? 'ភាគហ៊ុន' : 'Partners'}
+                  </span>
+                </button>
               </div>
             </div>
 
@@ -5253,6 +5269,21 @@ export default function App() {
             </motion.button>
           )}
 
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => {
+              setIsShareholderModalOpen(true);
+              playClickSound();
+            }}
+            className="w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-extrabold rounded-xl transition-all border duration-200 cursor-pointer text-emerald-400 hover:text-white hover:bg-emerald-950/40 border-emerald-800/40"
+          >
+            <span className="flex items-center gap-2.5">
+              <Users className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>🤝 {language === 'kh' ? 'គ្រប់គ្រងដៃគូរភាគហ៊ុន' : 'Manage Shareholders'}</span>
+            </span>
+          </motion.button>
+
           {isMember && (
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -5580,7 +5611,7 @@ export default function App() {
               <span>📝 {language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger Records'}</span>
             </button>
 
-            {currentUser === 'sounravin' ? (
+            {currentUser === 'sounravin' && (
               <button
                 onClick={() => setActiveSection('admin_dashboard')}
                 className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all relative cursor-pointer flex items-center justify-center gap-1.5 ${
@@ -5600,24 +5631,23 @@ export default function App() {
                   </span>
                 )}
               </button>
-            ) : (
-              isMember && (
-                <button
-                  onClick={() => setActiveSection('pricing')}
-                  className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    activeSection === 'pricing'
-                      ? mobileHeaderStyle === 'angkor'
-                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
-                        : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
-                      : mobileHeaderStyle === 'angkor'
-                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
-                        : 'bg-white/10 text-current hover:text-white'
-                  }`}
-                >
-                  <span>💎 {language === 'kh' ? 'គម្រោងកម្មវិធី' : 'Application Plans'}</span>
-                </button>
-              )
             )}
+
+            <button
+              onClick={() => {
+                setIsShareholderModalOpen(true);
+                playClickSound();
+              }}
+              className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                isShareholderModalOpen
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : mobileHeaderStyle === 'angkor'
+                    ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
+                    : 'bg-white/10 text-current hover:text-white'
+              }`}
+            >
+              <span>🤝 {language === 'kh' ? 'គ្រប់គ្រងភាគហ៊ុន' : 'Shareholders'}</span>
+            </button>
             {isLoggedIn && (
               <button
                 onClick={() => setActiveSection('loan_applications')}
