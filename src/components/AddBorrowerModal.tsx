@@ -43,6 +43,7 @@ interface AddBorrowerModalProps {
     shareholderName?: string;
     shareholderSharePercent?: number;
     shareholderCalculationType?: 'daily_usd' | 'percent';
+    shareholderDailyUSD?: number;
   }) => void;
   prefilledData?: {
     name?: string;
@@ -446,6 +447,8 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
     setProfilePhoto('');
     setCoverPhoto('');
   };
+
+  const selectedPartner = shareholders.find((s) => s.id === selectedShareholderId) || shareholders[0];
 
   return (
     <div id="add-borrower-modal" className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">

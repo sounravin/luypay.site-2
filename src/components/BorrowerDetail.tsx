@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Borrower, Payment, ReportedPayment } from '../types';
 import { formatMoney, formatKhmerDate, getTodayDateString } from '../utils';
-import { X, Trash2, Archive, Phone, Calendar, ArrowLeft, Plus, Check, Share2, Copy, MessageSquare, RotateCcw, Edit3, MessageCircle, Camera, User, Image as ImageIcon, QrCode, Sparkles, Upload, Radio, Wifi, WifiOff } from 'lucide-react';
+import { X, Trash2, Archive, Phone, Calendar, ArrowLeft, Plus, Check, Share2, Copy, MessageSquare, RotateCcw, Edit3, MessageCircle, Camera, User, Image as ImageIcon, QrCode, Sparkles, Upload, Radio, Wifi, WifiOff, Wallet } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import LiveChat from './LiveChat';
 import { motion, AnimatePresence } from 'motion/react';

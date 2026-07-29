@@ -1,4 +1,4 @@
-import { CurrencyType, FrequencyType, Borrower, Shareholder } from './types';
+import { CurrencyType, FrequencyType, Borrower, Shareholder, Payment } from './types';
 
 export function formatMoney(amount: number, currency: CurrencyType): string {
   if (currency === 'USD') {
@@ -125,8 +125,6 @@ export function formatKhmerDate(dateString: string): string {
   // Let's format as DD-MM-YYYY
   return `${day}/${month}/${year}`;
 }
-
-import { Borrower, Payment } from './types';
 
 export function runAutoCheckInForBorrowers(borrowers: Borrower[]): { updatedList: Borrower[], hasChanges: boolean } {
   let hasChanges = false;
