@@ -169,20 +169,20 @@ export default function SettingsModal({
                   <div className="flex flex-col">
                     <span className="text-sm font-bold dark:text-white flex items-center gap-1.5">
                       <span>{language === 'kh' ? 'តម្រូវអោយបើកទីតាំង GPS' : 'Require GPS Location'}</span>
-                      <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-extrabold px-1.5 py-0.5 rounded">
-                        🔒 {language === 'kh' ? 'មិនអាចបិទបាន' : 'Mandatory'}
-                      </span>
                     </span>
-                    <span className="text-xs text-slate-500">{language === 'kh' ? 'ទាមទារទីតាំង GPS លើទូរស័ព្ទជាដាច់ខាតនៅពេលកូនបំណុលសុំកម្ចីរហ័ស (លុយឆក់)' : 'Strictly mandates GPS location service when borrowers apply for quick loans'}</span>
+                    <span className="text-xs text-slate-500">{language === 'kh' ? 'បើបិទ កូនបំណុលអាចបំពេញព័ត៌មានសុំកម្ចីបានដោយមិនបាច់ Allow Location Services ឡើយ' : 'If disabled, borrowers can apply without activating GPS location'}</span>
                   </div>
-                  <label className="relative inline-flex items-center cursor-not-allowed">
+                  <label className="relative inline-flex items-center cursor-pointer">
                     <input 
                       type="checkbox" 
-                      checked={true}
-                      disabled
+                      defaultChecked={localStorage.getItem('loan_app_require_gps') !== 'false'}
+                      onChange={(e) => {
+                        localStorage.setItem('loan_app_require_gps', String(e.target.checked));
+                        window.dispatchEvent(new Event('storage'));
+                      }}
                       className="sr-only peer" 
                     />
-                    <div className="w-11 h-6 bg-emerald-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all opacity-90"></div>
+                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600"></div>
                   </label>
                 </div>
 

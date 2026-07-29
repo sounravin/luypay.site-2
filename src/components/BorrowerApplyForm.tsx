@@ -56,8 +56,20 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'requesting' | 'captured' | 'denied' | 'error'>('idle');
   const [gpsErrorMessage, setGpsErrorMessage] = useState('');
   
-  // GPS Location Requirement configuration state (Mandatory and cannot be turned off)
-  const requireGps = true;
+  // GPS Location Requirement configuration state
+  const [requireGps, setRequireGps] = useState<boolean>(() => {
+    const saved = localStorage.getItem('loan_app_require_gps');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  useEffect(() => {
+    const syncGpsSetting = () => {
+      const saved = localStorage.getItem('loan_app_require_gps');
+      setRequireGps(saved !== null ? saved === 'true' : true);
+    };
+    window.addEventListener('storage', syncGpsSetting);
+    return () => window.removeEventListener('storage', syncGpsSetting);
+  }, []);
 
   // Request GPS Location from Browser / Mobile device
   const requestGpsLocation = () => {
@@ -215,8 +227,8 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
     }
   };
 
-  // Mandatory GPS Location Gate: If location is not allowed/captured, block access to the form
-  if (gpsStatus !== 'captured' || !latitude || !longitude) {
+  // GPS Location Gate: If required and location is not allowed/captured, block access to the form
+  if (requireGps && (gpsStatus !== 'captured' || !latitude || !longitude)) {
     return (
       <div className="max-w-md mx-auto my-6 bg-slate-900 border border-slate-800 text-slate-100 rounded-3xl p-6 shadow-2xl text-center space-y-6 relative overflow-hidden font-sans">
         <div className="h-2 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 -mt-6 -mx-6 mb-4" />
@@ -1030,8 +1042,14 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded border bg-rose-500/20 border-rose-500/30 text-rose-300">
-                      {language === 'kh' ? '🔒 ទាមទារជាចាំបាច់ (មិនអាចបិទបាន)' : '🔒 Mandatory (Cannot Turn Off)'}
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${
+                      requireGps
+                        ? 'bg-rose-500/20 border-rose-500/30 text-rose-300'
+                        : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+                    }`}>
+                      {requireGps
+                        ? (language === 'kh' ? '🔒 ទាមទារ GPS' : '🔒 Required')
+                        : (language === 'kh' ? '🔓 មិនទាមទារ GPS' : '🔓 Optional')}
                     </span>
 
                     <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${
@@ -1039,11 +1057,14 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                         ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
                         : isRequestingGps
                         ? 'bg-amber-500/20 border-amber-500/30 text-amber-300 animate-pulse'
-                        : 'bg-rose-500/20 border-rose-500/30 text-rose-400'
+                        : requireGps
+                        ? 'bg-rose-500/20 border-rose-500/30 text-rose-400'
+                        : 'bg-slate-800 border-slate-700 text-slate-400'
                     }`}>
                       {isGpsCaptured ? (language === 'kh' ? '✓ បានស្វែងរក' : '✓ Captured') :
                        isRequestingGps ? (language === 'kh' ? '⌛ កំពុងរក...' : '⌛ Requesting') :
-                       (language === 'kh' ? '❌ គ្មានទីតាំង' : '❌ No Location')}
+                       requireGps ? (language === 'kh' ? '❌ គ្មានទីតាំង' : '❌ No Location') :
+                       (language === 'kh' ? 'ℹ️ មិនទាមទារ' : 'ℹ️ Optional')}
                     </span>
                   </div>
                 </div>
