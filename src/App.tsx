@@ -1211,13 +1211,21 @@ export default function App() {
     }
 
     // 1.5 Check Partner / Shareholder login (e.g. dalypoa / 1234)
-    const matchedPartner = shareholders.find((s) => {
-      const u = (s.username || 'admin').trim().toLowerCase();
-      const p = (s.password || 'admin').trim();
-      return u === cleanUsername && p === passwordInput;
+    const combinedShareholders = [...shareholders];
+    DEFAULT_SHAREHOLDERS.forEach((def) => {
+      if (!combinedShareholders.some((s) => (s.username || '').toLowerCase() === (def.username || '').toLowerCase())) {
+        combinedShareholders.push(def);
+      }
+    });
+
+    const matchedPartner = combinedShareholders.find((s) => {
+      const u = (s.username || '').trim().toLowerCase();
+      const p = (s.password || '').trim();
+      return u === cleanUsername && p === passwordInput.trim();
     });
 
     if (matchedPartner) {
+      setLoginError('');
       safeStorage.setItem(`luypay_partner_auth_${matchedPartner.id}`, 'true');
       safeStorage.setItem('luypay_authenticated_partner_id', matchedPartner.id);
       setActivePartner(matchedPartner);

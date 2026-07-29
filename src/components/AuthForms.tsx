@@ -134,20 +134,6 @@ export function SignInForm({
       >
         <span>{t('signInBtn')}</span>
       </motion.button>
-
-      <div className="pt-2 border-t border-slate-800/80">
-        <button
-          type="button"
-          onClick={() => {
-            setUsername('dalypoa');
-            setPassword('1234');
-            onSubmit('dalypoa', '1234');
-          }}
-          className="w-full py-2.5 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-2 shadow-xs"
-        >
-          <span>🤝 {language === 'kh' ? 'ចូលគណនីដៃគូរ (Partner: dalypoa / 1234)' : 'Login as Partner (dalypoa / 1234)'}</span>
-        </button>
-      </div>
     </form>
   );
 }
