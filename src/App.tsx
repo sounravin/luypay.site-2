@@ -1636,9 +1636,9 @@ export default function App() {
   // Cloud Sync Status
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('offline');
 
-  // Load and sync with Firestore if logged in, otherwise load from localStorage
+  // Load and sync with Firestore if logged in or partner logged in, otherwise load from localStorage
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn && !isPartnerLoggedIn) {
       setCloudSyncStatus('offline');
       const stored = safeStorage.getItem(getUserLocalStorageKey(null));
       let currentBorrowers: Borrower[] = [];
@@ -1760,7 +1760,7 @@ export default function App() {
     });
 
     return () => unsubscribe();
-  }, [isLoggedIn, currentUser]);
+  }, [isLoggedIn, isPartnerLoggedIn, currentUser]);
 
   // Real-time synchronization for admin dashboard and user profile
   useEffect(() => {
@@ -3025,6 +3025,23 @@ export default function App() {
   const isBlocked = memberProfile?.isBlocked === true;
   const isExpired = isSubscriptionExpired(memberProfile);
 
+  if (isPartnerLoggedIn) {
+    const partnerToUse = activePartner || shareholders[0] || DEFAULT_SHAREHOLDERS[0];
+    return (
+      <ShareholderDashboard
+        shareholder={partnerToUse}
+        allShareholders={shareholders}
+        borrowers={borrowers}
+        language={language}
+        onBackToMain={() => {
+          setIsPartnerLoggedIn(false);
+          setActivePartner(null);
+          safeStorage.removeItem('luypay_authenticated_partner_id');
+        }}
+      />
+    );
+  }
+
   if (!isLoggedIn) {
     if (!showLoginModal) {
       return (
@@ -3967,22 +3984,6 @@ export default function App() {
 
         </div>
       </div>
-    );
-  }
-
-  if (isPartnerLoggedIn) {
-    const partnerToUse = activePartner || shareholders[0] || DEFAULT_SHAREHOLDERS[0];
-    return (
-      <ShareholderDashboard
-        shareholder={partnerToUse}
-        allShareholders={shareholders}
-        borrowers={borrowers}
-        language={language}
-        onBackToMain={() => {
-          setIsPartnerLoggedIn(false);
-          safeStorage.removeItem('luypay_authenticated_partner_id');
-        }}
-      />
     );
   }
 
