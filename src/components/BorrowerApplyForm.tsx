@@ -418,10 +418,10 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
         address: address.trim(),
         idExpiryDate: idExpiryDate.trim(),
         idExpiryStatus: calculatedExpiryStatus,
-        latitude: latitude,
-        longitude: longitude,
-        locationAccuracy: locationAccuracy ?? undefined,
-        gpsCapturedAt: new Date().toISOString(),
+        latitude: latitude ?? null,
+        longitude: longitude ?? null,
+        locationAccuracy: locationAccuracy ?? null,
+        gpsCapturedAt: (latitude !== null && longitude !== null) ? new Date().toISOString() : null,
         lenderInfo: DEFAULT_LENDER_INFO
       };
 
