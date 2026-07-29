@@ -296,8 +296,14 @@ export function backfillShortIds(borrowersList: Borrower[]): { list: Borrower[];
 }
 
 export function sanitizeBorrowersShareholders(borrowersList: Borrower[], shareholdersList: Shareholder[]): { list: Borrower[]; hasChanges: boolean } {
-  let hasChanges = false;
   const validPartners = (shareholdersList || []).filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+  
+  // If shareholders list is empty/not loaded yet, do NOT purge or touch shareholder references on borrowers!
+  if (validPartners.length === 0) {
+    return { list: borrowersList, hasChanges: false };
+  }
+
+  let hasChanges = false;
   const firstPartner = validPartners[0] || null;
 
   const list = (borrowersList || []).map((b) => {
@@ -317,28 +323,27 @@ export function sanitizeBorrowersShareholders(borrowersList: Borrower[], shareho
         updated.shareholderSharePercent = firstPartner.sharePercent ?? 50;
         updated.shareholderCalculationType = firstPartner.calculationType ?? 'daily_usd';
         updated.shareholderDailyUSD = firstPartner.dailyProfitUSD ?? 1.0;
-      } else {
-        delete updated.shareholderId;
-        delete updated.shareholderName;
-        delete updated.shareholderSharePercent;
-        delete updated.shareholderCalculationType;
-        delete updated.shareholderDailyUSD;
       }
     } else if (b.shareholderId && !validPartners.some((s) => s.id === b.shareholderId)) {
-      // Points to an ID no longer present in shareholders list
+      // Points to an ID no longer directly found: try matching by name/username before falling back to firstPartner
+      const matchByName = validPartners.find(
+        (s) =>
+          (b.shareholderName && s.name.trim().toLowerCase() === b.shareholderName.trim().toLowerCase()) ||
+          (b.shareholderName && s.username && s.username.trim().toLowerCase() === b.shareholderName.trim().toLowerCase())
+      );
       changedThis = true;
-      if (firstPartner) {
+      if (matchByName) {
+        updated.shareholderId = matchByName.id;
+        updated.shareholderName = matchByName.name;
+        updated.shareholderSharePercent = matchByName.sharePercent ?? 50;
+        updated.shareholderCalculationType = matchByName.calculationType ?? 'daily_usd';
+        updated.shareholderDailyUSD = matchByName.dailyProfitUSD ?? 1.0;
+      } else if (firstPartner) {
         updated.shareholderId = firstPartner.id;
         updated.shareholderName = firstPartner.name;
         updated.shareholderSharePercent = firstPartner.sharePercent ?? 50;
         updated.shareholderCalculationType = firstPartner.calculationType ?? 'daily_usd';
         updated.shareholderDailyUSD = firstPartner.dailyProfitUSD ?? 1.0;
-      } else {
-        delete updated.shareholderId;
-        delete updated.shareholderName;
-        delete updated.shareholderSharePercent;
-        delete updated.shareholderCalculationType;
-        delete updated.shareholderDailyUSD;
       }
     } else if (b.shareholderId) {
       // Points to an active shareholder: Sync updated shareholder fields (name, rates, mode)

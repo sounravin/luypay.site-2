@@ -182,7 +182,7 @@ export default function BorrowerDetail({
           : (validShareholders[0]?.id || '')
       );
     }
-  }, [borrower.id, isEditing]);
+  }, [borrower.id, isEditing, shareholders]);
 
   // Auto enforce settings when editLoanType changes in Edit Mode for Luy Rab
   useEffect(() => {
