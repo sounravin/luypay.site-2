@@ -115,6 +115,7 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
       (err) => {
         console.warn("GPS Location error:", err);
         setGpsStatus('denied');
+        setShowSettingsHelp(true);
         if (err.code === 1) { // PERMISSION_DENIED
           setGpsErrorMessage(
             language === 'kh'
@@ -1201,6 +1202,16 @@ export default function BorrowerApplyForm({ lenderId, onBackToPortal, onSubmitSu
                   type="button"
                   onClick={() => {
                     requestGpsLocation();
+                    setShowSettingsHelp(true);
+                    try {
+                      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                        window.location.href = 'app-settings:';
+                      } else if (/Android/i.test(navigator.userAgent)) {
+                        window.location.href = 'intent:#Intent;action=android.settings.LOCATION_SOURCE_SETTINGS;end';
+                      }
+                    } catch (e) {
+                      console.log("Settings scheme error", e);
+                    }
                   }}
                   disabled={gpsStatus === 'requesting'}
                   className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm rounded-2xl shadow-lg shadow-emerald-600/30 transition cursor-pointer active:scale-98 flex items-center justify-center gap-2"
