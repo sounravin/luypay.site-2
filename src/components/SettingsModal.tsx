@@ -165,6 +165,24 @@ export default function SettingsModal({
                   </label>
                 </div>
 
+                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold dark:text-white">{language === 'kh' ? 'តម្រូវអោយបើកទីតាំង GPS' : 'Require GPS Location'}</span>
+                    <span className="text-xs text-slate-500">{language === 'kh' ? 'ទាមទារទីតាំង GPS នៅពេលកូនបំណុលសុំកម្ចីរហ័ស (លុយឆក់)' : 'Mandate GPS location when applying for quick loans'}</span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      defaultChecked={localStorage.getItem('loan_app_require_gps') !== 'false'} 
+                      onChange={(e) => {
+                        localStorage.setItem('loan_app_require_gps', String(e.target.checked));
+                      }} 
+                      className="sr-only peer" 
+                    />
+                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+
               </div>
             </div>
 
