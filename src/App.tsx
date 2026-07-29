@@ -9,7 +9,20 @@ import BorrowerPortal from './components/BorrowerPortal';
 import ShareholderDashboard from './components/ShareholderDashboard';
 import ShareholderManagementModal from './components/ShareholderManagementModal';
 
-const DEFAULT_SHAREHOLDERS: Shareholder[] = [];
+const DEFAULT_SHAREHOLDERS: Shareholder[] = [
+  {
+    id: 'sh_partner_default',
+    name: 'ដៃគូភាគហ៊ុន (Partner)',
+    phone: '',
+    username: 'partner',
+    password: '',
+    capitalUSD: 1000,
+    calculationType: 'daily_usd',
+    dailyProfitUSD: 1.0,
+    sharePercent: 50,
+    createdAt: new Date().toISOString(),
+  }
+];
 import AdminMembersDashboard from './components/AdminMembersDashboard';
 import PricingPanel from './components/PricingPanel';
 import NotificationBell, { playNotificationSound } from './components/NotificationBell';
@@ -203,14 +216,20 @@ export default function App() {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-          return parsed.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+          const cleaned = parsed.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+          if (cleaned.length > 0) return cleaned;
         }
       }
     } catch (e) {
       console.error('Error loading shareholders:', e);
     }
-    return [];
+    return DEFAULT_SHAREHOLDERS;
   });
+
+  const shareholdersRef = React.useRef<Shareholder[]>(shareholders);
+  useEffect(() => {
+    shareholdersRef.current = shareholders;
+  }, [shareholders]);
 
   const [isShareholderModalOpen, setIsShareholderModalOpen] = useState<boolean>(false);
   const [isPartnerLoggedIn, setIsPartnerLoggedIn] = useState<boolean>(() => {
@@ -803,8 +822,10 @@ export default function App() {
         const data = docSnap.data();
         if (Array.isArray(data?.shareholders)) {
           const cleaned = data.shareholders.filter((s: Shareholder) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
-          setShareholders(cleaned);
-          safeStorage.setItem('luypay_shareholders_global', JSON.stringify(cleaned));
+          const finalShs = cleaned.length > 0 ? cleaned : DEFAULT_SHAREHOLDERS;
+          setShareholders(finalShs);
+          shareholdersRef.current = finalShs;
+          safeStorage.setItem('luypay_shareholders_global', JSON.stringify(finalShs));
         }
       }
     }, (err) => {
@@ -1797,7 +1818,7 @@ export default function App() {
         }
       } else {
         const autoCheckRes = runAutoCheckInForBorrowers(fbBorrowers);
-        const sanitizeRes = sanitizeBorrowersShareholders(autoCheckRes.updatedList, shareholders);
+        const sanitizeRes = sanitizeBorrowersShareholders(autoCheckRes.updatedList, shareholdersRef.current);
         const finalBorrowers = sanitizeRes.list;
         const needsSave = autoCheckRes.hasChanges || sanitizeRes.hasChanges;
 
@@ -6500,6 +6521,7 @@ export default function App() {
         {selectedBorrower && (
           <BorrowerDetail
             borrower={selectedBorrower}
+            shareholders={shareholders}
             onClose={() => setSelectedBorrowerId(null)}
             onAddPayment={handleAddPaymentDetail}
             onDeletePayment={handleDeletePayment}

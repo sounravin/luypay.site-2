@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Borrower, Payment, ReportedPayment } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Borrower, Payment, ReportedPayment, Shareholder } from '../types';
 import { formatMoney, formatKhmerDate, getTodayDateString } from '../utils';
 import { X, Trash2, Archive, Phone, Calendar, ArrowLeft, Plus, Check, Share2, Copy, MessageSquare, RotateCcw, Edit3, MessageCircle, Camera, User, Image as ImageIcon, QrCode, Sparkles, Upload, Radio, Wifi, WifiOff, Wallet } from 'lucide-react';
 import { useLanguage } from '../i18n';
@@ -132,8 +132,9 @@ export default function BorrowerDetail({
   const [quickTopUpDate, setQuickTopUpDate] = useState<string>(borrower.topUpDate || '');
 
   // Reset editing states only when entering edit mode or changing borrower selection
+  const prevIsEditingRef = useRef(false);
   useEffect(() => {
-    if (isEditing) {
+    if (isEditing && !prevIsEditingRef.current) {
       setEditName(borrower.name);
       setEditPhone(borrower.phone || '');
       setEditLoanDate(borrower.loanDate);
@@ -173,7 +174,7 @@ export default function BorrowerDetail({
       setQuickTopUpNotes(borrower.topUpNotes || '');
       setQuickTopUpDate(borrower.topUpDate || '');
 
-      const validShareholders = shareholders.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+      const validShareholders = (shareholders || []).filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
       const isPartner = Boolean(borrower.shareholderId || borrower.shareholderName);
       setEditFundType(isPartner ? 'partner' : 'personal');
       setEditShareholderId(
@@ -182,7 +183,8 @@ export default function BorrowerDetail({
           : (validShareholders[0]?.id || '')
       );
     }
-  }, [borrower.id, isEditing, shareholders]);
+    prevIsEditingRef.current = isEditing;
+  }, [borrower.id, isEditing]);
 
   // Auto enforce settings when editLoanType changes in Edit Mode for Luy Rab
   useEffect(() => {
@@ -451,10 +453,24 @@ export default function BorrowerDetail({
       setEditTopUpDate('');
     }
 
-  const validShareholders = shareholders.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+  const fallbackPartner: Shareholder = {
+    id: 'sh_partner_default',
+    name: 'ដៃគូភាគហ៊ុន (Partner)',
+    phone: '',
+    username: 'partner',
+    password: '',
+    capitalUSD: 1000,
+    calculationType: 'daily_usd',
+    dailyProfitUSD: 1.0,
+    sharePercent: 50,
+    createdAt: new Date().toISOString(),
+  };
+
+  const validShareholders = (shareholders || []).filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+  const effectivePartners = validShareholders.length > 0 ? validShareholders : [fallbackPartner];
 
   const selectedPartner = editFundType === 'partner'
-    ? (validShareholders.find((s) => s.id === editShareholderId) || validShareholders[0])
+    ? (effectivePartners.find((s) => s.id === editShareholderId) || effectivePartners[0])
     : undefined;
 
     const shId = selectedPartner ? selectedPartner.id : undefined;
