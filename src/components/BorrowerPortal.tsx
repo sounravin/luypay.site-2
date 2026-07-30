@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Borrower, Payment, ReportedPayment } from '../types';
-import { formatMoney, formatKhmerDate, getFrequencyLabel } from '../utils';
-import { Phone, Calendar, ArrowLeft, ShieldCheck, Check, Clock, TrendingUp, DollarSign, RefreshCw, AlertCircle, MessageCircle, QrCode, X, Upload, Camera, CheckCircle2, Sparkles, Copy } from 'lucide-react';
+import { formatMoney, formatKhmerDate, getFrequencyLabel, getBorrowerOverdueDetails } from '../utils';
+import { Phone, Calendar, ArrowLeft, ShieldCheck, Check, Clock, TrendingUp, DollarSign, RefreshCw, AlertCircle, MessageCircle, QrCode, X, Upload, Camera, CheckCircle2, Sparkles, Copy, AlertTriangle, BellRing } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { motion, AnimatePresence } from 'motion/react';
 import LiveChat from './LiveChat';
 import AvatarWithFrame from './AvatarWithFrame';
 import FrameSelectorModal from './FrameSelectorModal';
+import OverduePaymentAlertModal from './OverduePaymentAlertModal';
 
 interface BorrowerPortalProps {
   borrower: Borrower;
@@ -47,6 +49,14 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | null>(null);
+
+  // Overdue Details & Popup state for Borrower Profile
+  const overdueDetails = getBorrowerOverdueDetails(borrower);
+  const [showOverduePopup, setShowOverduePopup] = useState<boolean>(true);
+
+  useEffect(() => {
+    setShowOverduePopup(true);
+  }, [borrower.id]);
   
   // Real-time Portal Configuration from Firestore settings/portal_config
   const [portalConfig, setPortalConfig] = useState<any>({
@@ -314,6 +324,26 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
             <CheckCircle2 className={`w-4 h-4 ${toastType === 'success' ? 'text-emerald-600' : 'text-rose-500'}`} />
             <span>{toastMessage}</span>
           </div>
+        </div>
+      )}
+
+      {/* Sticky Overdue Alert Banner in Portal */}
+      {overdueDetails.isOverdue && (
+        <div className="bg-gradient-to-r from-rose-600 via-rose-700 to-amber-600 text-white px-5 py-2.5 border-b border-rose-800 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg z-50 relative shrink-0">
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-black">
+            <AlertTriangle className="w-5 h-5 shrink-0 text-amber-300 animate-bounce" />
+            <span>
+              🚨 {language === 'kh' ? 'គណនីរបស់អ្នកមានការបង់ប្រាក់យឺតយ៉ាវលើសម៉ោងកំណត់' : 'Your account has an overdue payment past cutoff time'} ({language === 'kh' ? `វគ្គទី ${overdueDetails.nextTermIndex + 1}` : `Term #${overdueDetails.nextTermIndex + 1}`} - ម៉ោង {overdueDetails.dueTimeStr})
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowOverduePopup(true)}
+            className="px-3.5 py-1.5 bg-white text-rose-700 hover:bg-rose-50 font-black text-xs rounded-xl shadow-md transition active:scale-95 cursor-pointer shrink-0 flex items-center gap-1.5"
+          >
+            <BellRing className="w-4 h-4 text-rose-600" />
+            <span>{language === 'kh' ? 'មើល Pop-up ព្រមាន' : 'View Overdue Alert'}</span>
+          </button>
         </div>
       )}
 
@@ -1233,6 +1263,23 @@ export default function BorrowerPortal({ borrower, onBackToLender, isLenderLogge
         borrowerName={borrower.name}
         photoUrl={borrower.profilePhoto}
       />
+
+      {/* Overdue Payment Alert Modal */}
+      <AnimatePresence>
+        {overdueDetails.isOverdue && showOverduePopup && (
+          <OverduePaymentAlertModal
+            borrower={borrower}
+            overdueDetails={overdueDetails}
+            isPortalView={true}
+            onClose={() => setShowOverduePopup(false)}
+            onPayNow={() => {
+              setSelectedInstallment(overdueDetails.nextTermIndex);
+              setCustomAmount(overdueDetails.installmentAmount.toString());
+              setIsReportModalOpen(true);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

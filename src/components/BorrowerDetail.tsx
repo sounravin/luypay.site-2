@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Borrower, Payment, ReportedPayment, Shareholder } from '../types';
-import { formatMoney, formatKhmerDate, getTodayDateString } from '../utils';
-import { X, Trash2, Archive, Phone, Calendar, ArrowLeft, Plus, Check, Share2, Copy, MessageSquare, RotateCcw, Edit3, MessageCircle, Camera, User, Image as ImageIcon, QrCode, Sparkles, Upload, Radio, Wifi, WifiOff, Wallet } from 'lucide-react';
+import { formatMoney, formatKhmerDate, getTodayDateString, getBorrowerOverdueDetails } from '../utils';
+import { X, Trash2, Archive, Phone, Calendar, ArrowLeft, Plus, Check, Share2, Copy, MessageSquare, RotateCcw, Edit3, MessageCircle, Camera, User, Image as ImageIcon, QrCode, Sparkles, Upload, Radio, Wifi, WifiOff, Wallet, AlertTriangle, BellRing } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import LiveChat from './LiveChat';
 import { motion, AnimatePresence } from 'motion/react';
 import AvatarWithFrame from './AvatarWithFrame';
 import FrameSelectorModal from './FrameSelectorModal';
+import OverduePaymentAlertModal from './OverduePaymentAlertModal';
 import { calculatePaymentInterestSplit } from '../utils/shareholderUtils';
 
 interface BorrowerDetailProps {
@@ -68,6 +69,14 @@ export default function BorrowerDetail({
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [isFrameModalOpen, setIsFrameModalOpen] = useState<boolean>(false);
   const [detailTab, setDetailTab] = useState<'schedule' | 'personal' | 'verification' | 'statement'>('schedule');
+
+  // Calculate Overdue Details and Popup state
+  const overdueDetails = getBorrowerOverdueDetails(borrower);
+  const [showOverduePopup, setShowOverduePopup] = useState<boolean>(true);
+
+  useEffect(() => {
+    setShowOverduePopup(true);
+  }, [borrower.id]);
 
   useEffect(() => {
     if (isReadOnlyShareholder && detailTab !== 'schedule') {
@@ -777,8 +786,28 @@ export default function BorrowerDetail({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 30, scale: 0.98 }}
         transition={{ type: 'spring', damping: 25, stiffness: 380 }}
-        className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col my-4 md:my-8 max-h-[92vh]"
+        className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl border border-slate-200 flex flex-col my-4 md:my-8 max-h-[92vh] overflow-hidden"
       >
+        {/* Sticky Overdue Alert Banner if borrower has overdue payments */}
+        {overdueDetails.isOverdue && (
+          <div className="bg-gradient-to-r from-rose-600 via-rose-700 to-amber-600 text-white px-5 py-2.5 border-b border-rose-800 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md shrink-0">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-black">
+              <AlertTriangle className="w-5 h-5 shrink-0 text-amber-300 animate-bounce" />
+              <span>
+                🚨 {language === 'kh' ? 'កូនបំណុលរូបនេះមិនទាន់បានបង់ប្រាក់យឺតយ៉ាវលើសម៉ោងកំណត់' : 'This borrower is overdue past the scheduled cutoff time'} ({language === 'kh' ? `វគ្គទី ${overdueDetails.nextTermIndex + 1}` : `Term #${overdueDetails.nextTermIndex + 1}`} - ម៉ោង {overdueDetails.dueTimeStr})
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowOverduePopup(true)}
+              className="px-3 py-1.5 bg-white text-rose-700 hover:bg-rose-50 font-black text-xs rounded-xl shadow-md transition active:scale-95 cursor-pointer shrink-0 flex items-center gap-1.5"
+            >
+              <BellRing className="w-4 h-4 text-rose-600" />
+              <span>{language === 'kh' ? 'មើល Pop-up ព្រមាន' : 'View Overdue Alert'}</span>
+            </button>
+          </div>
+        )}
+
         {/* Header toolbar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 border-b border-slate-200 gap-3">
           <div className="flex items-center gap-3">
@@ -3567,6 +3596,26 @@ export default function BorrowerDetail({
           borrowerName={borrower.name}
           photoUrl={borrower.profilePhoto}
         />
+
+        {/* Overdue Payment Pop-up Alert Modal */}
+        <AnimatePresence>
+          {overdueDetails.isOverdue && showOverduePopup && (
+            <OverduePaymentAlertModal
+              borrower={borrower}
+              overdueDetails={overdueDetails}
+              onClose={() => setShowOverduePopup(false)}
+              onPayNow={() => {
+                setDetailTab('schedule');
+                setTimeout(() => {
+                  const box = document.getElementById(`day-box-${overdueDetails.nextTermIndex}`);
+                  if (box) {
+                    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }, 100);
+              }}
+            />
+          )}
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );

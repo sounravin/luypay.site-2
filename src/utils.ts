@@ -389,4 +389,115 @@ export function sanitizeBorrowersShareholders(borrowersList: Borrower[], shareho
   return { list, hasChanges };
 }
 
+export interface BorrowerOverdueDetails {
+  isOverdue: boolean;
+  daysOverdue: number;
+  hoursOverdue: number;
+  totalHoursOverdue: number;
+  dueDateTime: Date | null;
+  dueTimeStr: string;
+  nextTermIndex: number;
+  installmentAmount: number;
+  currency: CurrencyType;
+  totalRemaining: number;
+  totalPaid: number;
+}
+
+export function getBorrowerOverdueDetails(borrower: Borrower): BorrowerOverdueDetails {
+  const payments = Array.isArray(borrower.payments) ? borrower.payments : [];
+  const totalPaid = payments.reduce((sum, p) => sum + (p?.amount || 0), 0);
+  const totalRemaining = Math.max(0, borrower.totalToPay - totalPaid);
+  const isCompleted = totalPaid >= borrower.totalToPay;
+
+  const defaultResult: BorrowerOverdueDetails = {
+    isOverdue: false,
+    daysOverdue: 0,
+    hoursOverdue: 0,
+    totalHoursOverdue: 0,
+    dueDateTime: null,
+    dueTimeStr: borrower.dueTime || '17:00',
+    nextTermIndex: -1,
+    installmentAmount: borrower.installmentAmount || 0,
+    currency: borrower.currency || 'USD',
+    totalRemaining,
+    totalPaid
+  };
+
+  if (isCompleted || borrower.isArchived) return defaultResult;
+
+  const paidIndices = payments.filter(p => p !== undefined).map((p) => p.installmentIndex);
+  let nextIndex = -1;
+  for (let i = 0; i < borrower.duration; i++) {
+    if (!paidIndices.includes(i)) {
+      nextIndex = i;
+      break;
+    }
+  }
+
+  if (nextIndex === -1) return defaultResult;
+
+  const startDate = new Date(borrower.loanDate);
+  if (isNaN(startDate.getTime())) return defaultResult;
+
+  const dueDate = new Date(startDate);
+  const offset = nextIndex + 1;
+
+  if (borrower.frequency === 'daily') {
+    dueDate.setDate(dueDate.getDate() + offset);
+  } else if (borrower.frequency === 'weekly') {
+    dueDate.setDate(dueDate.getDate() + offset * 7);
+  } else if (borrower.frequency === 'monthly') {
+    dueDate.setMonth(dueDate.getMonth() + offset);
+  } else if (borrower.frequency === 'every_2_days') {
+    dueDate.setDate(dueDate.getDate() + offset * 2);
+  }
+
+  // Parse dueTime (default to 17:00 / 5:00 PM if not specified)
+  let dueHour = 17;
+  let dueMinute = 0;
+  if (borrower.dueTime) {
+    const parts = borrower.dueTime.split(':');
+    if (parts.length >= 2) {
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (!isNaN(h) && h >= 0 && h < 24) dueHour = h;
+      if (!isNaN(m) && m >= 0 && m < 60) dueMinute = m;
+    }
+  }
+
+  dueDate.setHours(dueHour, dueMinute, 0, 0);
+
+  const now = new Date();
+  const diffMs = now.getTime() - dueDate.getTime();
+
+  if (diffMs > 0) {
+    // Past due date and time -> OVERDUE!
+    const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const days = Math.floor(totalHours / 24);
+    const remainingHours = totalHours % 24;
+
+    return {
+      isOverdue: true,
+      daysOverdue: days,
+      hoursOverdue: remainingHours,
+      totalHoursOverdue: totalHours,
+      dueDateTime: dueDate,
+      dueTimeStr: borrower.dueTime || `${dueHour.toString().padStart(2, '0')}:${dueMinute.toString().padStart(2, '0')}`,
+      nextTermIndex: nextIndex,
+      installmentAmount: borrower.installmentAmount || 0,
+      currency: borrower.currency || 'USD',
+      totalRemaining,
+      totalPaid
+    };
+  }
+
+  return {
+    ...defaultResult,
+    dueDateTime: dueDate,
+    dueTimeStr: borrower.dueTime || `${dueHour.toString().padStart(2, '0')}:${dueMinute.toString().padStart(2, '0')}`,
+    nextTermIndex: nextIndex
+  };
+}
+
+
 
