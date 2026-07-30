@@ -8,9 +8,9 @@ import {
   Users, Check, X, FileText, Phone, DollarSign, Calendar, Copy, 
   ExternalLink, Eye, AlertCircle, CheckCircle, ChevronDown, 
   Trash2, Search, Sparkles, UserCheck, ShieldAlert, RefreshCw, AlertTriangle, CreditCard, MapPin,
-  Volume2, VolumeX, Bell, BellOff, Lock, Navigation
+  Volume2, VolumeX, Bell, BellOff, Lock, Navigation, Plus, Camera, Upload, User
 } from 'lucide-react';
-import { checkExpiryStatus } from '../utils/ocrHelper';
+import { checkExpiryStatus, scanIdCardImage } from '../utils/ocrHelper';
 import { playNewApplicationAlertSound } from '../utils';
 import DigitalLoanContractModal from './DigitalLoanContractModal';
 
@@ -36,6 +36,10 @@ export default function LoanApplicationsControlPanel({
   const [rejectingApp, setRejectingApp] = useState<LoanApplication | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [contractApp, setContractApp] = useState<LoanApplication | null>(null);
+
+  // New or Edit Application Modal
+  const [isAppModalOpen, setIsAppModalOpen] = useState(false);
+  const [editingApp, setEditingApp] = useState<LoanApplication | null>(null);
 
   // Sound Alert Notification option state
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
@@ -364,33 +368,50 @@ export default function LoanApplicationsControlPanel({
           </p>
         </div>
 
-        {/* Copy Apply Link Action Box */}
-        <div className="w-full md:w-auto p-4 bg-slate-950/80 border border-slate-800 rounded-2xl flex flex-col sm:flex-row items-center gap-3">
-          <div className="text-left space-y-0.5 flex-1">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-              {language === 'kh' ? 'តំណភ្ជាប់សុំកម្ចីសម្រាប់កូនបំណុល' : 'Client Application Link'}
-            </p>
-            <p className="text-xs font-bold text-slate-300 select-all truncate max-w-[200px]">
-              {`${window.location.origin}/?apply=true&lender=${currentUser}`}
-            </p>
-          </div>
-          <div className="flex gap-2 w-full sm:w-auto shrink-0">
-            <button
-              onClick={copyApplyLink}
-              className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/10 active:scale-95"
-            >
-              <Copy className="w-3.5 h-3.5" />
-              {language === 'kh' ? 'ចម្លងតំណភ្ជាប់' : 'Copy Link'}
-            </button>
-            <a
-              href={`/?apply=true&lender=${currentUser}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 sm:flex-none px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-black rounded-xl transition flex items-center justify-center gap-1.5 border border-slate-700"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              {language === 'kh' ? 'បើកមើល' : 'Preview'}
-            </a>
+        {/* Header Action Controls */}
+        <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* Button to Add / Create New Application with ID Card */}
+          <button
+            type="button"
+            onClick={() => {
+              setEditingApp(null);
+              setIsAppModalOpen(true);
+            }}
+            className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs rounded-2xl transition cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95 border border-blue-400/30 shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <CreditCard className="w-4 h-4" />
+            <span>{language === 'kh' ? '+ បង្កើតសំណើកម្ចី (Upload ID Card)' : '+ New Application (Upload ID)'}</span>
+          </button>
+
+          {/* Copy Apply Link Action Box */}
+          <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-2xl flex flex-col sm:flex-row items-center gap-3">
+            <div className="text-left space-y-0.5 flex-1">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                {language === 'kh' ? 'តំណភ្ជាប់សុំកម្ចីសម្រាប់កូនបំណុល' : 'Client Application Link'}
+              </p>
+              <p className="text-xs font-bold text-slate-300 select-all truncate max-w-[180px]">
+                {`${window.location.origin}/?apply=true&lender=${currentUser}`}
+              </p>
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto shrink-0">
+              <button
+                onClick={copyApplyLink}
+                className="flex-1 sm:flex-none px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/10 active:scale-95"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                {language === 'kh' ? 'ចម្លង' : 'Copy'}
+              </button>
+              <a
+                href={`/?apply=true&lender=${currentUser}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-black rounded-xl transition flex items-center justify-center gap-1.5 border border-slate-700"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                {language === 'kh' ? 'មើល' : 'Preview'}
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -870,14 +891,29 @@ export default function LoanApplicationsControlPanel({
                       )}
                     </div>
 
-                    {/* Action Button to Generate / Open Digital Contract */}
-                    <button
-                      onClick={() => setContractApp(app)}
-                      className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-blue-400 border border-blue-500/30 hover:border-blue-500/60 font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-blue-400" />
-                      <span>📄 {language === 'kh' ? 'បង្កើត/បោះពុម្ព លិខិតកម្ចី Digital' : 'Digital Loan Contract'}</span>
-                    </button>
+                    {/* Action Buttons Row */}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingApp(app);
+                          setIsAppModalOpen(true);
+                        }}
+                        className="flex-1 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/30 hover:border-amber-500/60 font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
+                      >
+                        <Camera className="w-3.5 h-3.5 text-amber-400" />
+                        <span>✏️ {language === 'kh' ? 'កែប្រែ/Upload ID Card' : 'Edit / Upload ID'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setContractApp(app)}
+                        className="flex-1 py-2 bg-slate-900 hover:bg-slate-800 text-blue-400 border border-blue-500/30 hover:border-blue-500/60 font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-blue-400" />
+                        <span>📄 {language === 'kh' ? 'លិខិតកម្ចី Digital' : 'Digital Contract'}</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Rejected Reason info bar if rejected */}
@@ -1015,6 +1051,662 @@ export default function LoanApplicationsControlPanel({
         )}
       </AnimatePresence>
 
+      {/* Add / Edit Loan Application Modal */}
+      <AnimatePresence>
+        {isAppModalOpen && (
+          <AddOrEditLoanAppModal
+            editingApp={editingApp}
+            currentUser={currentUser}
+            onClose={() => {
+              setIsAppModalOpen(false);
+              setEditingApp(null);
+            }}
+            showToast={showToast}
+          />
+        )}
+      </AnimatePresence>
+
+    </div>
+  );
+}
+
+interface AddOrEditLoanAppModalProps {
+  editingApp: LoanApplication | null;
+  currentUser: string;
+  onClose: () => void;
+  showToast: (message: string, type: 'success' | 'info') => void;
+}
+
+function AddOrEditLoanAppModal({
+  editingApp,
+  currentUser,
+  onClose,
+  showToast
+}: AddOrEditLoanAppModalProps) {
+  const { language } = useLanguage();
+  const [name, setName] = useState(editingApp?.name || '');
+  const [phone, setPhone] = useState(editingApp?.phone || '');
+  const [amountRequested, setAmountRequested] = useState(editingApp?.amountRequested ? String(editingApp.amountRequested) : '');
+  const [loanDuration, setLoanDuration] = useState(editingApp?.loanDuration ? String(editingApp.loanDuration) : '30');
+  const [paymentType, setPaymentType] = useState(editingApp?.paymentType || 'daily');
+  const [interestMethod, setInterestMethod] = useState(editingApp?.interestMethod || 'flat');
+  const [status, setStatus] = useState<'pending' | 'approved'>(editingApp?.status === 'approved' ? 'approved' : 'pending');
+
+  // Photo & OCR
+  const [idCardPhoto, setIdCardPhoto] = useState<string>(editingApp?.idCardPhoto || '');
+  const [selfiePhoto, setSelfiePhoto] = useState<string>(editingApp?.selfiePhoto || '');
+  const [idCardNumber, setIdCardNumber] = useState(editingApp?.idCardNumber || '');
+  const [dob, setDob] = useState(editingApp?.dob || '');
+  const [address, setAddress] = useState(editingApp?.address || '');
+  const [idExpiryDate, setIdExpiryDate] = useState(editingApp?.idExpiryDate || '');
+  const [idExpiryStatus, setIdExpiryStatus] = useState<'valid' | 'expiring_soon' | 'expired'>(editingApp?.idExpiryStatus || 'valid');
+  const [isOcrScanning, setIsOcrScanning] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Live Camera Stream
+  const [activeCameraType, setActiveCameraType] = useState<'id' | 'selfie' | null>(null);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, [cameraStream]);
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setActiveCameraType(null);
+  };
+
+  const startCamera = async (type: 'id' | 'selfie') => {
+    try {
+      stopCamera();
+      setActiveCameraType(type);
+      const facingMode = type === 'id' ? { ideal: 'environment' } : 'user';
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode, width: { ideal: 1280 }, height: { ideal: 810 } },
+        audio: false
+      });
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    } catch (err) {
+      console.warn("Camera failed:", err);
+      alert(language === 'kh' ? 'មិនអាចបើកកាមេរ៉ាបានទេ! សូមប្រើប្រាស់ប៊ូតុងជ្រើសរើសរូបថតចេញពី Album' : 'Could not start camera! Please pick photo from gallery.');
+      setActiveCameraType(null);
+    }
+  };
+
+  const captureLivePhoto = (type: 'id' | 'selfie') => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        if (type === 'id') {
+          canvas.width = 1280;
+          canvas.height = 808;
+          ctx.drawImage(video, 0, 0, 1280, 808);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+          setIdCardPhoto(dataUrl);
+          processOcr(dataUrl);
+        } else {
+          canvas.width = 600;
+          canvas.height = 600;
+          ctx.drawImage(video, 0, 0, 600, 600);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setSelfiePhoto(dataUrl);
+        }
+        stopCamera();
+      }
+    }
+  };
+
+  const processOcr = async (dataUrl: string) => {
+    setIsOcrScanning(true);
+    try {
+      const res = await scanIdCardImage(dataUrl);
+      if (res.idCardNumber) setIdCardNumber(res.idCardNumber);
+      if (res.name && !name) setName(res.name);
+      if (res.dob) setDob(res.dob);
+      if (res.address) setAddress(res.address);
+      if (res.idExpiryDate) {
+        setIdExpiryDate(res.idExpiryDate);
+        setIdExpiryStatus(checkExpiryStatus(res.idExpiryDate));
+      }
+    } catch (err) {
+      console.error("OCR Failed:", err);
+    } finally {
+      setIsOcrScanning(false);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'id' | 'selfie') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (evt) => {
+      const img = new Image();
+      img.src = evt.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = type === 'id' ? 1600 : 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_SIZE || height > MAX_SIZE) {
+          if (width > height) {
+            height = Math.round(height * (MAX_SIZE / width));
+            width = MAX_SIZE;
+          } else {
+            width = Math.round(width * (MAX_SIZE / height));
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+        }
+        const quality = type === 'id' ? 0.90 : 0.85;
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+        if (type === 'id') {
+          setIdCardPhoto(dataUrl);
+          processOcr(dataUrl);
+        } else {
+          setSelfiePhoto(dataUrl);
+        }
+      };
+    };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      alert(language === 'kh' ? 'សូមបញ្ចូលឈ្មោះកូនបំណុល!' : 'Please enter applicant name!');
+      return;
+    }
+    if (!phone.trim()) {
+      alert(language === 'kh' ? 'សូមបញ្ចូលលេខទូរស័ព្ទ!' : 'Please enter phone number!');
+      return;
+    }
+    const amt = parseFloat(amountRequested);
+    if (isNaN(amt) || amt <= 0) {
+      alert(language === 'kh' ? 'សូមបញ្ចូលទឹកប្រាក់ស្នើសុំឱ្យបានត្រឹមត្រូវ!' : 'Please enter valid requested amount!');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const targetId = editingApp ? editingApp.id : `app_${Date.now()}`;
+      const updatedData: Partial<LoanApplication> = {
+        id: targetId,
+        name: name.trim(),
+        phone: phone.trim(),
+        amountRequested: amt,
+        loanDuration: parseInt(loanDuration, 10) || 30,
+        paymentType,
+        interestMethod,
+        lenderId: editingApp ? (editingApp.lenderId || currentUser) : currentUser,
+        status,
+        createdAt: editingApp ? editingApp.createdAt : new Date().toISOString(),
+        idCardPhoto: idCardPhoto || '',
+        selfiePhoto: selfiePhoto || '',
+        idCardNumber: idCardNumber.trim(),
+        dob: dob.trim(),
+        address: address.trim(),
+        idExpiryDate: idExpiryDate.trim(),
+        idExpiryStatus: checkExpiryStatus(idExpiryDate.trim())
+      };
+
+      await setDoc(doc(db, 'loan_applications', targetId), updatedData, { merge: true });
+
+      showToast(
+        editingApp
+          ? (language === 'kh' ? '✅ បានបច្ចុប្បន្នភាពទិន្នន័យ ID Card និងកម្ចីជោគជ័យ!' : '✅ Loan application and ID card updated!')
+          : (language === 'kh' ? '✅ បានបង្កើតសំណើសុំកម្ចីថ្មី និង Upload ID Card រួចរាល់!' : '✅ Loan application created successfully!'),
+        'success'
+      );
+
+      stopCamera();
+      onClose();
+    } catch (err) {
+      console.error("Save Application Error:", err);
+      alert(language === 'kh' ? 'មានបញ្ហាក្នុងការរក្សាទុកទិន្នន័យ!' : 'Failed to save application!');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] my-auto"
+      >
+        {/* Modal Header */}
+        <div className="flex justify-between items-center px-6 py-4 bg-slate-950 border-b border-slate-800 shrink-0">
+          <div className="flex items-center gap-2 text-blue-400 font-black text-sm">
+            <CreditCard className="w-5 h-5 text-blue-400" />
+            <span>
+              {editingApp 
+                ? (language === 'kh' ? 'កែប្រែព័ត៌មានសំណើ & Upload ID Card' : 'Edit Application & ID Card') 
+                : (language === 'kh' ? 'បង្កើតសំណើសុំកម្ចីថ្មី (Upload ID Card)' : 'New Loan Application (Upload ID)')}
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              stopCamera();
+              onClose();
+            }}
+            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Modal Body Scrollable */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
+          
+          {/* Section 1: Basic Applicant & Loan Info */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-800 pb-2">
+              <User className="w-4 h-4 text-blue-400" />
+              <span>{language === 'kh' ? '១. ព័ត៌មានអ្នកស្នើសុំ & កម្ចី' : '1. Applicant & Loan Details'}</span>
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Name */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-400">
+                  {language === 'kh' ? 'ឈ្មោះកូនបំណុល *' : 'Applicant Name *'}
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={language === 'kh' ? 'ឧ. សុខ ជា' : 'e.g. John Doe'}
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-400">
+                  {language === 'kh' ? 'លេខទូរស័ព្ទ *' : 'Phone Number *'}
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="012 345 678"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Amount Requested */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-400">
+                  {language === 'kh' ? 'ទឹកប្រាក់ស្នើសុំ ($ USD) *' : 'Requested Amount ($ USD) *'}
+                </label>
+                <div className="relative">
+                  <DollarSign className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
+                  <input
+                    type="number"
+                    step="any"
+                    required
+                    value={amountRequested}
+                    onChange={(e) => setAmountRequested(e.target.value)}
+                    placeholder="100"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-black text-amber-400 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Loan Duration */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-400">
+                  {language === 'kh' ? 'រយៈពេលកម្ចី (ថ្ងៃ)' : 'Loan Duration (Days)'}
+                </label>
+                <div className="relative">
+                  <Calendar className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
+                  <input
+                    type="number"
+                    value={loanDuration}
+                    onChange={(e) => setLoanDuration(e.target.value)}
+                    placeholder="30"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Payment Type */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-400">
+                  {language === 'kh' ? 'ប្រភេទនៃការបង់' : 'Payment Schedule'}
+                </label>
+                <select
+                  value={paymentType}
+                  onChange={(e) => setPaymentType(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="daily">{language === 'kh' ? 'បង់រៀងរាល់ថ្ងៃ (Daily)' : 'Daily'}</option>
+                  <option value="weekly">{language === 'kh' ? 'បង់រៀងរាល់សប្តាហ៍ (Weekly)' : 'Weekly'}</option>
+                  <option value="monthly">{language === 'kh' ? 'បង់រៀងរាល់ខែ (Monthly)' : 'Monthly'}</option>
+                  <option value="every_2_days">{language === 'kh' ? 'បង់ 2 ថ្ងៃម្តង (Every 2 Days)' : 'Every 2 Days'}</option>
+                </select>
+              </div>
+
+              {/* Status */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-400">
+                  {language === 'kh' ? 'ស្ថានភាពសំណើ' : 'Application Status'}
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as 'pending' | 'approved')}
+                  className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="pending">⏳ {language === 'kh' ? 'រង់ចាំការពិនិត្យ (Pending)' : 'Pending'}</option>
+                  <option value="approved">✅ {language === 'kh' ? 'បានអនុម័ត (Approved)' : 'Approved'}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: ID Card Upload & Camera & OCR */}
+          <div className="space-y-4 pt-2">
+            <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center justify-between border-b border-slate-800 pb-2">
+              <div className="flex items-center gap-1.5">
+                <CreditCard className="w-4 h-4 text-emerald-400" />
+                <span>{language === 'kh' ? '២. អត្តសញ្ញាណប័ណ្ណ (National ID Card)' : '2. National ID Card & OCR'}</span>
+              </div>
+              {isOcrScanning && (
+                <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1 animate-pulse">
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                  {language === 'kh' ? 'កំពុងស្កេនទិន្នន័យ OCR...' : 'OCR Scanning...'}
+                </span>
+              )}
+            </h4>
+
+            {/* Live Camera Stream Display */}
+            {activeCameraType === 'id' && (
+              <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-500 bg-black aspect-video flex flex-col items-center justify-center">
+                <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                <div className="absolute bottom-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => captureLivePhoto('id')}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl flex items-center gap-1.5 shadow-lg"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>{language === 'kh' ? 'ថតយករូបភាព' : 'Capture ID Photo'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={stopCamera}
+                    className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl"
+                  >
+                    {language === 'kh' ? 'បិទកាមេរ៉ា' : 'Cancel'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ID Card Photo Preview & Upload Controls */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="relative border-2 border-dashed border-slate-800 hover:border-blue-500/50 bg-slate-950 rounded-2xl p-3 flex flex-col items-center justify-center min-h-[140px]">
+                  {idCardPhoto ? (
+                    <div className="relative w-full h-32 rounded-xl overflow-hidden group">
+                      <img src={idCardPhoto} alt="ID Preview" className="w-full h-full object-contain bg-slate-900" />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                        <label className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl cursor-pointer text-xs font-bold flex items-center gap-1">
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>{language === 'kh' ? 'ប្តូររូប' : 'Change'}</span>
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, 'id')} />
+                        </label>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center space-y-2 py-2">
+                      <CreditCard className="w-8 h-8 text-slate-600 mx-auto" />
+                      <p className="text-xs text-slate-400 font-bold">
+                        {language === 'kh' ? 'មិនទាន់មានរូបអត្តសញ្ញាណប័ណ្ណ' : 'No ID Card Photo'}
+                      </p>
+                      <div className="flex gap-2 justify-center">
+                        <label className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1 shadow-md">
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>{language === 'kh' ? 'Upload រូបភាព' : 'Upload File'}</span>
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, 'id')} />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => startCamera('id')}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl flex items-center gap-1 border border-slate-700"
+                        >
+                          <Camera className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>{language === 'kh' ? 'ថតផ្ទាល់' : 'Live Camera'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {idCardPhoto && (
+                  <button
+                    type="button"
+                    onClick={() => processOcr(idCardPhoto)}
+                    disabled={isOcrScanning}
+                    className="w-full py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>{language === 'kh' ? 'ស្កេនទិន្នន័យ ID Card ដោយ AI' : 'Re-scan ID Card with AI'}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* OCR Extracted Input Fields */}
+              <div className="space-y-2.5">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    {language === 'kh' ? 'លេខអត្តសញ្ញាណប័ណ្ណ' : 'ID Card Number'}
+                  </label>
+                  <input
+                    type="text"
+                    value={idCardNumber}
+                    onChange={(e) => setIdCardNumber(e.target.value)}
+                    placeholder="123456789"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono font-bold text-amber-300 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    {language === 'kh' ? 'ថ្ងៃខែឆ្នាំកំណើត' : 'Date of Birth'}
+                  </label>
+                  <input
+                    type="text"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    placeholder="22.06.1995"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>{language === 'kh' ? 'ថ្ងៃផុតកំណត់ ID Card' : 'ID Expiry Date'}</span>
+                    {idExpiryDate && (
+                      <span className={`text-[10px] font-bold ${
+                        idExpiryStatus === 'expired' ? 'text-rose-400' :
+                        idExpiryStatus === 'expiring_soon' ? 'text-amber-400' : 'text-emerald-400'
+                      }`}>
+                        {idExpiryStatus === 'expired' ? '🔴 Expired' :
+                         idExpiryStatus === 'expiring_soon' ? '🟡 Expiring Soon' : '🟢 Valid'}
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    value={idExpiryDate}
+                    onChange={(e) => {
+                      setIdExpiryDate(e.target.value);
+                      setIdExpiryStatus(checkExpiryStatus(e.target.value));
+                    }}
+                    placeholder="22.06.2030"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    {language === 'kh' ? 'អាសយដ្ឋាន' : 'Address'}
+                  </label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder={language === 'kh' ? 'ភូមិ/ឃុំ/ស្រុក/ខេត្ត' : 'Village/Commune/District'}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Selfie / Face Photo */}
+          <div className="space-y-3 pt-2">
+            <h4 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-800 pb-2">
+              <User className="w-4 h-4 text-purple-400" />
+              <span>{language === 'kh' ? '៣. រូបថតផ្ទៃមុខ (Selfie Face Photo)' : '3. Selfie Face Photo'}</span>
+            </h4>
+
+            {activeCameraType === 'selfie' && (
+              <div className="relative rounded-2xl overflow-hidden border-2 border-purple-500 bg-black aspect-square max-w-xs mx-auto flex flex-col items-center justify-center">
+                <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover scale-x-[-1]" />
+                <div className="absolute bottom-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => captureLivePhoto('selfie')}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-black text-xs rounded-xl flex items-center gap-1.5 shadow-lg"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>{language === 'kh' ? 'ថតយករូបថត' : 'Capture Selfie'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={stopCamera}
+                    className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl"
+                  >
+                    {language === 'kh' ? 'បិទ' : 'Cancel'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="border-2 border-dashed border-slate-800 bg-slate-950 rounded-2xl p-3 flex flex-col items-center justify-center min-h-[120px]">
+              {selfiePhoto ? (
+                <div className="relative w-28 h-28 rounded-full overflow-hidden border-2 border-purple-500 group">
+                  <img src={selfiePhoto} alt="Selfie Preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                    <label className="p-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg cursor-pointer text-[10px] font-bold">
+                      {language === 'kh' ? 'ប្តូររូប' : 'Change'}
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, 'selfie')} />
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center space-y-2 py-2">
+                  <User className="w-8 h-8 text-slate-600 mx-auto" />
+                  <p className="text-xs text-slate-400 font-bold">
+                    {language === 'kh' ? 'មិនទាន់មានរូបថតផ្ទៃមុខ' : 'No Selfie Photo'}
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    <label className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1 shadow-md">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{language === 'kh' ? 'Upload រូបថត' : 'Upload File'}</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, 'selfie')} />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => startCamera('selfie')}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl flex items-center gap-1 border border-slate-700"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-purple-400" />
+                      <span>{language === 'kh' ? 'ថតផ្ទាល់' : 'Live Camera'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <canvas ref={canvasRef} className="hidden" />
+
+          {/* Modal Footer Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                stopCamera();
+                onClose();
+              }}
+              className="px-5 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold text-xs rounded-xl transition cursor-pointer"
+            >
+              {language === 'kh' ? 'បោះបង់' : 'Cancel'}
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs rounded-xl transition shadow-lg shadow-blue-600/20 active:scale-95 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {isSaving ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>{language === 'kh' ? 'កំពុងរក្សាទុក...' : 'Saving...'}</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>
+                    {editingApp 
+                      ? (language === 'kh' ? 'រក្សាទុកការកែប្រែ' : 'Save Changes') 
+                      : (language === 'kh' ? 'បង្កើតសំណើកម្ចីថ្មី' : 'Create Loan Request')}
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+
+        </form>
+      </motion.div>
     </div>
   );
 }
