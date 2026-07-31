@@ -10,6 +10,7 @@ interface ShareholderDashboardProps {
   language: 'kh' | 'en';
   onBackToMain?: () => void;
   onEditBorrower?: (borrowerId: string, updatedFields: Partial<Borrower>) => Promise<void> | void;
+  onSaveShareholders?: (updatedList: Shareholder[]) => void;
 }
 
 // Web Audio API synthesized audio chime alert
@@ -53,6 +54,7 @@ export default function ShareholderDashboard({
   language,
   onBackToMain,
   onEditBorrower,
+  onSaveShareholders,
 }: ShareholderDashboardProps) {
   const [activeShareholder, setActiveShareholder] = useState<Shareholder>(initialShareholder);
 
@@ -279,11 +281,17 @@ export default function ShareholderDashboard({
     setActiveShareholder(updatedSh);
 
     try {
-      const rawGlobal = localStorage.getItem('luypay_shareholders_global');
-      if (rawGlobal) {
-        const list = JSON.parse(rawGlobal);
-        const updatedList = list.map((s: any) => (s.id === updatedSh.id ? { ...s, password: updatedSh.password } : s));
-        localStorage.setItem('luypay_shareholders_global', JSON.stringify(updatedList));
+      const sourceList = allShareholders.length > 0 ? allShareholders : [updatedSh];
+      const updatedList = sourceList.map((s: any) => (s.id === updatedSh.id ? { ...s, password: updatedSh.password } : s));
+      if (onSaveShareholders) {
+        onSaveShareholders(updatedList);
+      } else {
+        const rawGlobal = localStorage.getItem('luypay_shareholders_global');
+        if (rawGlobal) {
+          const list = JSON.parse(rawGlobal);
+          const updatedList2 = list.map((s: any) => (s.id === updatedSh.id ? { ...s, password: updatedSh.password } : s));
+          localStorage.setItem('luypay_shareholders_global', JSON.stringify(updatedList2));
+        }
       }
     } catch (err) {
       console.error('Error saving new password:', err);

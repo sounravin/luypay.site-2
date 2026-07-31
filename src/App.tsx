@@ -52,6 +52,16 @@ const getUserLocalStorageKey = (user: string | null) => {
   return `luypay_ledger_borrowers_${user}`;
 };
 
+const getUserShareholdersLocalStorageKey = (user: string | null) => {
+  if (!user || user === 'sounravin') return 'luypay_shareholders_sounravin';
+  return `luypay_shareholders_${user}`;
+};
+
+const getUserShareholdersDocPath = (user: string | null) => {
+  if (!user || user === 'sounravin') return 'shareholders_config_sounravin';
+  return `shareholders_config_${user}`;
+};
+
 // Helper to sanitize objects for Firestore (removes undefined values)
 export const sanitizeForFirestore = (obj: any): any => {
   if (obj === null || obj === undefined) return null;
@@ -209,27 +219,56 @@ export default function App() {
   });
   const [isAvatarFrameModalOpen, setIsAvatarFrameModalOpen] = useState<boolean>(false);
 
-  // Shareholder & Partner Portal States
+  // Shareholder & Partner Portal States (Scoped per user account)
   const [shareholders, setShareholders] = useState<Shareholder[]>(() => {
     try {
-      const raw = safeStorage.getItem('luypay_shareholders_global');
+      const userKey = getUserShareholdersLocalStorageKey(currentUser);
+      let raw = safeStorage.getItem(userKey);
+      if (!raw && (!currentUser || currentUser === 'sounravin')) {
+        raw = safeStorage.getItem('luypay_shareholders_global');
+      }
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
           const cleaned = parsed.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
-          if (cleaned.length > 0) return cleaned;
+          return cleaned;
         }
       }
     } catch (e) {
       console.error('Error loading shareholders:', e);
     }
-    return DEFAULT_SHAREHOLDERS;
+    return currentUser === 'sounravin' ? DEFAULT_SHAREHOLDERS : [];
   });
 
   const shareholdersRef = React.useRef<Shareholder[]>(shareholders);
   useEffect(() => {
     shareholdersRef.current = shareholders;
   }, [shareholders]);
+
+  // Sync local shareholders when currentUser switches
+  useEffect(() => {
+    try {
+      const userKey = getUserShareholdersLocalStorageKey(currentUser);
+      let raw = safeStorage.getItem(userKey);
+      if (!raw && (!currentUser || currentUser === 'sounravin')) {
+        raw = safeStorage.getItem('luypay_shareholders_global');
+      }
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+          setShareholders(cleaned);
+          shareholdersRef.current = cleaned;
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Error switching shareholders for user:', e);
+    }
+    const defaultShs = currentUser === 'sounravin' ? DEFAULT_SHAREHOLDERS : [];
+    setShareholders(defaultShs);
+    shareholdersRef.current = defaultShs;
+  }, [currentUser]);
 
   const [isShareholderModalOpen, setIsShareholderModalOpen] = useState<boolean>(false);
   const [isPartnerLoggedIn, setIsPartnerLoggedIn] = useState<boolean>(() => {
@@ -241,7 +280,8 @@ export default function App() {
   const [activePartner, setActivePartner] = useState<Shareholder | null>(() => {
     const params = new URLSearchParams(window.location.search);
     const partnerParam = params.get('partner');
-    const raw = safeStorage.getItem('luypay_shareholders_global');
+    const userKey = getUserShareholdersLocalStorageKey(currentUser);
+    let raw = safeStorage.getItem(userKey) || safeStorage.getItem('luypay_shareholders_global');
     let currentShs: Shareholder[] = [];
     if (raw) {
       try {
@@ -302,9 +342,21 @@ export default function App() {
   const handleSaveShareholders = async (updated: Shareholder[]) => {
     const cleaned = updated.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
     setShareholders(cleaned);
-    safeStorage.setItem('luypay_shareholders_global', JSON.stringify(cleaned));
+    shareholdersRef.current = cleaned;
+
+    const storageKey = getUserShareholdersLocalStorageKey(currentUser);
+    safeStorage.setItem(storageKey, JSON.stringify(cleaned));
+
+    if (currentUser === 'sounravin') {
+      safeStorage.setItem('luypay_shareholders_global', JSON.stringify(cleaned));
+    }
+
+    const docPath = getUserShareholdersDocPath(currentUser);
     try {
-      await setDoc(doc(db, 'settings', 'shareholders_config'), { shareholders: cleaned }, { merge: true });
+      await setDoc(doc(db, 'settings', docPath), { shareholders: cleaned, userId: currentUser }, { merge: true });
+      if (currentUser === 'sounravin') {
+        setDoc(doc(db, 'settings', 'shareholders_config'), { shareholders: cleaned, userId: 'sounravin' }, { merge: true }).catch(() => {});
+      }
     } catch (e) {
       console.error('Error saving shareholders to Firestore:', e);
     }
@@ -315,7 +367,7 @@ export default function App() {
       saveBorrowers(sanitizeRes.list);
     }
 
-    showToast('បានរក្សាទុកព័ត៌មានភាគហ៊ុនជោគជ័យ!');
+    showToast(language === 'kh' ? 'បានរក្សាទុកព័ត៌មានភាគហ៊ុនជោគជ័យ!' : 'Shareholders saved successfully!');
   };
 
   const handleBlockScreenImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -817,21 +869,6 @@ export default function App() {
       console.warn('Unable to subscribe to settings/layout_config in real-time (using default offline values):', err.message || err);
     });
 
-    const unsubscribeShareholders = onSnapshot(doc(db, 'settings', 'shareholders_config'), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (Array.isArray(data?.shareholders)) {
-          const cleaned = data.shareholders.filter((s: Shareholder) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
-          const finalShs = cleaned.length > 0 ? cleaned : DEFAULT_SHAREHOLDERS;
-          setShareholders(finalShs);
-          shareholdersRef.current = finalShs;
-          safeStorage.setItem('luypay_shareholders_global', JSON.stringify(finalShs));
-        }
-      }
-    }, (err) => {
-      console.warn('Unable to subscribe to settings/shareholders_config in real-time:', err.message || err);
-    });
-
     const handleLayoutUpdated = (e: any) => {
       if (e.detail) {
         setLayoutConfig((prev: any) => ({ ...prev, ...e.detail }));
@@ -844,10 +881,69 @@ export default function App() {
       unsubscribeLogo();
       unsubscribeSponsor();
       unsubscribeLayout();
-      unsubscribeShareholders();
       window.removeEventListener('layout_config_updated', handleLayoutUpdated);
     };
   }, []);
+
+  // Real-time listener for shareholders scoped to currentUser account
+  useEffect(() => {
+    const shDocPath = getUserShareholdersDocPath(currentUser);
+    const storageKey = getUserShareholdersLocalStorageKey(currentUser);
+
+    const unsubscribeShareholders = onSnapshot(doc(db, 'settings', shDocPath), async (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (Array.isArray(data?.shareholders)) {
+          const cleaned = data.shareholders.filter((s: Shareholder) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+          setShareholders(cleaned);
+          shareholdersRef.current = cleaned;
+          safeStorage.setItem(storageKey, JSON.stringify(cleaned));
+          if (currentUser === 'sounravin') {
+            safeStorage.setItem('luypay_shareholders_global', JSON.stringify(cleaned));
+          }
+        }
+      } else {
+        if (currentUser === 'sounravin') {
+          // Fallback check legacy doc for main admin account and migrate
+          try {
+            const oldSnap = await getDoc(doc(db, 'settings', 'shareholders_config'));
+            if (oldSnap.exists() && Array.isArray(oldSnap.data()?.shareholders)) {
+              const oldCleaned = oldSnap.data()?.shareholders.filter((s: Shareholder) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+              setShareholders(oldCleaned);
+              shareholdersRef.current = oldCleaned;
+              safeStorage.setItem(storageKey, JSON.stringify(oldCleaned));
+              safeStorage.setItem('luypay_shareholders_global', JSON.stringify(oldCleaned));
+              await setDoc(doc(db, 'settings', shDocPath), { shareholders: oldCleaned, userId: 'sounravin' }, { merge: true });
+            }
+          } catch (e) {
+            console.warn('Error fetching legacy shareholders_config:', e);
+          }
+        } else {
+          // Usermember: use member's local storage or empty list
+          const raw = safeStorage.getItem(storageKey);
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) {
+                const cleaned = parsed.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
+                setShareholders(cleaned);
+                shareholdersRef.current = cleaned;
+                return;
+              }
+            } catch (e) {}
+          }
+          setShareholders([]);
+          shareholdersRef.current = [];
+        }
+      }
+    }, (err) => {
+      console.warn(`Unable to subscribe to settings/${shDocPath} in real-time:`, err.message || err);
+    });
+
+    return () => {
+      unsubscribeShareholders();
+    };
+  }, [currentUser]);
 
 
 
@@ -1296,7 +1392,11 @@ export default function App() {
     let partnerList = shareholders.filter((s) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
     if (partnerList.length === 0) {
       try {
-        const shSnap = await getDoc(doc(db, 'settings', 'shareholders_config'));
+        const docPath = getUserShareholdersDocPath(currentUser);
+        let shSnap = await getDoc(doc(db, 'settings', docPath));
+        if (!shSnap.exists()) {
+          shSnap = await getDoc(doc(db, 'settings', 'shareholders_config'));
+        }
         if (shSnap.exists() && Array.isArray(shSnap.data()?.shareholders)) {
           partnerList = shSnap.data()?.shareholders.filter((s: Shareholder) => s.username !== 'dalypoa' && s.id !== 'sh_dalypoa');
         }
@@ -3136,6 +3236,7 @@ export default function App() {
           allShareholders={shareholders}
           borrowers={borrowers}
           language={language}
+          onSaveShareholders={handleSaveShareholders}
           onBackToMain={() => {
             setIsPartnerLoggedIn(false);
             setActivePartner(null);
