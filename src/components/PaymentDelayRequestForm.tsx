@@ -155,11 +155,6 @@ export default function PaymentDelayRequestForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!locationCaptured || latitude === undefined || longitude === undefined) {
-      alert(language === 'kh' ? 'សូមអនុញ្ញាតទីតាំង GPS (Allow Location) ជាមុនសិន!' : 'Please allow GPS location permission first!');
-      return;
-    }
-
     if (!borrowerName.trim()) {
       alert(language === 'kh' ? 'សូមបញ្ចូលឈ្មោះកូនបំណុល!' : 'Please enter borrower name!');
       return;
@@ -168,32 +163,35 @@ export default function PaymentDelayRequestForm({
     setSubmitting(true);
 
     try {
-      const requestId = 'pdr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+      const requestId = 'pdr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
       const finalReason = selectedReason === 'ផ្សេងៗ (Other Reason)' && customReasonNote.trim()
         ? `ផ្សេងៗ៖ ${customReasonNote.trim()}`
         : customReasonNote.trim()
         ? `${selectedReason} - ${customReasonNote.trim()}`
         : selectedReason;
 
-      const newRequest: PaymentDelayRequest = {
+      const rawRequest = {
         id: requestId,
         borrowerId: borrowerId || linkedBorrower?.id || '',
         borrowerName: borrowerName.trim(),
-        borrowerPhone: borrowerPhone.trim(),
+        borrowerPhone: borrowerPhone.trim() || '',
         lenderId: (lenderId || 'sounravin').toLowerCase(),
-        reason: finalReason,
-        notes: customReasonNote.trim(),
-        requestedDate,
-        latitude,
-        longitude,
-        locationAccuracy,
+        reason: finalReason || 'ពន្យារពេលបង់ប្រាក់',
+        notes: customReasonNote.trim() || '',
+        requestedDate: requestedDate || new Date().toISOString().split('T')[0],
+        latitude: latitude !== undefined ? latitude : 0,
+        longitude: longitude !== undefined ? longitude : 0,
+        locationAccuracy: locationAccuracy !== undefined ? locationAccuracy : 0,
         gpsCapturedAt: gpsCapturedAt || new Date().toISOString(),
-        deviceInfo: navigator.userAgent.split(' ')[0] + ' (' + (navigator.platform || 'Mobile') + ')',
+        deviceInfo: (navigator?.userAgent || 'Browser').split(' ')[0] + ' (' + (navigator?.platform || 'Mobile') + ')',
         status: 'pending',
         createdAt: new Date().toISOString(),
       };
 
-      await setDoc(doc(db, 'payment_delay_requests', requestId), newRequest);
+      // Sanitize payload to strip any undefined values that cause Firestore to fail
+      const cleanPayload = JSON.parse(JSON.stringify(rawRequest));
+
+      await setDoc(doc(db, 'payment_delay_requests', requestId), cleanPayload);
 
       setSubmittedRequestId(requestId);
       setSubmitting(false);
@@ -201,13 +199,13 @@ export default function PaymentDelayRequestForm({
       if (onSubmitSuccess) {
         onSubmitSuccess(requestId);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error submitting delay request:', err);
       setSubmitting(false);
       alert(
         language === 'kh'
-          ? 'មានបញ្ហាក្នុងការផ្ញើសំណើ! សូមព្យាយាមម្ដងទៀត'
-          : 'Error submitting request. Please try again.'
+          ? `មានបញ្ហាក្នុងការផ្ញើសំណើ៖ ${err?.message || 'សូមព្យាយាមម្ដងទៀត'}`
+          : `Error submitting request: ${err?.message || 'Please try again.'}`
       );
     }
   };
