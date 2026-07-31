@@ -375,30 +375,7 @@ export default function PaymentDelayRequestForm({
         </div>
       </div>
 
-      {/* GPS Verified Status Banner */}
-      <div className="mx-5 mt-5 p-3.5 bg-emerald-950/60 border border-emerald-800/60 rounded-2xl flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-          <div>
-            <div className="font-bold text-emerald-300 flex items-center gap-1">
-              <span>{language === 'kh' ? '✓ បានផ្ទៀងផ្ទាត់ទីតាំង GPS រួចរាល់' : '✓ GPS Location Verified'}</span>
-            </div>
-            {latitude !== undefined && longitude !== undefined && (
-              <div className="text-[11px] text-slate-300 font-mono mt-0.5">
-                {latitude.toFixed(6)}, {longitude.toFixed(6)}
-                {locationAccuracy && <span className="text-slate-400 ml-1.5">(±{Math.round(locationAccuracy)}m)</span>}
-              </div>
-            )}
-          </div>
-        </div>
-        <button
-          onClick={handleVerifyLocation}
-          className="p-2 bg-emerald-900/40 hover:bg-emerald-900/80 border border-emerald-700/50 text-emerald-300 rounded-xl text-[11px] transition active:scale-95 cursor-pointer shrink-0"
-          title="Refresh GPS Location"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-        </button>
-      </div>
+
 
       <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5">
         {/* Borrower Name & Phone */}
