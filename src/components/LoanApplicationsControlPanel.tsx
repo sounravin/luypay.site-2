@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
-import { LoanApplication, DEFAULT_LENDER_INFO } from '../types';
+import { LoanApplication, PaymentDelayRequest, DEFAULT_LENDER_INFO } from '../types';
 import { useLanguage } from '../i18n';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, Check, X, FileText, Phone, DollarSign, Calendar, Copy, 
   ExternalLink, Eye, AlertCircle, CheckCircle, ChevronDown, 
   Trash2, Search, Sparkles, UserCheck, ShieldAlert, RefreshCw, AlertTriangle, CreditCard, MapPin,
-  Volume2, VolumeX, Bell, BellOff, Lock, Navigation, Plus, Camera, Upload, User
+  Volume2, VolumeX, Bell, BellOff, Lock, Navigation, Plus, Camera, Upload, User, Clock, Compass, ShieldCheck
 } from 'lucide-react';
 import { checkExpiryStatus, scanIdCardImage } from '../utils/ocrHelper';
 import { playNewApplicationAlertSound } from '../utils';
 import DigitalLoanContractModal from './DigitalLoanContractModal';
+import GPSLocationViewerModal from './GPSLocationViewerModal';
+
 
 interface LoanApplicationsControlPanelProps {
   currentUser: string;
@@ -47,11 +49,44 @@ export default function LoanApplicationsControlPanel({
     return saved !== null ? saved === 'true' : true;
   });
 
+  // Mode Switcher: Loan Applications vs Payment Delay Requests
+  const [panelMode, setPanelMode] = useState<'applications' | 'delay_requests'>('applications');
+  const [delayRequests, setDelayRequests] = useState<PaymentDelayRequest[]>([]);
+  const [delayActiveTab, setDelayActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'all'>('all');
+  const [delaySearchQuery, setDelaySearchQuery] = useState('');
+
+  // GPS Modal Viewer State
+  const [isGpsModalOpen, setIsGpsModalOpen] = useState(false);
+  const [selectedGpsModalData, setSelectedGpsModalData] = useState<any | null>(null);
+
   // GPS Location Requirement option state
   const [requireGps, setRequireGps] = useState<boolean>(() => {
     const saved = localStorage.getItem('loan_app_require_gps');
     return saved !== null ? saved === 'true' : false;
   });
+
+  // Real-time listener for Payment Delay Requests
+  useEffect(() => {
+    const q = collection(db, 'payment_delay_requests');
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list: PaymentDelayRequest[] = [];
+      const userLower = (currentUser || 'sounravin').toLowerCase();
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data() as PaymentDelayRequest;
+        if (currentUser === 'sounravin' || !data.lenderId || (data.lenderId && data.lenderId.toLowerCase() === userLower)) {
+          list.push({ id: docSnap.id, ...data });
+        }
+      });
+
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      setDelayRequests(list);
+    }, (err) => {
+      console.warn('Error subscribing to payment_delay_requests:', err);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'settings', 'gps_config'), (snapshot) => {
@@ -352,9 +387,341 @@ export default function LoanApplicationsControlPanel({
     }
   };
 
+  const copyDelayLink = () => {
+    const delayUrl = `${window.location.origin}/?delay=true&lender=${currentUser}`;
+    navigator.clipboard.writeText(delayUrl);
+    showToast(
+      language === 'kh' 
+        ? '📋 ចម្លងតំណភ្ជាប់ស្នើសុំពន្យារពេលបង់ប្រាក់រួចរាល់! អាចផ្ញើអោយកូនបំណុលបាន។' 
+        : '📋 Payment extension link copied successfully!',
+      'success'
+    );
+  };
+
+  const handleApproveDelayRequest = async (req: PaymentDelayRequest) => {
+    try {
+      await updateDoc(doc(db, 'payment_delay_requests', req.id), {
+        status: 'approved',
+        approvedAt: new Date().toISOString(),
+      });
+      showToast(
+        language === 'kh' ? '✅ បានអនុម័តសំណើសុំពន្យារពេលបង់ប្រាក់រួចរាល់!' : '✅ Approved extension request!',
+        'success'
+      );
+    } catch (e) {
+      console.error('Error approving delay request:', e);
+    }
+  };
+
+  const handleRejectDelayRequest = async (req: PaymentDelayRequest) => {
+    try {
+      await updateDoc(doc(db, 'payment_delay_requests', req.id), {
+        status: 'rejected',
+      });
+      showToast(
+        language === 'kh' ? '❌ បានបដិសេធសំណើសុំពន្យារពេលបង់ប្រាក់' : '❌ Rejected extension request',
+        'info'
+      );
+    } catch (e) {
+      console.error('Error rejecting delay request:', e);
+    }
+  };
+
+  const handleDeleteDelayRequest = async (reqId: string) => {
+    if (!window.confirm(language === 'kh' ? 'តើអ្នកពិតជាចង់លុបសំណើពន្យារនេះមែនទេ?' : 'Delete this extension request?')) return;
+    try {
+      await deleteDoc(doc(db, 'payment_delay_requests', reqId));
+      showToast(language === 'kh' ? '🗑️ បានលុបសំណើពន្យាររួចរាល់' : '🗑️ Deleted request', 'info');
+    } catch (e) {
+      console.error('Error deleting delay request:', e);
+    }
+  };
+
+  const filteredDelayRequests = delayRequests.filter((req) => {
+    if (delayActiveTab !== 'all' && (req.status || 'pending') !== delayActiveTab) return false;
+    if (delaySearchQuery.trim()) {
+      const q = delaySearchQuery.toLowerCase();
+      const matchName = (req.borrowerName || '').toLowerCase().includes(q);
+      const matchPhone = (req.borrowerPhone || '').includes(q);
+      const matchReason = (req.reason || '').toLowerCase().includes(q);
+      return matchName || matchPhone || matchReason;
+    }
+    return true;
+  });
+
+  const pendingDelayCount = delayRequests.filter((r) => r.status === 'pending').length;
+
+
   return (
     <div className="space-y-6">
       
+      {/* Mode Switcher Tabs */}
+      <div className="flex bg-slate-900 border border-slate-800 p-1.5 rounded-3xl shadow-2xl gap-2">
+        <button
+          onClick={() => setPanelMode('applications')}
+          className={`flex-1 py-3 px-4 rounded-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center justify-center gap-2 ${
+            panelMode === 'applications'
+              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <CreditCard className="w-4 h-4" />
+          <span>{language === 'kh' ? '⚡️ សំណើសុំកម្ចី' : '⚡️ Loan Applications'}</span>
+          <span className="px-2 py-0.5 bg-blue-950/80 text-blue-300 rounded-md text-xs border border-blue-800/60 font-mono">
+            {userApplications.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setPanelMode('delay_requests')}
+          className={`flex-1 py-3 px-4 rounded-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center justify-center gap-2 relative ${
+            panelMode === 'delay_requests'
+              ? 'bg-gradient-to-r from-amber-600 via-rose-600 to-amber-600 text-white shadow-lg shadow-amber-600/20'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          <span>{language === 'kh' ? '⏰ សំណើសុំពន្យារពេលបង់ប្រាក់ (GPS Track)' : '⏰ Payment Extension Requests'}</span>
+          {pendingDelayCount > 0 && (
+            <span className="px-2 py-0.5 bg-rose-500 text-white rounded-md text-xs font-mono font-bold animate-pulse shadow-md">
+              {pendingDelayCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {panelMode === 'delay_requests' ? (
+        <div className="space-y-6">
+          {/* Header Block for Delay Requests */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-black text-white flex items-center gap-2 tracking-tight">
+                ⏰ {language === 'kh' ? 'ផ្ទាំងគ្រប់គ្រងសំណើសុំពន្យារពេលបង់ប្រាក់' : 'Payment Extension Requests Dashboard'}
+              </h1>
+              <p className="text-xs text-slate-400 font-semibold">
+                {language === 'kh' 
+                  ? 'ពិនិត្យមើលសំណើសុំពន្យារពេលបង់ប្រាក់ពីកូនបំណុល និងទីតាំង GPS ដែលបានផ្ទៀងផ្ទាត់' 
+                  : 'Review payment delay requests submitted by borrowers along with verified GPS location data.'}
+              </p>
+            </div>
+
+            {/* Shareable Link Box */}
+            <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-2xl flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+              <div className="text-left space-y-0.5 flex-1">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                  {language === 'kh' ? 'តំណភ្ជាប់សំណើសុំពន្យារពេលបង់' : 'Delay Request Link'}
+                </p>
+                <p className="text-xs font-bold text-amber-300 select-all truncate max-w-[200px]">
+                  {`${window.location.origin}/?delay=true&lender=${currentUser}`}
+                </p>
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto shrink-0">
+                <button
+                  onClick={copyDelayLink}
+                  className="flex-1 sm:flex-none px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md active:scale-95"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  {language === 'kh' ? 'ចម្លង Link' : 'Copy Link'}
+                </button>
+                <a
+                  href={`/?delay=true&lender=${currentUser}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-black rounded-xl transition flex items-center justify-center gap-1.5 border border-slate-700"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  {language === 'kh' ? 'មើល' : 'Preview'}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter Tabs & Search for Delay Requests */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900 border border-slate-800 p-4 rounded-3xl shadow-xl">
+            <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800/80 gap-1 w-full md:w-auto overflow-x-auto shrink-0">
+              {(['pending', 'approved', 'rejected', 'all'] as const).map((tab) => {
+                const count = delayRequests.filter(r => tab === 'all' ? true : (r.status || 'pending') === tab).length;
+                const tabName = {
+                  pending: language === 'kh' ? '⏳ រង់ចាំពិនិត្យ' : 'Pending',
+                  approved: language === 'kh' ? '✅ បានអនុម័ត' : 'Approved',
+                  rejected: language === 'kh' ? '❌ បានបដិសេធ' : 'Rejected',
+                  all: language === 'kh' ? '📂 ទាំងអស់' : 'All'
+                }[tab];
+
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setDelayActiveTab(tab)}
+                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                      delayActiveTab === tab
+                        ? 'bg-amber-600 text-white shadow-md border border-amber-500'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                    }`}
+                  >
+                    <span>{tabName}</span>
+                    <span className={`px-1.5 py-0.5 text-[9px] rounded-md font-black ${
+                      delayActiveTab === tab 
+                        ? 'bg-amber-950 text-amber-200' 
+                        : 'bg-slate-800 text-slate-400'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search Input */}
+            <div className="relative w-full md:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input
+                type="text"
+                value={delaySearchQuery}
+                onChange={(e) => setDelaySearchQuery(e.target.value)}
+                placeholder={language === 'kh' ? 'ស្វែងរកឈ្មោះ លេខទូរស័ព្ទ ឬមូលហេតុ...' : 'Search name, phone, or reason...'}
+                className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition font-medium text-slate-200 placeholder-slate-600"
+              />
+            </div>
+          </div>
+
+          {/* Delay Requests List */}
+          {filteredDelayRequests.length === 0 ? (
+            <div className="p-12 text-center bg-slate-900 border border-slate-800 rounded-3xl space-y-3">
+              <Clock className="w-12 h-12 text-slate-600 mx-auto" />
+              <h3 className="text-base font-bold text-slate-300">
+                {language === 'kh' ? 'មិនទាន់មានសំណើសុំពន្យារពេលបង់ប្រាក់នៅឡើយទេ' : 'No payment extension requests found'}
+              </h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                {language === 'kh' ? 'នៅពេលកូនបំណុលបំពេញទម្រង់ស្នើសុំពន្យារពេលបង់ ព័ត៌មាន និងទីតាំង GPS នឹងបង្ហាញនៅទីនេះ។' : 'When borrowers submit delay requests, their information and verified GPS coordinates will appear here.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredDelayRequests.map((req) => {
+                const hasGps = typeof req.latitude === 'number' && typeof req.longitude === 'number';
+
+                return (
+                  <div
+                    key={req.id}
+                    className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-3xl p-5 shadow-xl space-y-4 flex flex-col justify-between relative overflow-hidden group transition"
+                  >
+                    <div className="space-y-3">
+                      {/* Header Row */}
+                      <div className="flex items-start justify-between gap-2 border-b border-slate-800/80 pb-3">
+                        <div>
+                          <h4 className="font-extrabold text-base text-white flex items-center gap-1.5">
+                            <User className="w-4 h-4 text-amber-400" />
+                            {req.borrowerName}
+                          </h4>
+                          {req.borrowerPhone && (
+                            <p className="text-xs font-mono text-slate-400 flex items-center gap-1 mt-0.5">
+                              <Phone className="w-3 h-3 text-emerald-400" />
+                              <a href={`tel:${req.borrowerPhone}`} className="hover:underline">
+                                {req.borrowerPhone}
+                              </a>
+                            </p>
+                          )}
+                        </div>
+
+                        <div>{getStatusBadge(req.status)}</div>
+                      </div>
+
+                      {/* Reason & Date Details */}
+                      <div className="space-y-2 text-xs">
+                        <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800/80 space-y-1">
+                          <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">
+                            {language === 'kh' ? 'មូលហេតុស្នើសុំពន្យារ៖' : 'Extension Reason:'}
+                          </span>
+                          <p className="text-xs font-semibold text-slate-200 leading-relaxed">
+                            {req.reason}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/60 text-slate-300">
+                          <span className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+                            <Calendar className="w-3.5 h-3.5 text-purple-400" />
+                            {language === 'kh' ? 'សុំពន្យារដល់៖' : 'Extension Date:'}
+                          </span>
+                          <span className="font-bold text-amber-300">{req.requestedDate}</span>
+                        </div>
+
+                        {req.createdAt && (
+                          <div className="flex items-center justify-between text-[10px] text-slate-500 px-1">
+                            <span>{language === 'kh' ? 'ថ្ងៃផ្ញើសំណើ៖' : 'Submitted At:'}</span>
+                            <span>{new Date(req.createdAt).toLocaleString()}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* GPS Badge Bar */}
+                      <div className="pt-1">
+                        {hasGps ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedGpsModalData(req);
+                              setIsGpsModalOpen(true);
+                            }}
+                            className="w-full p-2.5 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/50 rounded-2xl flex items-center justify-between gap-2 text-xs text-emerald-300 transition cursor-pointer active:scale-98"
+                          >
+                            <span className="flex items-center gap-1.5 font-bold">
+                              <MapPin className="w-4 h-4 text-emerald-400 animate-pulse" />
+                              {language === 'kh' ? '📍 មើលទីតាំង GPS (GPS Verified)' : '📍 View Verified GPS'}
+                            </span>
+                            <span className="px-2 py-0.5 bg-emerald-900/80 text-emerald-200 rounded-lg text-[10px] font-mono font-bold">
+                              ±{Math.round(req.locationAccuracy || 0)}m
+                            </span>
+                          </button>
+                        ) : (
+                          <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-2xl flex items-center gap-2 text-xs text-slate-500">
+                            <MapPin className="w-4 h-4 text-slate-600" />
+                            <span>{language === 'kh' ? 'ពុំមានព័ត៌មាន GPS ឡើយ' : 'No GPS coordinates attached'}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action Controls */}
+                    <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                      {req.status === 'pending' && (
+                        <div className="flex gap-2 w-full">
+                          <button
+                            type="button"
+                            onClick={() => handleApproveDelayRequest(req)}
+                            className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1 shadow-md shadow-emerald-600/20 active:scale-95"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{language === 'kh' ? 'អនុម័ត' : 'Approve'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRejectDelayRequest(req)}
+                            className="flex-1 py-2 px-3 bg-rose-950/80 hover:bg-rose-900/80 text-rose-300 font-bold text-xs rounded-xl transition cursor-pointer border border-rose-800/60 flex items-center justify-center gap-1 active:scale-95"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span>{language === 'kh' ? 'បដិសេធ' : 'Reject'}</span>
+                          </button>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteDelayRequest(req.id)}
+                        className="p-2 bg-slate-950 hover:bg-rose-950 text-slate-500 hover:text-rose-400 rounded-xl transition border border-slate-800 hover:border-rose-800/50 cursor-pointer ml-auto"
+                        title="Delete Request"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-6">
       {/* Title Header Block */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-xl">
         <div className="space-y-1">
@@ -367,6 +734,7 @@ export default function LoanApplicationsControlPanel({
               : 'Review submitted IDs, face selfies, and approve quick debtor loan applications.'}
           </p>
         </div>
+
 
         {/* Header Action Controls */}
         <div className="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -952,6 +1320,8 @@ export default function LoanApplicationsControlPanel({
           </AnimatePresence>
         </div>
       )}
+      </div>
+      )}
 
       {/* Lightbox / Image Zoom Full Modal */}
       <AnimatePresence>
@@ -1065,6 +1435,13 @@ export default function LoanApplicationsControlPanel({
           />
         )}
       </AnimatePresence>
+
+      {/* GPS Location Viewer Modal */}
+      <GPSLocationViewerModal
+        isOpen={isGpsModalOpen}
+        onClose={() => setIsGpsModalOpen(false)}
+        locationData={selectedGpsModalData}
+      />
 
     </div>
   );

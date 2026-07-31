@@ -30,6 +30,7 @@ import PlanApprovalModal from './components/PlanApprovalModal';
 import KhmerAvatarFrame from './components/KhmerAvatarFrame';
 import KhmerAvatarFrameModal from './components/KhmerAvatarFrameModal';
 import BorrowerApplyForm from './components/BorrowerApplyForm';
+import PaymentDelayRequestForm from './components/PaymentDelayRequestForm';
 import LoanApplicationTracker from './components/LoanApplicationTracker';
 import LoanApplicationsControlPanel from './components/LoanApplicationsControlPanel';
 import { LoanApplication } from './types';
@@ -187,6 +188,10 @@ export default function App() {
   const [isApplyMode, setIsApplyMode] = useState<boolean>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('apply') === 'true';
+  });
+  const [isDelayMode, setIsDelayMode] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('delay') === 'true' || params.get('extension') === 'true';
   });
   const [trackId, setTrackId] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -6019,7 +6024,18 @@ export default function App() {
             );
           }
 
-          // Router Switch based on activeSection
+          // Router Switch based on activeSection or special debtor link mode
+          if (isDelayMode) {
+            return (
+              <PaymentDelayRequestForm
+                lenderId={applyLenderId}
+                onSubmitSuccess={() => {
+                  showToast(language === 'kh' ? 'បានផ្ញើសំណើសុំពន្យារពេលបង់ប្រាក់រួចរាល់!' : 'Payment delay request submitted successfully!', 'success');
+                }}
+              />
+            );
+          }
+
           if (activeSection === 'admin_dashboard' && currentUser === 'sounravin') {
             return (
               <AdminMembersDashboard

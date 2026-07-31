@@ -208,3 +208,27 @@ export interface LoanApplication {
   loanType?: 'luy_chok' | 'luy_rab';
 }
 
+export interface PaymentDelayRequest {
+  id: string;
+  borrowerId?: string;
+  borrowerName: string;
+  borrowerPhone: string;
+  lenderId: string;
+  reason: string;
+  notes?: string;
+  requestedDate: string;
+  amount?: number;
+  termIndex?: number;
+  latitude?: number;
+  longitude?: number;
+  locationAccuracy?: number;
+  locationAddress?: string;
+  gpsCapturedAt?: string;
+  deviceInfo?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  approvedAt?: string;
+  rejectedReason?: string;
+}
+
+
