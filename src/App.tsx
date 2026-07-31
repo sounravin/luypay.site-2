@@ -3225,6 +3225,30 @@ export default function App() {
     );
   }
 
+  // Render Standalone Public Payment Delay Request form if viewing delay/extension link
+  if (isDelayMode) {
+    return (
+      <div className="min-h-screen bg-[#030712] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        {/* Animated Background Auroras */}
+        <div className="absolute top-10 left-10 w-80 h-80 rounded-full bg-amber-600/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
+        
+        <div className="w-full max-w-md z-10">
+          <PaymentDelayRequestForm 
+            lenderId={applyLenderId} 
+            onSubmitSuccess={() => {
+              showToast(language === 'kh' ? 'បានផ្ញើសំណើសុំពន្យារពេលបង់ប្រាក់រួចរាល់!' : 'Payment delay request submitted successfully!', 'success');
+            }}
+            onBackToPortal={() => {
+              window.history.replaceState({}, document.title, window.location.pathname);
+              setIsDelayMode(false);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const isSuperAdmin = currentUser === 'sounravin';
   const isBlocked = memberProfile?.isBlocked === true;
   const isExpired = isSubscriptionExpired(memberProfile);
@@ -3375,19 +3399,34 @@ export default function App() {
                     </p>
                   </div>
 
-                  {/* Fast Loan Application Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playClickSound();
-                      setIsApplyMode(true);
-                    }}
-                    className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white font-black text-sm rounded-2xl shadow-lg shadow-emerald-900/30 border border-emerald-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 group"
-                  >
-                    <Sparkles className="w-4 h-4 text-emerald-200 animate-pulse group-hover:rotate-12 transition-transform" />
-                    <span>{language === 'kh' ? '⚡ ស្នើសុំកម្ចីរហ័ស (លុយឆក់)' : '⚡ Apply for Fast Loan'}</span>
-                    <ChevronRight className="w-4 h-4 text-emerald-200 group-hover:translate-x-1 transition-transform ml-auto" />
-                  </button>
+                  {/* Fast Action Buttons Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Fast Loan Application Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setIsApplyMode(true);
+                      }}
+                      className="w-full py-3 px-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white font-black text-xs rounded-2xl shadow-lg shadow-emerald-900/30 border border-emerald-400/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 group"
+                    >
+                      <Sparkles className="w-4 h-4 text-emerald-200 animate-pulse group-hover:rotate-12 transition-transform shrink-0" />
+                      <span className="truncate">{language === 'kh' ? '⚡ ស្នើសុំកម្ចីរហ័ស' : '⚡ Fast Loan Application'}</span>
+                    </button>
+
+                    {/* Standalone Payment Delay Request Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setIsDelayMode(true);
+                      }}
+                      className="w-full py-3 px-3 bg-gradient-to-r from-amber-600 via-rose-600 to-amber-700 hover:from-amber-500 hover:to-rose-500 text-white font-black text-xs rounded-2xl shadow-lg shadow-amber-900/30 border border-amber-400/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 group"
+                    >
+                      <Clock className="w-4 h-4 text-amber-200 animate-pulse group-hover:rotate-12 transition-transform shrink-0" />
+                      <span className="truncate">{language === 'kh' ? '⏳ ពន្យារពេលបង់ប្រាក់' : '⏳ Delay Payment Request'}</span>
+                    </button>
+                  </div>
 
                   <SignInForm
                     onSubmit={handleCredentialsLogin}
@@ -6025,17 +6064,6 @@ export default function App() {
           }
 
           // Router Switch based on activeSection or special debtor link mode
-          if (isDelayMode) {
-            return (
-              <PaymentDelayRequestForm
-                lenderId={applyLenderId}
-                onSubmitSuccess={() => {
-                  showToast(language === 'kh' ? 'បានផ្ញើសំណើសុំពន្យារពេលបង់ប្រាក់រួចរាល់!' : 'Payment delay request submitted successfully!', 'success');
-                }}
-              />
-            );
-          }
-
           if (activeSection === 'admin_dashboard' && currentUser === 'sounravin') {
             return (
               <AdminMembersDashboard
