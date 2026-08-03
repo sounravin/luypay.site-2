@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { CurrencyType, FrequencyType, Shareholder } from '../types';
+import { CurrencyType, FrequencyType, Shareholder, LoanApplication } from '../types';
 import { getTodayDateString, calculateInstallmentDueDate, formatKhmerDate } from '../utils';
-import { X, Info, Camera, User, Image, Users, Wallet } from 'lucide-react';
+import { X, Info, Camera, User, Image, Users, Wallet, Sparkles } from 'lucide-react';
 import { useLanguage } from '../i18n';
+import { db } from '../lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 interface AddBorrowerModalProps {
   isOpen: boolean;
@@ -103,6 +105,51 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
   const [locationAddress, setLocationAddress] = useState<string | undefined>(undefined);
   const [locationAccuracy, setLocationAccuracy] = useState<number | undefined>(undefined);
   const [gpsCapturedAt, setGpsCapturedAt] = useState<string | undefined>(undefined);
+
+  // Registered Applicants list from Firestore
+  const [registeredApps, setRegisteredApps] = useState<LoanApplication[]>([]);
+  const [selectedAppId, setSelectedAppId] = useState<string>('');
+
+  useEffect(() => {
+    if (isOpen) {
+      const q = collection(db, 'loan_applications');
+      const unsub = onSnapshot(q, (snapshot) => {
+        const list: LoanApplication[] = [];
+        snapshot.forEach((docSnap) => {
+          list.push({ id: docSnap.id, ...docSnap.data() } as LoanApplication);
+        });
+        list.sort((a, b) => (new Date(b.createdAt || 0).getTime() || 0) - (new Date(a.createdAt || 0).getTime() || 0));
+        setRegisteredApps(list);
+      }, (err) => {
+        console.warn("Error loading loan applications in modal:", err);
+      });
+      return () => unsub();
+    }
+  }, [isOpen]);
+
+  const handleSelectRegisteredApp = (appId: string) => {
+    setSelectedAppId(appId);
+    const app = registeredApps.find((a) => a.id === appId);
+    if (!app) return;
+
+    setName(app.name || '');
+    setPhone(app.phone || '');
+    setCurrency('USD');
+    setPrincipal(app.amountRequested ? app.amountRequested.toString() : '');
+    setProfilePhoto(app.selfiePhoto || '');
+    setNotes(`សំណើខ្ចីលុយឆក់អេឡិចត្រូនិច ID: ${app.id}`);
+    setDuration(app.loanDuration ? app.loanDuration.toString() : '24');
+    setIdCardNumber(app.idCardNumber || '');
+    setDob(app.dob || '');
+    setAddress(app.address || '');
+    setIdExpiryDate(app.idExpiryDate || '');
+    setIdExpiryStatus(app.idExpiryStatus || 'valid');
+    setLatitude(app.latitude);
+    setLongitude(app.longitude);
+    setLocationAddress(app.locationAddress);
+    setLocationAccuracy(app.locationAccuracy);
+    setGpsCapturedAt(app.gpsCapturedAt);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -480,6 +527,36 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
 
         {/* Content Form */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto max-h-[calc(100vh-8rem)] bg-slate-50/40">
+          {/* Quick Selector: Auto-fill from Existing Registered Borrower Applications */}
+          {registeredApps.length > 0 && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 p-3.5 rounded-2xl space-y-2 text-xs">
+              <div className="flex items-center justify-between font-black text-emerald-900 dark:text-emerald-300">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>{language === 'kh' ? '⚡ ទាញយកទិន្នន័យពីកូនបំណុលធ្លាប់ចុះឈ្មោះ' : '⚡ Auto-fill Registered Borrower'}</span>
+                </span>
+                <span className="text-[10px] bg-emerald-200/80 dark:bg-emerald-900/80 text-emerald-900 dark:text-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                  {registeredApps.length} {language === 'kh' ? 'សំណើ' : 'apps'}
+                </span>
+              </div>
+
+              <select
+                value={selectedAppId}
+                onChange={(e) => handleSelectRegisteredApp(e.target.value)}
+                className="w-full bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-2xs"
+              >
+                <option value="">
+                  {language === 'kh' ? '-- ជ្រើសរើសឈ្មោះកូនបំណុលដើម្បីបំពេញទិន្នន័យស្វ័យប្រវត្តិ --' : '-- Select Borrower to Auto-fill --'}
+                </option>
+                {registeredApps.map((app) => (
+                  <option key={app.id} value={app.id}>
+                    👤 {app.name} ({app.phone}) - ${app.amountRequested?.toLocaleString() || 0} [{app.status === 'approved' ? (language === 'kh' ? 'បានអនុម័ត' : 'Approved') : app.status === 'pending' ? (language === 'kh' ? 'រង់ចាំ' : 'Pending') : (language === 'kh' ? 'បដិសេធ' : 'Rejected')}]
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Section 1: Borrower Information */}
           <div className="space-y-3">
             {/* Profile & Cover Photo Upload */}
