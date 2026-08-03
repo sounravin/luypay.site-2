@@ -126,6 +126,44 @@ export function formatKhmerDate(dateString: string): string {
   return `${day}/${month}/${year}`;
 }
 
+export function getDaysInMonth(year: number, monthZeroBased: number): number {
+  return new Date(year, monthZeroBased + 1, 0).getDate();
+}
+
+/**
+ * Calculates the exact due date for an installment (1-based offset),
+ * accurately handling 28, 29, 30, and 31 days for every month.
+ */
+export function calculateInstallmentDueDate(loanDateStr: string, frequency: FrequencyType, offset: number): Date {
+  const startDate = new Date(loanDateStr);
+  if (isNaN(startDate.getTime())) return new Date();
+
+  const dueDate = new Date(startDate);
+
+  if (frequency === 'daily') {
+    dueDate.setDate(dueDate.getDate() + offset);
+  } else if (frequency === 'weekly') {
+    dueDate.setDate(dueDate.getDate() + offset * 7);
+  } else if ((frequency as string) === 'every_2_days') {
+    dueDate.setDate(dueDate.getDate() + offset * 2);
+  } else if (frequency === 'monthly') {
+    const origYear = startDate.getFullYear();
+    const origMonth = startDate.getMonth();
+    const origDay = startDate.getDate();
+
+    const targetMonthIndex = origMonth + offset;
+    const targetYear = origYear + Math.floor(targetMonthIndex / 12);
+    const targetMonth = ((targetMonthIndex % 12) + 12) % 12;
+
+    const maxDaysInTargetMonth = getDaysInMonth(targetYear, targetMonth);
+    const actualDay = Math.min(origDay, maxDaysInTargetMonth);
+
+    dueDate.setFullYear(targetYear, targetMonth, actualDay);
+  }
+
+  return dueDate;
+}
+
 export function runAutoCheckInForBorrowers(borrowers: Borrower[]): { updatedList: Borrower[], hasChanges: boolean } {
   let hasChanges = false;
   const updatedList = (borrowers || []).map((borrower) => {
@@ -155,17 +193,8 @@ export function runAutoCheckInForBorrowers(borrowers: Borrower[]): { updatedList
     for (let i = 0; i < borrower.duration; i++) {
       if (paymentBySlot[i]) continue;
 
-      const dueDate = new Date(startDate);
       const offset = i + 1;
-
-      if (borrower.frequency === 'daily') {
-        dueDate.setDate(dueDate.getDate() + offset);
-      } else if (borrower.frequency === 'weekly') {
-        dueDate.setDate(dueDate.getDate() + offset * 7);
-      } else if (borrower.frequency === 'monthly') {
-        dueDate.setMonth(dueDate.getMonth() + offset);
-      }
-
+      const dueDate = calculateInstallmentDueDate(borrower.loanDate, borrower.frequency, offset);
       dueDate.setHours(0, 0, 0, 0);
 
       if (dueDate <= today) {
@@ -216,16 +245,8 @@ export function getDaysUntilNextPayment(borrower: Borrower): number | null {
   const startDate = new Date(borrower.loanDate);
   if (isNaN(startDate.getTime())) return null;
 
-  const dueDate = new Date(startDate);
   const offset = nextIndex + 1;
-
-  if (borrower.frequency === 'daily') {
-    dueDate.setDate(dueDate.getDate() + offset);
-  } else if (borrower.frequency === 'weekly') {
-    dueDate.setDate(dueDate.getDate() + offset * 7);
-  } else if (borrower.frequency === 'monthly') {
-    dueDate.setMonth(dueDate.getMonth() + offset);
-  }
+  const dueDate = calculateInstallmentDueDate(borrower.loanDate, borrower.frequency, offset);
 
   // Parse dueTime (default to 17:00 / 5:00 PM if not specified)
   let dueHour = 17;
@@ -439,18 +460,8 @@ export function getBorrowerOverdueDetails(borrower: Borrower): BorrowerOverdueDe
   const startDate = new Date(borrower.loanDate);
   if (isNaN(startDate.getTime())) return defaultResult;
 
-  const dueDate = new Date(startDate);
   const offset = nextIndex + 1;
-
-  if (borrower.frequency === 'daily') {
-    dueDate.setDate(dueDate.getDate() + offset);
-  } else if (borrower.frequency === 'weekly') {
-    dueDate.setDate(dueDate.getDate() + offset * 7);
-  } else if (borrower.frequency === 'monthly') {
-    dueDate.setMonth(dueDate.getMonth() + offset);
-  } else if (borrower.frequency === 'every_2_days') {
-    dueDate.setDate(dueDate.getDate() + offset * 2);
-  }
+  const dueDate = calculateInstallmentDueDate(borrower.loanDate, borrower.frequency, offset);
 
   // Parse dueTime (default to 17:00 / 5:00 PM if not specified)
   let dueHour = 17;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CurrencyType, FrequencyType, Shareholder } from '../types';
-import { getTodayDateString } from '../utils';
+import { getTodayDateString, calculateInstallmentDueDate, formatKhmerDate } from '../utils';
 import { X, Info, Camera, User, Image, Users, Wallet } from 'lucide-react';
 import { useLanguage } from '../i18n';
 
@@ -1288,6 +1288,54 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                 </span>
               </div>
             </div>
+
+            {/* Automated Month & Schedule Calculation Preview Card */}
+            {loanDate && duration && (
+              <div className="bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 p-3.5 rounded-2xl space-y-2 text-xs">
+                <div className="flex items-center justify-between font-black text-indigo-950 dark:text-indigo-200">
+                  <span className="flex items-center gap-1.5">
+                    <span>🗓️</span>
+                    <span>{language === 'kh' ? 'កាលវិភាគបង់ប្រាក់ស្វ័យប្រវត្តិតាមខែនីមួយៗ (Auto Schedule)' : 'Auto Schedule Preview'}</span>
+                  </span>
+                  <span className="text-[10px] bg-indigo-200/80 dark:bg-indigo-900/80 text-indigo-900 dark:text-indigo-200 px-2 py-0.5 rounded-full font-extrabold">
+                    {frequency === 'monthly'
+                      ? (language === 'kh' ? 'រាល់ខែ (២៨-៣១ ថ្ងៃ)' : 'Monthly (28-31d)')
+                      : frequency === 'weekly'
+                      ? (language === 'kh' ? 'រាល់សប្តាហ៍ (៧ ថ្ងៃ)' : 'Weekly (7d)')
+                      : (language === 'kh' ? 'រាល់ថ្ងៃ (Daily)' : 'Daily')}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-indigo-100 dark:border-indigo-900">
+                    <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                      {language === 'kh' ? 'ថ្ងៃបង់ដំបូង (វគ្គទី ១)៖' : 'First Due Date (Term 1):'}
+                    </span>
+                    <span className="font-extrabold text-indigo-700 dark:text-indigo-300 text-xs">
+                      {formatKhmerDate(calculateInstallmentDueDate(loanDate, frequency, 1).toISOString().split('T')[0])}
+                    </span>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-indigo-100 dark:border-indigo-900">
+                    <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                      {language === 'kh' ? 'ថ្ងៃសងដាច់ (វគ្គទី ' + (parseInt(duration) || 1) + ')៖' : 'Maturity Date (Term ' + (parseInt(duration) || 1) + '):'}
+                    </span>
+                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-xs">
+                      {formatKhmerDate(calculateInstallmentDueDate(loanDate, frequency, Math.max(1, parseInt(duration) || 1)).toISOString().split('T')[0])}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-[11px] font-semibold text-indigo-900/90 dark:text-indigo-300 flex items-start gap-1.5 pt-1 border-t border-indigo-200/60 dark:border-indigo-800/50">
+                  <span className="text-sm shrink-0">✨</span>
+                  <p className="leading-snug">
+                    {language === 'kh'
+                      ? 'ប្រព័ន្ធគណនាដឹងស្វ័យប្រវត្តិតាមចំនួនថ្ងៃពិតប្រាកដក្នុងខែនីមួយៗ (ខែខ្លះមាន ២៨, ២៩, ៣០ ឬ ៣១ ថ្ងៃ) ដើម្បីកំណត់ថ្ងៃត្រូវបង់ប្រាក់បានត្រឹមត្រូវ។'
+                      : 'The system automatically recognizes exact month lengths (28, 29, 30, or 31 days) for accurate installment due dates.'}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Borrower Standing Rating Selection */}

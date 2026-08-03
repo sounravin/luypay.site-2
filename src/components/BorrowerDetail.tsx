@@ -140,6 +140,8 @@ export default function BorrowerDetail({
   const [quickTopUpNotes, setQuickTopUpNotes] = useState<string>(borrower.topUpNotes || '');
   const [quickTopUpDate, setQuickTopUpDate] = useState<string>(borrower.topUpDate || '');
 
+
+
   // Reset editing states only when entering edit mode or changing borrower selection
   const prevIsEditingRef = useRef(false);
   useEffect(() => {
@@ -2315,32 +2317,38 @@ export default function BorrowerDetail({
                                 {language === 'kh' ? 'ចុចលើប្រអប់លេខនីមួយៗ ដើម្បីកត់ត្រាសងប្រាក់រហ័ស ឬលុបការបង់ប្រាក់។' : 'Click any box to quickly record installment payment or uncheck to delete.'}
                               </p>
                             </div>
-                            {totalPaid < borrower.totalToPay && !isReadOnlyShareholder && (
-                              <button
-                                onClick={() => {
-                                  const unpaidIndices: number[] = [];
-                                  for (let i = 0; i < borrower.duration; i++) {
-                                    if (!paymentBySlot[i]) unpaidIndices.push(i);
-                                  }
-                                  if (unpaidIndices.length === 0) return;
-                                  const msg = language === 'kh'
-                                    ? `តើអ្នកពិតជាចង់កត់ត្រាការបង់ប្រាក់សម្រាប់វគ្គដែលនៅសល់ទាំង ${unpaidIndices.length} វគ្គក្នុងពេលតែមួយមែនទេ?`
-                                    : `Are you sure you want to log payments for all remaining ${unpaidIndices.length} installments at once?`;
-                                  if (window.confirm(msg)) {
-                                    unpaidIndices.forEach((index) => {
-                                      onAddPayment(borrower.id, {
-                                        amount: borrower.installmentAmount,
-                                        date: getTodayDateString(),
-                                        installmentIndex: index,
-                                        note: language === 'kh' ? `ទូទាត់រហ័សវគ្គទី ${index + 1}` : `Quick paid installment ${index + 1}`,
-                                      });
-                                    });
-                                  }
-                                }}
-                                className="shrink-0 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-extrabold text-xs rounded-xl border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 cursor-pointer transition duration-150"
-                              >
-                                <span>✔️ {language === 'kh' ? 'ទូទាត់រហ័សគ្រប់វគ្គ' : 'Auto Check All'}</span>
-                              </button>
+                            {!isReadOnlyShareholder && (
+                              <div className="flex flex-wrap items-center gap-2">
+
+
+                                {totalPaid < borrower.totalToPay && (
+                                  <button
+                                    onClick={() => {
+                                      const unpaidIndices: number[] = [];
+                                      for (let i = 0; i < borrower.duration; i++) {
+                                        if (!paymentBySlot[i]) unpaidIndices.push(i);
+                                      }
+                                      if (unpaidIndices.length === 0) return;
+                                      const msg = language === 'kh'
+                                        ? `តើអ្នកពិតជាចង់កត់ត្រាការបង់ប្រាក់សម្រាប់វគ្គដែលនៅសល់ទាំង ${unpaidIndices.length} វគ្គក្នុងពេលតែមួយមែនទេ?`
+                                        : `Are you sure you want to log payments for all remaining ${unpaidIndices.length} installments at once?`;
+                                      if (window.confirm(msg)) {
+                                        unpaidIndices.forEach((index) => {
+                                          onAddPayment(borrower.id, {
+                                            amount: borrower.installmentAmount,
+                                            date: getTodayDateString(),
+                                            installmentIndex: index,
+                                            note: language === 'kh' ? `ទូទាត់រហ័សវគ្គទី ${index + 1}` : `Quick paid installment ${index + 1}`,
+                                          });
+                                        });
+                                      }
+                                    }}
+                                    className="shrink-0 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-extrabold text-xs rounded-xl border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 cursor-pointer transition duration-150"
+                                  >
+                                    <span>✔️ {language === 'kh' ? 'ទូទាត់រហ័សគ្រប់វគ្គ' : 'Auto Check All'}</span>
+                                  </button>
+                                )}
+                              </div>
                             )}
                           </div>
 
@@ -3616,6 +3624,8 @@ export default function BorrowerDetail({
             />
           )}
         </AnimatePresence>
+
+
       </motion.div>
     </motion.div>
   );
