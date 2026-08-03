@@ -8,7 +8,8 @@ import {
   Users, Check, X, FileText, Phone, DollarSign, Calendar, Copy, 
   ExternalLink, Eye, AlertCircle, CheckCircle, ChevronDown, 
   Trash2, Search, Sparkles, UserCheck, ShieldAlert, RefreshCw, AlertTriangle, CreditCard, MapPin,
-  Volume2, VolumeX, Bell, BellOff, Lock, Navigation, Plus, Camera, Upload, User, Clock, Compass, ShieldCheck
+  Volume2, VolumeX, Bell, BellOff, Lock, Navigation, Plus, Camera, Upload, User, Clock, Compass, ShieldCheck,
+  LayoutGrid, Grid, List
 } from 'lucide-react';
 import { checkExpiryStatus, scanIdCardImage } from '../utils/ocrHelper';
 import { playNewApplicationAlertSound } from '../utils';
@@ -32,6 +33,17 @@ export default function LoanApplicationsControlPanel({
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected' | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Custom View Mode Layer: Large Cards ('large'), Small Cards ('small'), or List Rows ('list')
+  const [viewMode, setViewMode] = useState<'large' | 'small' | 'list'>(() => {
+    const saved = localStorage.getItem('loan_app_view_mode');
+    return (saved === 'small' || saved === 'list' || saved === 'large') ? saved : 'large';
+  });
+
+  const changeViewMode = (mode: 'large' | 'small' | 'list') => {
+    setViewMode(mode);
+    localStorage.setItem('loan_app_view_mode', mode);
+  };
   
   // Modal previews
   const [selectedPhoto, setSelectedPhoto] = useState<{ title: string; src: string } | null>(null);
@@ -928,16 +940,63 @@ export default function LoanApplicationsControlPanel({
           })}
         </div>
 
-        {/* Search bar input */}
-        <div className="relative w-full md:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={language === 'kh' ? 'ស្វែងរកឈ្មោះ ឬលេខទូរស័ព្ទ...' : 'Search applicant name/phone...'}
-            className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium text-slate-200 placeholder-slate-600"
-          />
+        {/* Search bar input & Custom View Layer Switcher */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={language === 'kh' ? 'ស្វែងរកឈ្មោះ ឬលេខទូរស័ព្ទ...' : 'Search applicant name/phone...'}
+              className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-2xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium text-slate-200 placeholder-slate-600"
+            />
+          </div>
+
+          {/* Design Layer / View Mode Selector (Large / Small / List) */}
+          <div className="flex items-center justify-center gap-1 bg-slate-950 p-1 border border-slate-800 rounded-2xl shrink-0 self-start sm:self-auto shadow-inner">
+            <button
+              type="button"
+              onClick={() => changeViewMode('large')}
+              title={language === 'kh' ? 'ទម្រង់កាតធំ (Large Cards View)' : 'Large Cards View'}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'large'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-black">{language === 'kh' ? 'កាតធំ' : 'Large'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => changeViewMode('small')}
+              title={language === 'kh' ? 'ទម្រង់កាតតូច (Small Cards View)' : 'Small Cards View'}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'small'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <Grid className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-black">{language === 'kh' ? 'កាតតូច' : 'Small'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => changeViewMode('list')}
+              title={language === 'kh' ? 'ទម្រង់បញ្ជីរៀបជួរ (List View)' : 'List View'}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                viewMode === 'list'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-black">{language === 'kh' ? 'បញ្ជី Row' : 'List'}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -995,17 +1054,298 @@ export default function LoanApplicationsControlPanel({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className={viewMode === 'large' ? "grid grid-cols-1 md:grid-cols-2 gap-6" : viewMode === 'small' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
           <AnimatePresence mode="popLayout">
-            {filteredApps.map((app) => (
-              <motion.div
-                key={app.id}
-                layout
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4 hover:border-slate-750 transition flex flex-col justify-between"
-              >
+            {filteredApps.map((app) => {
+              if (viewMode === 'small') {
+                return (
+                  <motion.div
+                    key={app.id}
+                    layout
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 shadow-lg flex flex-col justify-between space-y-3 transition"
+                  >
+                    {/* Small Card Header */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {activeTab !== 'pending' && (
+                          <input
+                            type="checkbox"
+                            checked={selectedAppIds.includes(app.id)}
+                            onChange={() => handleToggleSelect(app.id)}
+                            className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-blue-600 focus:ring-blue-500/20 cursor-pointer shrink-0"
+                          />
+                        )}
+                        <div 
+                          onClick={() => app.selfiePhoto && setSelectedPhoto({ title: `រូបថត Selfie - ${app.name}`, src: app.selfiePhoto })}
+                          className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shrink-0 cursor-pointer flex items-center justify-center hover:opacity-80 transition shadow-inner"
+                        >
+                          {app.selfiePhoto ? (
+                            <img src={app.selfiePhoto} alt={app.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <User className="w-5 h-5 text-slate-400" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-black text-white truncate">{app.name}</h4>
+                          <p className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-blue-400 shrink-0" />
+                            <span className="truncate">{app.phone}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 flex items-center gap-1">
+                        {getStatusBadge(app.status)}
+                        {activeTab !== 'pending' && (
+                          <button
+                            onClick={() => handleDeleteIndividual(app)}
+                            className="p-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition cursor-pointer"
+                            title={language === 'kh' ? 'លុបសំណើនេះ' : 'Delete'}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Amount & Schedule Summary */}
+                    <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 space-y-1.5 text-xs">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">{language === 'kh' ? 'ទឹកប្រាក់' : 'Amount'}:</span>
+                        <span className="text-sm font-black text-emerald-400">${app.amountRequested.toLocaleString()} USD</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] text-slate-400 border-t border-slate-850 pt-1">
+                        <span>
+                          {app.paymentType === 'daily' ? (language === 'kh' ? 'រាល់ថ្ងៃ' : 'Daily') : 
+                           app.paymentType === 'weekly' ? (language === 'kh' ? 'រាល់សប្តាហ៍' : 'Weekly') : 
+                           app.paymentType === 'monthly' ? (language === 'kh' ? 'រាល់ខែ' : 'Monthly') : 
+                           (language === 'kh' ? 'ផ្សេងៗ' : 'Custom')} ({app.loanDuration || 24} វគ្គ)
+                        </span>
+                        <span>{new Date(app.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    {/* Badges: GPS Location & Contract Status */}
+                    <div className="flex items-center justify-between text-[10px] gap-1">
+                      {app.latitude && app.longitude ? (
+                        <a
+                          href={`https://www.google.com/maps?q=${app.latitude},${app.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2 py-0.5 bg-blue-500/15 border border-blue-500/30 text-blue-400 font-bold rounded-md flex items-center gap-1 hover:bg-blue-500/25 transition"
+                        >
+                          <MapPin className="w-3 h-3 text-blue-400" />
+                          <span>📍 GPS</span>
+                        </a>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-slate-800 text-slate-500 rounded-md">
+                          NO GPS
+                        </span>
+                      )}
+
+                      {app.idCardNumber && (
+                        <span className="text-slate-400 font-medium truncate max-w-[110px]">
+                          ID: {app.idCardNumber}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="pt-1.5 border-t border-slate-800/60 flex items-center gap-1.5">
+                      {app.status === 'pending' ? (
+                        <>
+                          <button
+                            onClick={() => setRejectingApp(app)}
+                            className="p-1.5 border border-rose-500/30 text-rose-400 font-bold text-xs rounded-lg hover:bg-rose-500/10 flex-1 transition cursor-pointer flex items-center justify-center gap-1"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span>{language === 'kh' ? 'បដិសេធ' : 'Reject'}</span>
+                          </button>
+                          <button
+                            onClick={() => handleApprove(app)}
+                            className="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-lg flex-[2] transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{language === 'kh' ? 'អនុម័ត' : 'Approve'}</span>
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => onApproveAndCreateBorrower(app)}
+                          className="w-full py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white font-black text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>{language === 'kh' ? '⚡ បង្កើតកម្ចី' : 'Create Loan'}</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => setContractApp(app)}
+                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-lg transition cursor-pointer"
+                        title={language === 'kh' ? 'កិច្ចសន្យាឌីជីថល' : 'Contract'}
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => { setEditingApp(app); setIsAppModalOpen(true); }}
+                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-lg transition cursor-pointer"
+                        title={language === 'kh' ? 'កែប្រែ' : 'Edit'}
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              }
+
+              if (viewMode === 'list') {
+                return (
+                  <motion.div
+                    key={app.id}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-3.5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4 transition"
+                  >
+                    {/* Left: Applicant Profile Info & Avatar */}
+                    <div className="flex items-center gap-3 min-w-0 md:w-1/3">
+                      {activeTab !== 'pending' && (
+                        <input
+                          type="checkbox"
+                          checked={selectedAppIds.includes(app.id)}
+                          onChange={() => handleToggleSelect(app.id)}
+                          className="w-4.5 h-4.5 rounded border-slate-700 bg-slate-950 text-blue-600 focus:ring-blue-500/20 cursor-pointer shrink-0"
+                        />
+                      )}
+                      <div 
+                        onClick={() => app.selfiePhoto && setSelectedPhoto({ title: `រូបថត Selfie - ${app.name}`, src: app.selfiePhoto })}
+                        className="w-11 h-11 rounded-2xl bg-slate-800 border border-slate-700 overflow-hidden shrink-0 cursor-pointer flex items-center justify-center hover:opacity-80 transition shadow-inner"
+                      >
+                        {app.selfiePhoto ? (
+                          <img src={app.selfiePhoto} alt={app.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-5 h-5 text-slate-400" />
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-black text-white truncate">{app.name}</h4>
+                          {getStatusBadge(app.status)}
+                        </div>
+                        <p className="text-xs font-semibold text-slate-400 flex items-center gap-1.5 mt-0.5">
+                          <Phone className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                          <span>{app.phone}</span>
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-medium">
+                          {new Date(app.createdAt).toLocaleDateString(language === 'kh' ? 'km-KH' : 'en-US', {
+                            month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Middle: Loan Requested & Details */}
+                    <div className="flex flex-wrap items-center gap-4 text-xs md:w-1/3">
+                      <div className="bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+                        <span className="text-[9px] text-slate-500 font-extrabold uppercase block">{language === 'kh' ? 'ទឹកប្រាក់ស្នើសុំ' : 'Amount'}</span>
+                        <span className="text-sm font-black text-emerald-400">${app.amountRequested.toLocaleString()} USD</span>
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-slate-400 font-bold block">
+                          {app.paymentType === 'daily' ? 'បង់រាល់ថ្ងៃ' : app.paymentType === 'weekly' ? 'បង់រាល់សប្តាហ៍' : 'បង់រាល់ខែ'} ({app.loanDuration || 24} វគ្គ)
+                        </span>
+                        <div className="flex items-center gap-2 text-[10px]">
+                          {app.latitude && app.longitude ? (
+                            <a
+                              href={`https://www.google.com/maps?q=${app.latitude},${app.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:underline flex items-center gap-1 font-bold"
+                            >
+                              <MapPin className="w-3 h-3" />
+                              <span>📍 Map</span>
+                            </a>
+                          ) : (
+                            <span className="text-slate-600 font-semibold">No GPS</span>
+                          )}
+                          {app.idCardNumber && <span className="text-slate-400">ID: {app.idCardNumber}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Action Buttons */}
+                    <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                      {app.status === 'pending' ? (
+                        <>
+                          <button
+                            onClick={() => setRejectingApp(app)}
+                            className="px-3 py-2 border border-rose-500/30 text-rose-400 font-bold text-xs rounded-xl hover:bg-rose-500/10 transition cursor-pointer flex items-center gap-1"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">{language === 'kh' ? 'បដិសេធ' : 'Reject'}</span>
+                          </button>
+                          <button
+                            onClick={() => handleApprove(app)}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+                          >
+                            <Check className="w-4 h-4" />
+                            <span>{language === 'kh' ? 'អនុម័ត & បង្កើតកម្ចី' : 'Approve & Create'}</span>
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => onApproveAndCreateBorrower(app)}
+                          className="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>{language === 'kh' ? '⚡ បង្កើតកម្ចី' : 'Create Loan'}</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => setContractApp(app)}
+                        className="p-2 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-xl transition cursor-pointer border border-slate-700"
+                        title={language === 'kh' ? 'មើលកិច្ចសន្យាឌីជីថល' : 'Digital Contract'}
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => { setEditingApp(app); setIsAppModalOpen(true); }}
+                        className="p-2 bg-slate-800 hover:bg-slate-700 text-amber-400 rounded-xl transition cursor-pointer border border-slate-700"
+                        title={language === 'kh' ? 'កែប្រែទិន្នន័យ / ID Card' : 'Edit Profile'}
+                      >
+                        <Camera className="w-4 h-4" />
+                      </button>
+                      {activeTab !== 'pending' && (
+                        <button
+                          onClick={() => handleDeleteIndividual(app)}
+                          className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl transition cursor-pointer border border-rose-500/10"
+                          title={language === 'kh' ? 'លុបសំណើនេះ' : 'Delete'}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              }
+
+              // Large View (Default rich card)
+              return (
+                <motion.div
+                  key={app.id}
+                  layout
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4 hover:border-slate-750 transition flex flex-col justify-between"
+                >
                 {/* Header Information Card */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-start gap-2 border-b border-slate-800/80 pb-3">
@@ -1378,7 +1718,8 @@ export default function LoanApplicationsControlPanel({
                   </div>
                 )}
               </motion.div>
-            ))}
+            );
+          })}
           </AnimatePresence>
         </div>
       )}
