@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { LoanApplication, Borrower, DEFAULT_LENDER_INFO, LenderInfo } from '../types';
 import { useLanguage } from '../i18n';
 import { motion } from 'motion/react';
-import { Printer, X, Shield, FileText, CheckCircle, AlertTriangle, AlertCircle, Edit3, Save, Download, UserCheck, Calendar, MapPin, DollarSign, Clock, Phone } from 'lucide-react';
+import { Printer, X, Shield, FileText, CheckCircle, AlertTriangle, AlertCircle, Edit3, Save, Download, UserCheck, Calendar, MapPin, DollarSign, Clock, Phone, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { toPng, toJpeg } from 'html-to-image';
 
 interface DigitalLoanContractModalProps {
   application?: LoanApplication | null;
@@ -64,6 +65,11 @@ export default function DigitalLoanContractModal({
   // Edit mode toggle
   const [isEditing, setIsEditing] = useState(false);
 
+  // Ref for contract DOM element to convert to PNG / JPG
+  const contractRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [exportFormat, setExportFormat] = useState<'png' | 'jpg' | null>(null);
+
   // Contract Creation Date
   const contractDate = new Date().toLocaleDateString('km-KH', {
     day: '2-digit',
@@ -73,6 +79,68 @@ export default function DigitalLoanContractModal({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadImage = async (format: 'png' | 'jpg') => {
+    if (!contractRef.current) return;
+    setIsExporting(true);
+    setExportFormat(format);
+
+    try {
+      const cleanBorrowerName = (borrowerName || 'Borrower').trim().replace(/[\s/\\?%*:|"<>]/g, '_');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const fileName = `LuyChok_Contract_${cleanBorrowerName}_${dateStr}.${format}`;
+
+      const element = contractRef.current;
+
+      let dataUrl = '';
+      if (format === 'png') {
+        dataUrl = await toPng(element, {
+          quality: 0.98,
+          pixelRatio: 2,
+          cacheBust: true,
+          backgroundColor: '#ffffff'
+        });
+      } else {
+        dataUrl = await toJpeg(element, {
+          quality: 0.95,
+          pixelRatio: 2,
+          cacheBust: true,
+          backgroundColor: '#ffffff'
+        });
+      }
+
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      if (showToast) {
+        showToast(
+          language === 'kh'
+            ? `✅ បានទាញយកលិខិតកម្ចីជា File ${format.toUpperCase()} រួចរាល់!`
+            : `✅ Successfully downloaded contract as ${format.toUpperCase()}!`,
+          'success'
+        );
+      }
+    } catch (err) {
+      console.error(`Error saving contract as ${format}:`, err);
+      if (showToast) {
+        showToast(
+          language === 'kh'
+            ? `❌ បរាជ័យក្នុងការ Save ជា ${format.toUpperCase()}`
+            : `❌ Failed to save contract as ${format.toUpperCase()}`,
+          'error'
+        );
+      } else {
+        alert(language === 'kh' ? `មិនអាចទាញយក File ${format.toUpperCase()} បានទេ` : `Failed to save ${format.toUpperCase()}`);
+      }
+    } finally {
+      setIsExporting(false);
+      setExportFormat(null);
+    }
   };
 
   return (
@@ -127,7 +195,47 @@ export default function DigitalLoanContractModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={isExporting}
+              onClick={() => handleDownloadImage('png')}
+              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95"
+              title={language === 'kh' ? 'រក្សាទុកជា File រូបភាព PNG' : 'Save as PNG'}
+            >
+              {isExporting && exportFormat === 'png' ? (
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+              ) : (
+                <ImageIcon className="w-4 h-4 text-emerald-100" />
+              )}
+              <span>Save PNG</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isExporting}
+              onClick={() => handleDownloadImage('jpg')}
+              className="px-3 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white text-xs font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-teal-600/20 active:scale-95"
+              title={language === 'kh' ? 'រក្សាទុកជា File រូបភាព JPG' : 'Save as JPG'}
+            >
+              {isExporting && exportFormat === 'jpg' ? (
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
+              ) : (
+                <Download className="w-4 h-4 text-teal-100" />
+              )}
+              <span>Save JPG</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-600/20 active:scale-95"
+              title={language === 'kh' ? 'បោះពុម្ពលិខិត ឬ Save ជា PDF' : 'Print or Save as PDF'}
+            >
+              <Printer className="w-4 h-4" />
+              <span>Print / PDF</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setIsEditing(!isEditing)}
@@ -145,18 +253,9 @@ export default function DigitalLoanContractModal({
               ) : (
                 <>
                   <Edit3 className="w-4 h-4 text-blue-400" />
-                  <span>កែប្រែទិន្នន័យ</span>
+                  <span>កែប្រែ</span>
                 </>
               )}
-            </button>
-
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-lg shadow-blue-600/20 active:scale-95"
-            >
-              <Printer className="w-4 h-4" />
-              <span>បោះពុម្ពលិខិត (Print)</span>
             </button>
 
             <button
@@ -261,7 +360,7 @@ export default function DigitalLoanContractModal({
           )}
 
           {/* Printable Document Sheet Container */}
-          <div className="printable-contract bg-white text-slate-900 p-6 sm:p-10 rounded-2xl shadow-xl space-y-6 border border-slate-200">
+          <div ref={contractRef} className="printable-contract bg-white text-slate-900 p-6 sm:p-10 rounded-2xl shadow-xl space-y-6 border border-slate-200">
             
             {/* Header / Emblem */}
             <div className="text-center space-y-1 pb-4 border-b-2 border-slate-900">
@@ -409,17 +508,64 @@ export default function DigitalLoanContractModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between no-print text-xs">
-          <div className="text-slate-400 font-medium">
+        <div className="p-4 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 no-print text-xs">
+          <div className="text-slate-400 font-medium text-center sm:text-left">
             💡 ព័ត៌មានម្ចាស់បំណុល៖ <span className="text-white font-bold">{lender.name} ({lender.idCardNumber})</span>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition cursor-pointer"
-          >
-            បិទ (Close)
-          </button>
+
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="text-[11px] font-bold text-slate-400 hidden sm:inline mr-1">
+              {language === 'kh' ? '📥 ទាញយកលិខិត៖' : '📥 Save File:'}
+            </span>
+
+            <button
+              type="button"
+              disabled={isExporting}
+              onClick={() => handleDownloadImage('png')}
+              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95"
+              title={language === 'kh' ? 'រក្សាទុកជា File រូបភាព PNG' : 'Save as PNG image'}
+            >
+              {isExporting && exportFormat === 'png' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+              ) : (
+                <ImageIcon className="w-3.5 h-3.5 text-emerald-200" />
+              )}
+              <span>Save PNG</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isExporting}
+              onClick={() => handleDownloadImage('jpg')}
+              className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-teal-600/20 active:scale-95"
+              title={language === 'kh' ? 'រក្សាទុកជា File រូបភាព JPG' : 'Save as JPG image'}
+            >
+              {isExporting && exportFormat === 'jpg' ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-teal-200" />
+              )}
+              <span>Save JPG</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-blue-600/20 active:scale-95"
+              title={language === 'kh' ? 'បោះពុម្ពលិខិត ឬ Save ជា PDF' : 'Print or Save as PDF'}
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print/PDF</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl transition cursor-pointer border border-slate-700"
+            >
+              បិទ (Close)
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>
