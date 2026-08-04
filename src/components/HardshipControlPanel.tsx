@@ -643,6 +643,8 @@ ${scheduleItems.map(item => {
                   </label>
                   <input
                     type="number"
+                    step="any"
+                    min="1"
                     placeholder={language === 'kh' ? 'ចំនួនប្រាក់ដើម' : 'Enter principal'}
                     value={calcPrincipal}
                     onChange={(e) => setCalcPrincipal(e.target.value === '' ? '' : Number(e.target.value))}
@@ -671,6 +673,8 @@ ${scheduleItems.map(item => {
                 </label>
                 <input
                   type="number"
+                  step="any"
+                  min="0.01"
                   placeholder={language === 'kh' ? 'បញ្ចូលចំនួនប្រាក់សុំឡើង' : 'Enter daily rate'}
                   value={calcDailyRate}
                   onChange={(e) => setCalcDailyRate(e.target.value === '' ? '' : Number(e.target.value))}

@@ -485,6 +485,7 @@ ${scheduleItems.map(item => {
                     <input
                       type="number"
                       min="1"
+                      step="any"
                       required
                       placeholder={language === 'kh' ? 'បញ្ចូលចំនួនប្រាក់ដើម' : 'Enter amount'}
                       value={principalAmount}
@@ -509,8 +510,8 @@ ${scheduleItems.map(item => {
                     </span>
                     <input
                       type="number"
-                      min="0.1"
-                      step="0.5"
+                      min="0.01"
+                      step="any"
                       required
                       placeholder={language === 'kh' ? 'បញ្ចូលចំនួនប្រាក់សុំឡើង' : 'Enter daily rate'}
                       value={dailyRate}

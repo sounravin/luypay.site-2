@@ -5992,20 +5992,6 @@ export default function App() {
                   <span className="text-sm">📩</span>
                   <span className="truncate">{language === 'kh' ? 'សំណើសុំឡើងដើម' : 'Hardship Requests'}</span>
                 </button>
-
-                <button
-                  onClick={() => setActiveSection('interest_only_management')}
-                  className={`py-2.5 px-3 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
-                    activeSection === 'interest_only_management'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black shadow-md border border-amber-300'
-                      : mobileHeaderStyle === 'angkor'
-                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/20'
-                        : 'bg-white/10 text-slate-200 hover:text-white border border-white/5'
-                  }`}
-                >
-                  <span className="text-sm">🧮</span>
-                  <span className="truncate">{language === 'kh' ? 'គ្រប់គ្រងសុំឡើងដើម' : 'Interest-Only Panel'}</span>
-                </button>
               </>
             )}
           </div>
