@@ -112,23 +112,26 @@ export default function DigitalLoanContractModal({
 
       const element = contractRef.current;
 
-      // Render crisp A4 resolution (800px x 1131px, 2x pixel ratio = 1600px x 2262px)
+      // Calculate natural full height of contract element so no content/text is ever clipped or cut off
+      const contentHeight = Math.max(element.scrollHeight, 1131);
+
+      // Render HD output (800px width with dynamic auto-fitting height and 2x pixel ratio)
       const exportOptions = {
         quality: 0.98,
         pixelRatio: 2,
         cacheBust: true,
         backgroundColor: '#ffffff',
         width: 800,
-        height: 1131,
+        height: contentHeight,
         style: {
           width: '800px',
           maxWidth: '800px',
           minWidth: '800px',
-          height: '1131px',
-          maxHeight: '1131px',
-          minHeight: '1131px',
+          height: `${contentHeight}px`,
+          minHeight: `${contentHeight}px`,
+          maxHeight: 'none',
           margin: '0 auto',
-          padding: '48px 56px',
+          padding: '44px 50px',
           borderRadius: '0px',
           boxShadow: 'none',
           transform: 'none',
@@ -408,7 +411,7 @@ export default function DigitalLoanContractModal({
           )}
 
           {/* Printable Document Sheet Container */}
-          <div ref={contractRef} className="printable-contract bg-white text-slate-900 p-8 sm:p-12 rounded-2xl shadow-xl space-y-6 border border-slate-200 min-h-[1131px] flex flex-col justify-between w-full max-w-[800px] mx-auto box-sizing-border">
+          <div ref={contractRef} className="printable-contract bg-white text-slate-900 p-6 sm:p-10 rounded-2xl shadow-xl space-y-6 border border-slate-200 min-h-[1000px] flex flex-col justify-between w-full max-w-[800px] mx-auto box-sizing-border">
             
             {/* Upper Content Group */}
             <div className="space-y-6">
@@ -672,7 +675,7 @@ export default function DigitalLoanContractModal({
               <img
                 src={exportedPreview.dataUrl}
                 alt="Digital Loan Contract A4 Document"
-                className="w-full max-w-md h-auto rounded-xl shadow-2xl object-contain border border-slate-200"
+                className="w-full max-w-2xl h-auto rounded-xl shadow-2xl object-contain border border-slate-200"
               />
             </div>
 
