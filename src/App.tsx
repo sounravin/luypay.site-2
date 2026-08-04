@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Borrower, LedgerStats, Payment, Member, SubscriptionRequest, Shareholder } from './types';
-import type { CurrencyType } from './types';
+import { Borrower, LedgerStats, CurrencyType, Payment, Member, SubscriptionRequest, Shareholder } from './types';
 import { generateId, getTodayDateString, runAutoCheckInForBorrowers, getDaysUntilNextPayment, playClickSound, backfillShortIds, formatMoney, sanitizeBorrowersShareholders } from './utils';
 import Header from './components/Header';
 import BorrowerCard from './components/BorrowerCard';
@@ -38,7 +37,7 @@ import LoanApplicationsControlPanel from './components/LoanApplicationsControlPa
 import HardshipControlPanel from './components/HardshipControlPanel';
 import { InterestOnlyManagementPanel } from './components/InterestOnlyManagementPanel';
 import { LoanApplication } from './types';
-import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText, X, Layout, Calculator, RotateCcw, Smartphone, Monitor, Grid } from 'lucide-react';
+import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText, X, Layout, Calculator } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDoc, getDocs } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import { safeStorage, largeMediaStorage } from './lib/safeStorage';
@@ -476,27 +475,8 @@ export default function App() {
         console.warn('Failed to parse saved layout config:', e);
       }
     }
-    return { cardLayer: 'default', mobileLayoutMode: 'super_app' };
+    return { cardLayer: 'default', mobileLayoutMode: 'app_menu' };
   });
-
-  const handleQuickChangeMobileLayoutMode = async (newMode: 'super_app' | 'app_menu' | 'original') => {
-    const updated = { ...layoutConfig, mobileLayoutMode: newMode };
-    setLayoutConfig(updated);
-    safeStorage.setItem('luypay_layout_config', JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('layout_config_updated', { detail: updated }));
-    playClickSound();
-    showToast(
-      language === 'kh' 
-        ? `បានប្តូរទម្រង់ទូរស័ព្ទទៅជា៖ ${newMode === 'super_app' ? '🚀 Super App' : newMode === 'app_menu' ? '📱 Mobile App Menu' : '💻 ទម្រង់ដើម (Original)'}` 
-        : `Switched mobile layout to: ${newMode}`,
-      'success'
-    );
-    try {
-      await setDoc(doc(db, 'settings', 'layout_config'), { mobileLayoutMode: newMode }, { merge: true });
-    } catch (e) {
-      console.warn('Firestore update for mobileLayoutMode skipped/failed:', e);
-    }
-  };
 
   const handleQuickChangeLayoutLayer = async (newLayer: 'default' | 'compact' | 'detailed') => {
     const updated = { ...layoutConfig, cardLayer: newLayer };
@@ -5759,38 +5739,53 @@ export default function App() {
       <main className={`flex-1 min-h-screen p-4 sm:p-6 md:p-8 space-y-6 overflow-y-auto ${
         layoutConfig?.mobileLayoutMode !== 'original' ? 'pb-24 md:pb-8' : ''
       }`}>
-        {/* Mobile Header profile bar & Super App Dashboard */}
-        <div className={`md:hidden flex flex-col p-4 rounded-3xl border shadow-xl gap-4 relative z-50 transition-all duration-300 overflow-visible ${
+        {/* Mobile Header profile bar */}
+        <div className={`md:hidden flex flex-col p-4 rounded-2xl border shadow-lg gap-4 relative z-50 transition-all duration-300 overflow-visible ${
           mobileHeaderStyle === 'angkor'
-            ? 'bg-gradient-to-br from-[#2c080a] via-[#1f0506] to-[#0d0202] text-amber-100 border-amber-600/40 shadow-2xl shadow-amber-950/50'
+            ? 'bg-gradient-to-br from-[#2c080a] via-[#1f0506] to-[#0d0202] text-amber-100 border-amber-600/40 shadow-xl shadow-amber-950/40'
             : currentThemeConfig.sidebarClass
         }`}>
           {/* Angkor Wat background vector silhouette */}
           {mobileHeaderStyle === 'angkor' && (
-            <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none select-none z-0">
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0d0202]/95 via-[#1f0506]/40 to-transparent" />
+            <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none select-none z-0">
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0d0202]/90 via-[#1f0506]/30 to-transparent" />
               <svg className="absolute right-[-24px] bottom-[-8px] h-[120%] w-auto opacity-20 text-amber-500/80" viewBox="0 0 180 120" fill="currentColor">
+                {/* Base foundation tier */}
                 <path d="M10,110 L170,110 L165,115 L15,115 Z" />
                 <rect x="20" y="100" width="140" height="10" rx="1" />
                 <rect x="30" y="92" width="120" height="8" rx="1" />
+                
+                {/* Central Tower (Prasat) */}
                 <path d="M80,92 L80,35 C80,28 83,23 90,15 C97,23 100,28 100,35 L100,92 Z" />
                 <path d="M78,42 L102,42 M76,52 L104,52 M74,62 L106,62 M72,72 L108,72 M70,82 L110,82" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 <path d="M90,15 L90,5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                
+                {/* Left Tower */}
                 <path d="M45,92 L45,50 C45,45 47,41 52,35 C57,41 59,45 59,50 L59,92 Z" />
                 <path d="M43,56 L61,56 M41,64 L63,64 M39,72 L65,72 M37,80 L67,80" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 <path d="M52,35 L52,27" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+
+                {/* Right Tower */}
                 <path d="M121,92 L121,50 C121,45 123,41 128,35 C133,41 135,45 135,50 L135,92 Z" />
                 <path d="M119,56 L137,56 M117,64 L139,64 M115,72 L141,72 M113,80 L143,80" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 <path d="M128,35 L128,27" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+
+                {/* Outermost Left Spire */}
+                <path d="M22,100 L22,70 C22,66 23,63 26,58 C29,63 30,66 30,70 L30,100 Z" />
+                <path d="M21,74 L31,74 M20,80 L32,80 M19,86 L33,86" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+
+                {/* Outermost Right Spire */}
+                <path d="M150,100 L150,70 C150,66 151,63 154,58 C157,63 158,66 158,70 L158,100 Z" />
+                <path d="M149,74 L159,74 M148,80 L160,80 M147,86 L161,86" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
               </svg>
               <div className="absolute right-[60px] bottom-[40px] w-14 h-14 rounded-full bg-amber-500/10 blur-xl animate-pulse" />
+              {/* Gold Khmer pattern border accents */}
               <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-600 via-amber-300 to-amber-600" />
             </div>
           )}
 
-          {/* Super App Top Navigation Bar */}
           <div className="flex items-center justify-between w-full relative z-30">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 border-transparent">
               {memberProfile?.photoURL ? (
                 <KhmerAvatarFrame
                   frameId={avatarFrameId}
@@ -5812,57 +5807,70 @@ export default function App() {
                 renderSystemLogo("w-11 h-11 shrink-0")
               )}
               <div>
-                <div className="flex flex-col gap-0.5">
-                  <p className={`text-xs font-black leading-tight flex items-center gap-1 ${
+                <div className="flex flex-col gap-1">
+                  <p className={`text-sm font-black leading-tight ${
                     mobileHeaderStyle === 'angkor'
                       ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 font-serif'
-                      : 'text-white'
+                      : ''
                   }`}>
                     {mobileHeaderStyle === 'angkor' ? '៚ ប្រព័ន្ធលុយឆក់ ៚' : (logoConfig?.systemName || t('appName'))}
-                    <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-amber-500/20 text-amber-300 font-extrabold border border-amber-500/30">
-                      {layoutConfig?.mobileLayoutMode === 'super_app' ? 'Super App' : layoutConfig?.mobileLayoutMode === 'original' ? 'Original' : 'App Menu'}
-                    </span>
                   </p>
-                  <p className="text-[10px] font-extrabold opacity-90 truncate max-w-[130px]">
-                    👋 {userDisplayName}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href="https://www.facebook.com/share/1F4p12PfJx/?mibextid=wwXIfr"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`p-1.5 rounded-lg transition flex items-center justify-center shadow-3xs ${
+                        mobileHeaderStyle === 'angkor'
+                          ? 'bg-amber-500/10 text-amber-300 hover:text-amber-200 hover:bg-amber-500/20 border border-amber-500/20'
+                          : 'bg-white/10 text-current hover:text-blue-400 hover:bg-white/20'
+                      }`}
+                      title="Facebook Link"
+                    >
+                      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                        <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.8c4.56-.93 8-4.96 8-9.8z"/>
+                      </svg>
+                    </a>
+                    <a
+                      href="https://t.me/laymeancamera"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`p-1.5 rounded-lg transition flex items-center justify-center shadow-3xs ${
+                        mobileHeaderStyle === 'angkor'
+                          ? 'bg-amber-500/10 text-amber-300 hover:text-amber-200 hover:bg-amber-500/20 border border-amber-500/20'
+                          : 'bg-white/10 text-current hover:text-sky-400 hover:bg-white/20'
+                      }`}
+                      title="Telegram Link"
+                    >
+                      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.53-1.39.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.46-.42-1.4-.88.03-.24.36-.49.99-.75 3.88-1.69 6.47-2.8 7.77-3.32 3.7-1.49 4.47-1.75 4.97-1.76.11 0 .36.03.52.16.14.11.18.26.19.38 0 .09-.01.27-.02.39z"/>
+                      </svg>
+                    </a>
+                  </div>
                 </div>
+                <p className={`text-[9px] leading-none mt-1 ${
+                  mobileHeaderStyle === 'angkor' ? 'text-amber-200/80 font-bold' : 'opacity-70'
+                }`}>{t('accountLabel')} {userDisplayName} ({currentUser})</p>
               </div>
             </div>
-
-            <div className="flex items-center gap-1.5">
-              {/* Quick Layout Mode Selector Toggle Pill */}
+            <div className="flex items-center gap-2">
+              {/* Style Switcher Button */}
               <button
                 onClick={() => {
-                  const currentMode = layoutConfig?.mobileLayoutMode || 'super_app';
-                  const nextMode = currentMode === 'super_app' ? 'original' : currentMode === 'original' ? 'app_menu' : 'super_app';
-                  handleQuickChangeMobileLayoutMode(nextMode);
+                  const nextStyle = mobileHeaderStyle === 'default' ? 'angkor' : 'default';
+                  setMobileHeaderStyle(nextStyle);
+                  safeStorage.setItem('luypay_mobile_header_style', nextStyle);
+                  playClickSound();
                 }}
-                className={`px-2.5 py-1.5 rounded-xl transition cursor-pointer border flex items-center justify-center gap-1.5 shadow-sm active:scale-95 ${
-                  layoutConfig?.mobileLayoutMode === 'super_app'
-                    ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 border-amber-300 font-black'
-                    : layoutConfig?.mobileLayoutMode === 'original'
-                      ? 'bg-indigo-600 text-white border-indigo-400 font-black'
-                      : 'bg-white/10 hover:bg-white/20 text-slate-200 border-white/10 font-bold'
+                className={`p-2 rounded-xl transition cursor-pointer border flex items-center justify-center gap-1 shadow-3xs ${
+                  mobileHeaderStyle === 'angkor'
+                    ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/35 border-amber-400/40'
+                    : 'bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border-transparent'
                 }`}
-                title={language === 'kh' ? 'ប្តូរទម្រង់ / Switch Layout Mode' : 'Switch Layout'}
+                title={language === 'kh' ? 'ប្តូររចនាប័ទ្មអង្គរវត្ត' : 'Switch Header Style'}
               >
-                {layoutConfig?.mobileLayoutMode === 'super_app' ? (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5 text-slate-950 animate-pulse" />
-                    <span className="text-[10px] font-black">Super App</span>
-                  </>
-                ) : layoutConfig?.mobileLayoutMode === 'original' ? (
-                  <>
-                    <Monitor className="w-3.5 h-3.5 text-white" />
-                    <span className="text-[10px] font-black">ទម្រង់ដើម</span>
-                  </>
-                ) : (
-                  <>
-                    <Smartphone className="w-3.5 h-3.5 text-slate-200" />
-                    <span className="text-[10px] font-black">App Menu</span>
-                  </>
-                )}
+                <Sparkles className={`w-3.5 h-3.5 ${mobileHeaderStyle === 'angkor' ? 'text-yellow-400 animate-spin-slow' : 'text-slate-400'}`} />
+                {mobileHeaderStyle === 'angkor' && <span className="text-[8px] font-black tracking-wider uppercase text-amber-200">អង្គរ</span>}
               </button>
 
               {/* Mobile Notification Bell */}
@@ -5893,253 +5901,99 @@ export default function App() {
             </div>
           </div>
 
-          {/* Super App Wallet / Balance Summary Card (Shown when mobileLayoutMode === 'super_app' or default) */}
-          {layoutConfig?.mobileLayoutMode !== 'original' && (
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15 relative z-20 flex flex-col gap-3 shadow-inner">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-extrabold text-amber-200/90 uppercase tracking-wider flex items-center gap-1">
-                    <Coins className="w-3.5 h-3.5 text-amber-400" />
-                    {language === 'kh' ? 'ប្រាក់ដើមកម្ចីសរុប (Active Portfolio)' : 'Total Active Portfolio'}
-                  </p>
-                  <p className="text-lg font-black text-white tracking-tight mt-0.5">
-                    ${formatMoney(stats.totalPrincipalUSD, 'USD')} / ៛{formatMoney(stats.totalPrincipalKHR, 'KHR')}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold block">
-                    👥 {borrowers.filter(b => !b.isArchived).length} {language === 'kh' ? 'កូនបំណុល' : 'Borrowers'}
-                  </span>
-                  {subRequests.filter(r => r.status === 'pending').length > 0 && (
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold block mt-1 animate-pulse">
-                      📩 {subRequests.filter(r => r.status === 'pending').length} {language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}
-                    </span>
-                  )}
-                </div>
-              </div>
+          {/* Mobile Nav buttons grid */}
+          <div className={`grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap gap-2 border-t pt-3 relative z-10 ${
+            mobileHeaderStyle === 'angkor' ? 'border-amber-600/30' : 'border-white/10'
+          }`}>
+            <button
+              onClick={() => setActiveSection('ledger')}
+              className={`py-2.5 px-3 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                activeSection === 'ledger'
+                  ? mobileHeaderStyle === 'angkor'
+                    ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
+                    : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
+                  : mobileHeaderStyle === 'angkor'
+                    ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/20'
+                    : 'bg-white/10 text-slate-200 hover:text-white border border-white/5'
+              }`}
+            >
+              <span className="text-sm">📝</span>
+              <span className="truncate">{language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger Records'}</span>
+            </button>
 
-              {/* Quick Action Pill Bar */}
-              <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-white/10">
-                <button
-                  onClick={() => {
-                    setIsAddModalOpen(true);
-                    playClickSound();
-                  }}
-                  className="py-1.5 px-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-[10px] font-black rounded-xl text-center transition flex items-center justify-center gap-1 shadow-sm active:scale-95"
-                >
-                  <Plus className="w-3 h-3 stroke-[3px]" />
-                  <span>{language === 'kh' ? 'បន្ថែម' : 'Add'}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveSection('loan_applications');
-                    playClickSound();
-                  }}
-                  className="py-1.5 px-2 bg-white/15 hover:bg-white/25 text-white text-[10px] font-bold rounded-xl text-center transition flex items-center justify-center gap-1 active:scale-95"
-                >
-                  <FileText className="w-3 h-3 text-sky-400" />
-                  <span>{language === 'kh' ? 'សំណើ' : 'Loans'}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveSection('hardship_panel');
-                    playClickSound();
-                  }}
-                  className="py-1.5 px-2 bg-white/15 hover:bg-white/25 text-white text-[10px] font-bold rounded-xl text-center transition flex items-center justify-center gap-1 active:scale-95"
-                >
-                  <Activity className="w-3 h-3 text-amber-400" />
-                  <span>{language === 'kh' ? 'សុំឡើងដើម' : 'Hardship'}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setIsShareholderModalOpen(true);
-                    playClickSound();
-                  }}
-                  className="py-1.5 px-2 bg-white/15 hover:bg-white/25 text-white text-[10px] font-bold rounded-xl text-center transition flex items-center justify-center gap-1 active:scale-95"
-                >
-                  <Users className="w-3 h-3 text-emerald-400" />
-                  <span>{language === 'kh' ? 'ភាគហ៊ុន' : 'Share'}</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Super App Quick Services Grid (កិច្ចការលឿន / Quick Services Grid) */}
-          <div className="relative z-10 pt-1">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-black tracking-wide text-amber-200/90 uppercase flex items-center gap-1">
-                <Grid className="w-3.5 h-3.5 text-amber-400" />
-                {language === 'kh' ? 'កិច្ចការលឿន (Super App Services)' : 'Quick Services'}
-              </span>
+            {currentUser === 'sounravin' && (
               <button
-                onClick={() => {
-                  const newMode = layoutConfig?.mobileLayoutMode === 'original' ? 'super_app' : 'original';
-                  handleQuickChangeMobileLayoutMode(newMode);
-                }}
-                className="text-[10px] font-extrabold text-amber-300 hover:text-amber-100 flex items-center gap-1 underline underline-offset-2 cursor-pointer"
-              >
-                <RotateCcw className="w-3 h-3" />
-                {layoutConfig?.mobileLayoutMode === 'original' ? 'ប្តូរទៅ Super App' : 'custom មកលំនាំដើម'}
-              </button>
-            </div>
-
-            <div className="grid grid-cols-4 gap-2">
-              {/* Service 1: Ledger */}
-              <button
-                onClick={() => {
-                  setActiveSection('ledger');
-                  playClickSound();
-                }}
-                className={`p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95 ${
-                  activeSection === 'ledger'
-                    ? 'bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-400/30'
-                    : 'bg-white/10 hover:bg-white/20 text-white'
+                onClick={() => setActiveSection('admin_dashboard')}
+                className={`py-2.5 px-3 text-[11px] font-black rounded-xl text-center transition-all relative cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                  activeSection === 'admin_dashboard'
+                    ? mobileHeaderStyle === 'angkor'
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
+                      : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
+                    : mobileHeaderStyle === 'angkor'
+                      ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/20'
+                      : 'bg-white/10 text-slate-200 hover:text-white border border-white/5'
                 }`}
               >
-                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-300">
-                  <BookOpen className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-black truncate w-full text-center">
-                  {language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger'}
-                </span>
-              </button>
-
-              {/* Service 2: Requests */}
-              <button
-                onClick={() => {
-                  setActiveSection('loan_applications');
-                  playClickSound();
-                }}
-                className={`p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer relative shadow-xs active:scale-95 ${
-                  activeSection === 'loan_applications'
-                    ? 'bg-sky-400 text-slate-950 font-black shadow-md shadow-sky-400/30'
-                    : 'bg-white/10 hover:bg-white/20 text-white'
-                }`}
-              >
-                <div className="p-2 rounded-xl bg-sky-500/20 text-sky-300">
-                  <FileText className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-black truncate w-full text-center">
-                  {language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}
-                </span>
+                <span className="text-sm">📊</span>
+                <span className="truncate">{language === 'kh' ? 'គ្រប់គ្រងប្រព័ន្ធ' : 'Manage System'}</span>
                 {subRequests.filter(r => r.status === 'pending').length > 0 && (
-                  <span className="absolute top-1 right-1 px-1.5 py-0.2 text-[8px] rounded-full font-black bg-rose-500 text-white animate-pulse shadow-sm">
+                  <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[8px] rounded-md font-black bg-rose-500 text-white animate-pulse">
                     {subRequests.filter(r => r.status === 'pending').length}
                   </span>
                 )}
               </button>
+            )}
 
-              {/* Service 3: Hardship Requests */}
-              <button
-                onClick={() => {
-                  setActiveSection('hardship_panel');
-                  playClickSound();
-                }}
-                className={`p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95 ${
-                  activeSection === 'hardship_panel'
-                    ? 'bg-orange-400 text-slate-950 font-black shadow-md shadow-orange-400/30'
-                    : 'bg-white/10 hover:bg-white/20 text-white'
-                }`}
-              >
-                <div className="p-2 rounded-xl bg-orange-500/20 text-orange-300">
-                  <Activity className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-black truncate w-full text-center">
-                  {language === 'kh' ? 'សុំឡើងដើម' : 'Hardship'}
-                </span>
-              </button>
+            <button
+              onClick={() => {
+                setIsShareholderModalOpen(true);
+                playClickSound();
+              }}
+              className={`py-2.5 px-3 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                isShareholderModalOpen
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : mobileHeaderStyle === 'angkor'
+                    ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/20'
+                    : 'bg-white/10 text-slate-200 hover:text-white border border-white/5'
+              }`}
+            >
+              <span className="text-sm">🤝</span>
+              <span className="truncate">{language === 'kh' ? 'គ្រប់គ្រងភាគហ៊ុន' : 'Shareholders'}</span>
+            </button>
 
-              {/* Service 4: Shareholders */}
-              <button
-                onClick={() => {
-                  setIsShareholderModalOpen(true);
-                  playClickSound();
-                }}
-                className="p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer shadow-xs active:scale-95"
-              >
-                <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
-                  <Users className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-black truncate w-full text-center">
-                  {language === 'kh' ? 'ភាគហ៊ុន' : 'Shareholders'}
-                </span>
-              </button>
-
-              {/* Service 5: Admin Dashboard (if sounravin) */}
-              {currentUser === 'sounravin' && (
+            {isLoggedIn && (
+              <>
                 <button
-                  onClick={() => {
-                    setActiveSection('admin_dashboard');
-                    playClickSound();
-                  }}
-                  className={`p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95 ${
-                    activeSection === 'admin_dashboard'
-                      ? 'bg-indigo-500 text-white font-black shadow-md shadow-indigo-500/30'
-                      : 'bg-white/10 hover:bg-white/20 text-white'
+                  onClick={() => setActiveSection('loan_applications')}
+                  className={`py-2.5 px-3 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                    activeSection === 'loan_applications'
+                      ? mobileHeaderStyle === 'angkor'
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
+                        : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
+                      : mobileHeaderStyle === 'angkor'
+                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/20'
+                        : 'bg-white/10 text-slate-200 hover:text-white border border-white/5'
                   }`}
                 >
-                  <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300">
-                    <Settings className="w-4 h-4" />
-                  </div>
-                  <span className="text-[10px] font-black truncate w-full text-center">
-                    {language === 'kh' ? 'គ្រប់គ្រង' : 'Admin'}
-                  </span>
+                  <span className="text-sm">📂</span>
+                  <span className="truncate">{language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}</span>
                 </button>
-              )}
 
-              {/* Service 6: Pricing Plans */}
-              <button
-                onClick={() => {
-                  setActiveSection('pricing');
-                  playClickSound();
-                }}
-                className={`p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95 ${
-                  activeSection === 'pricing'
-                    ? 'bg-yellow-400 text-slate-950 font-black shadow-md shadow-yellow-400/30'
-                    : 'bg-white/10 hover:bg-white/20 text-white'
-                }`}
-              >
-                <div className="p-2 rounded-xl bg-yellow-500/20 text-yellow-300">
-                  <Award className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-black truncate w-full text-center">
-                  {language === 'kh' ? 'គម្រោង' : 'Plans'}
-                </span>
-              </button>
-
-              {/* Service 7: Add Loan */}
-              <button
-                onClick={() => {
-                  setIsAddModalOpen(true);
-                  playClickSound();
-                }}
-                className="p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 bg-gradient-to-tr from-emerald-600 to-teal-500 text-white transition-all cursor-pointer shadow-xs active:scale-95"
-              >
-                <div className="p-2 rounded-xl bg-white/20 text-white">
-                  <Plus className="w-4 h-4 stroke-[3px]" />
-                </div>
-                <span className="text-[10px] font-black truncate w-full text-center">
-                  {language === 'kh' ? 'បន្ថែម' : 'Add Loan'}
-                </span>
-              </button>
-
-              {/* Service 8: Revert to Original Layout Button */}
-              <button
-                onClick={() => {
-                  const targetMode = layoutConfig?.mobileLayoutMode === 'original' ? 'super_app' : 'original';
-                  handleQuickChangeMobileLayoutMode(targetMode);
-                }}
-                className="p-2.5 rounded-2xl flex flex-col items-center justify-center gap-1 bg-indigo-950/60 hover:bg-indigo-900/80 text-amber-300 border border-amber-500/30 transition-all cursor-pointer shadow-xs active:scale-95"
-                title={language === 'kh' ? 'ចុចដើម្បីប្តូរមកទម្រង់ដើមវិញ' : 'Switch to Original Layout'}
-              >
-                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-300">
-                  <RotateCcw className="w-4 h-4" />
-                </div>
-                <span className="text-[10px] font-black truncate w-full text-center text-amber-200">
-                  {layoutConfig?.mobileLayoutMode === 'original' ? (language === 'kh' ? 'Super App' : 'Super App') : (language === 'kh' ? 'ទម្រង់ដើម' : 'Original')}
-                </span>
-              </button>
-            </div>
+                <button
+                  onClick={() => setActiveSection('hardship_panel')}
+                  className={`py-2.5 px-3 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
+                    activeSection === 'hardship_panel'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black shadow-md border border-amber-300'
+                      : mobileHeaderStyle === 'angkor'
+                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/20'
+                        : 'bg-white/10 text-slate-200 hover:text-white border border-white/5'
+                  }`}
+                >
+                  <span className="text-sm">📩</span>
+                  <span className="truncate">{language === 'kh' ? 'សំណើសុំឡើងដើម' : 'Hardship Requests'}</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
 

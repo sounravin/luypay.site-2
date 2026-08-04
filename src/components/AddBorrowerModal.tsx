@@ -40,7 +40,7 @@ interface AddBorrowerModalProps {
     locationAddress?: string;
     locationAccuracy?: number;
     gpsCapturedAt?: string;
-    loanType?: 'luy_chok' | 'luy_rab' | 'hardship_settlement';
+    loanType?: 'luy_chok' | 'luy_rab';
     shareholderId?: string;
     shareholderName?: string;
     shareholderSharePercent?: number;
@@ -54,7 +54,7 @@ interface AddBorrowerModalProps {
     profilePhoto?: string;
     notes?: string;
     loanDuration?: number;
-    loanType?: 'luy_chok' | 'luy_rab' | 'hardship_settlement';
+    loanType?: 'luy_chok' | 'luy_rab';
     idCardNumber?: string;
     dob?: string;
     address?: string;
@@ -77,7 +77,7 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
   const [principal, setPrincipal] = useState<string>('');
   const [totalToPay, setTotalToPay] = useState<string>('');
   const [duration, setDuration] = useState<string>('24'); // Default 24 installments
-  const [loanType, setLoanType] = useState<'luy_chok' | 'luy_rab' | 'hardship_settlement'>('luy_chok');
+  const [loanType, setLoanType] = useState<'luy_chok' | 'luy_rab'>('luy_chok');
 
   // Partner / Personal Fund Option State
   const [fundType, setFundType] = useState<'personal' | 'partner'>('personal');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserX, UserCheck, ShieldAlert, Check, X, Search, Calendar, Award, Trash2, Edit2, Lock, Plus, RefreshCw, QrCode, Upload, Image, Settings, AlertCircle, Camera, Layout, Smartphone, Monitor, Sparkles, RotateCcw } from 'lucide-react';
+import { Users, UserX, UserCheck, ShieldAlert, Check, X, Search, Calendar, Award, Trash2, Edit2, Lock, Plus, RefreshCw, QrCode, Upload, Image, Settings, AlertCircle, Camera, Layout, Smartphone, Monitor } from 'lucide-react';
 import { doc, setDoc, deleteDoc, getDoc, writeBatch, collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Member, SubscriptionRequest } from '../types';
@@ -80,7 +80,7 @@ export default function AdminMembersDashboard({
 
   // Layout states
   const [layoutCardLayer, setLayoutCardLayer] = useState<'default' | 'compact' | 'detailed'>('default');
-  const [mobileLayoutMode, setMobileLayoutMode] = useState<'super_app' | 'app_menu' | 'original'>('super_app');
+  const [mobileLayoutMode, setMobileLayoutMode] = useState<'app_menu' | 'original'>('app_menu');
   const [isLayoutSaving, setIsLayoutSaving] = useState(false);
 
   // Fetch current configurations
@@ -2646,33 +2646,8 @@ export default function AdminMembersDashboard({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {/* Option 1: Super App Layout */}
-                      <div
-                        onClick={() => setMobileLayoutMode('super_app')}
-                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                          mobileLayoutMode === 'super_app'
-                            ? 'border-indigo-600 bg-indigo-50/50 shadow-sm ring-2 ring-indigo-500/10'
-                            : 'border-slate-200 hover:border-slate-300 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2.5 rounded-xl ${mobileLayoutMode === 'super_app' ? 'bg-gradient-to-tr from-indigo-600 to-amber-500 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                            <Sparkles className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <span className={`block text-xs font-black ${mobileLayoutMode === 'super_app' ? 'text-indigo-900' : 'text-slate-800'}`}>
-                              {language === 'kh' ? '🚀 ទម្រង់ Super App' : 'Super App Layout'}
-                            </span>
-                            <span className="block text-[10px] text-slate-500 font-medium">
-                              {language === 'kh' ? 'ទម្រង់ Super App សេរីទំនើប មាន Grid Services & Balance' : 'Modern Super App experience with Quick Services'}
-                            </span>
-                          </div>
-                        </div>
-                        {mobileLayoutMode === 'super_app' && <Check className="w-5 h-5 text-indigo-600 shrink-0" />}
-                      </div>
-
-                      {/* Option 2: Mobile App Menu Layout */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Option 1: Mobile App Menu Layout */}
                       <div
                         onClick={() => setMobileLayoutMode('app_menu')}
                         className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
@@ -2690,14 +2665,14 @@ export default function AdminMembersDashboard({
                               {language === 'kh' ? '📱 ទម្រង់ម៉ឺនុយ Mobile App' : 'Mobile App Menu Layout'}
                             </span>
                             <span className="block text-[10px] text-slate-500 font-medium">
-                              {language === 'kh' ? 'មានរបារ Navigation ស្អាតនៅខាងក្រោមអេក្រង់' : 'Standard bottom navigation bar on mobile'}
+                              {language === 'kh' ? 'មានរបារ Navigation ស្អាតនៅខាងក្រោមអេក្រង់ទូរស័ព្ទ' : 'Sleek bottom app navigation bar on mobile'}
                             </span>
                           </div>
                         </div>
                         {mobileLayoutMode === 'app_menu' && <Check className="w-5 h-5 text-indigo-600 shrink-0" />}
                       </div>
 
-                      {/* Option 3: Original Layout */}
+                      {/* Option 2: Original Layout */}
                       <div
                         onClick={() => setMobileLayoutMode('original')}
                         className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
