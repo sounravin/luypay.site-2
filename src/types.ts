@@ -49,6 +49,9 @@ export interface Borrower {
   coverPhoto?: string; // base64 encoded cover photo string
   paymentQr?: string; // base64 encoded payment QR code image URL
   userId?: string; // The username of the member who owns this borrower
+  createdBy?: string;
+  lenderId?: string;
+  lenderUsername?: string;
   interestOnlyExtension?: boolean; // Whether the borrower requested interest-only principal deferral
   interestOnlyExtensionNote?: string; // Note/reason for interest-only principal deferral
   interestOnlyExtensionReason?: string; // Standard condition/reason selected for the extension request (e.g. "គ្រួសារឈឺ", "សុំយកបន្ថែមថ្មីលើកម្ចីចាស់")
@@ -185,6 +188,7 @@ export interface LoanApplication {
   selfiePhoto: string; // base64 string of selfie
   amountRequested: number; // in USD
   lenderId: string; // the member who will review/approve
+  lenderUsername?: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string; // ISO string
   approvedAt?: string;
