@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { LoanApplication, Borrower, DEFAULT_LENDER_INFO, LenderInfo } from '../types';
 import { useLanguage } from '../i18n';
 import { motion } from 'motion/react';
-import { Printer, X, Shield, FileText, CheckCircle, AlertTriangle, AlertCircle, Edit3, Save, Download, UserCheck, Calendar, MapPin, DollarSign, Clock, Phone, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Printer, X, Shield, FileText, CheckCircle, AlertTriangle, AlertCircle, Edit3, Save, Download, UserCheck, Calendar, MapPin, DollarSign, Clock, Phone, Image as ImageIcon, Loader2, Smartphone, ExternalLink } from 'lucide-react';
 import { toPng, toJpeg } from 'html-to-image';
 
 interface DigitalLoanContractModalProps {
@@ -10,6 +10,13 @@ interface DigitalLoanContractModalProps {
   borrower?: Borrower | null;
   onClose: () => void;
   showToast?: (message: string, type: 'success' | 'info' | 'error') => void;
+}
+
+interface ExportedPreviewModalState {
+  blobUrl: string;
+  dataUrl: string;
+  fileName: string;
+  format: 'png' | 'jpg';
 }
 
 export default function DigitalLoanContractModal({
@@ -69,6 +76,7 @@ export default function DigitalLoanContractModal({
   const contractRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [exportFormat, setExportFormat] = useState<'png' | 'jpg' | null>(null);
+  const [exportedPreview, setExportedPreview] = useState<ExportedPreviewModalState | null>(null);
 
   // Contract Creation Date
   const contractDate = new Date().toLocaleDateString('km-KH', {
@@ -79,6 +87,17 @@ export default function DigitalLoanContractModal({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const dataUrlToBlob = (dataUrl: string): Blob => {
+    const parts = dataUrl.split(';base64,');
+    const contentType = parts[0].split(':')[1] || 'image/png';
+    const raw = window.atob(parts[1]);
+    const uInt8Array = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; ++i) {
+      uInt8Array[i] = raw.charCodeAt(i);
+    }
+    return new Blob([uInt8Array], { type: contentType });
   };
 
   const handleDownloadImage = async (format: 'png' | 'jpg') => {
@@ -93,35 +112,57 @@ export default function DigitalLoanContractModal({
 
       const element = contractRef.current;
 
+      // Force fixed A4 aspect ratio & width (800px HD layout with crisp 2x resolution)
+      const exportOptions = {
+        quality: 0.98,
+        pixelRatio: 2, // High resolution output for printing/saving (1600px width)
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        width: 800,
+        style: {
+          width: '800px',
+          maxWidth: '800px',
+          minWidth: '800px',
+          margin: '0 auto',
+          padding: '40px 48px',
+          borderRadius: '0px',
+          boxShadow: 'none',
+          transform: 'none',
+          boxSizing: 'border-box'
+        }
+      };
+
       let dataUrl = '';
       if (format === 'png') {
-        dataUrl = await toPng(element, {
-          quality: 0.98,
-          pixelRatio: 2,
-          cacheBust: true,
-          backgroundColor: '#ffffff'
-        });
+        dataUrl = await toPng(element, exportOptions);
       } else {
-        dataUrl = await toJpeg(element, {
-          quality: 0.95,
-          pixelRatio: 2,
-          cacheBust: true,
-          backgroundColor: '#ffffff'
-        });
+        dataUrl = await toJpeg(element, exportOptions);
       }
 
+      const blob = dataUrlToBlob(dataUrl);
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Attempt immediate programmatic link download
       const link = document.createElement('a');
       link.download = fileName;
-      link.href = dataUrl;
+      link.href = blobUrl;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
+      // Open interactive mobile preview dialog so Mobile/iOS/Webview users can long-press or tap to save
+      setExportedPreview({
+        blobUrl,
+        dataUrl,
+        fileName,
+        format
+      });
+
       if (showToast) {
         showToast(
           language === 'kh'
-            ? `✅ បានទាញយកលិខិតកម្ចីជា File ${format.toUpperCase()} រួចរាល់!`
-            : `✅ Successfully downloaded contract as ${format.toUpperCase()}!`,
+            ? `✅ បានបង្កើត File A4 (${format.toUpperCase()}) រួចរាល់! អាច Save ក្នុងទូរស័ព្ទបាន!`
+            : `✅ Successfully created A4 ${format.toUpperCase()} file!`,
           'success'
         );
       }
@@ -568,6 +609,95 @@ export default function DigitalLoanContractModal({
           </div>
         </div>
       </motion.div>
+
+      {/* Mobile-Friendly Exported Image Preview Modal */}
+      {exportedPreview && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-5 bg-black/90 backdrop-blur-md overflow-y-auto no-print">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="w-full max-w-2xl bg-slate-900 border border-slate-750 rounded-3xl p-4 sm:p-6 space-y-4 text-white shadow-2xl relative max-h-[92vh] flex flex-col my-auto"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shadow-inner">
+                  <ImageIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm sm:text-base text-white flex items-center gap-2">
+                    <span>លិខិតកម្ចី A4 ({exportedPreview.format.toUpperCase()})</span>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">
+                      HD Resolution (A4 Size)
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 truncate max-w-[240px] sm:max-w-xs">
+                    {exportedPreview.fileName}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setExportedPreview(null)}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Mobile Touch Guidance Tip Box */}
+            <div className="bg-blue-950/70 border border-blue-800/80 p-3 rounded-2xl flex items-start gap-2.5 text-xs text-blue-200">
+              <Smartphone className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-black text-blue-100 block">📱 សម្រាប់ទូរស័ព្ទ (Mobile User):</span>
+                <p className="text-blue-200/90 leading-relaxed">
+                  អ្នកអាច <strong>ចុចសង្កត់លើរូបភាព A4 (Press & Hold)</strong> ខាងក្រោម រួចជ្រើសរើស <strong>"Save Image"</strong> ឬ <strong>"រក្សាទុករូបភាព"</strong> ដើម្បី Save ចូលក្នុងទូរស័ព្ទ ឬ Photos របស់អ្នកបានភ្លាមៗ!
+                </p>
+              </div>
+            </div>
+
+            {/* High Definition Image Container (Rendered in A4 aspect ratio) */}
+            <div className="flex-1 overflow-y-auto bg-slate-950 border border-slate-800 rounded-2xl p-2.5 flex justify-center items-center shadow-inner min-h-[280px]">
+              <img
+                src={exportedPreview.dataUrl}
+                alt="Digital Loan Contract A4 Document"
+                className="w-full max-w-md h-auto rounded-xl shadow-2xl object-contain border border-slate-200"
+              />
+            </div>
+
+            {/* Actions Toolbar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-xs">
+              <a
+                href={exportedPreview.blobUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl transition flex items-center gap-1.5 shadow-md shadow-blue-600/20"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span>បើករូបភាព A4 ក្នុង Tab ថ្មី</span>
+              </a>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={exportedPreview.blobUrl}
+                  download={exportedPreview.fileName}
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>ទាញយក / Save</span>
+                </a>
+
+                <button
+                  onClick={() => setExportedPreview(null)}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition cursor-pointer border border-slate-700"
+                >
+                  បិទ (Close)
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
