@@ -105,7 +105,7 @@ export default function BorrowerDetail({
   const [editPaymentQr, setEditPaymentQr] = useState(borrower.paymentQr || '');
 
   // Interest-related Edit Mode states
-  const [editLoanType, setEditLoanType] = useState<'luy_chok' | 'luy_rab'>(borrower.loanType || 'luy_chok');
+  const [editLoanType, setEditLoanType] = useState<'luy_chok' | 'luy_rab' | 'hardship_settlement'>(borrower.loanType || 'luy_chok');
   const [editInterestType, setEditInterestType] = useState<'percent' | 'fixed'>(borrower.interestType || 'percent');
   const [editInterestValue, setEditInterestValue] = useState<string>(borrower.interestValue?.toString() || '4');
   const [editPaymentMode, setEditPaymentMode] = useState<'all' | 'interest-only'>(borrower.paymentMode || 'all');
@@ -1924,11 +1924,17 @@ export default function BorrowerDetail({
                   </span>
                   {borrower.loanType && (
                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                      borrower.loanType === 'luy_rab'
+                      borrower.loanType === 'hardship_settlement'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 border-amber-300 font-extrabold shadow-sm'
+                        : borrower.loanType === 'luy_rab'
                         ? 'bg-purple-100 text-purple-800 border-purple-200'
                         : 'bg-amber-100 text-amber-800 border-amber-200'
                     }`}>
-                      {borrower.loanType === 'luy_rab' ? '🔢 ' + (language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab') : '⚡️ ' + (language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok')}
+                      {borrower.loanType === 'hardship_settlement'
+                        ? '🤝 ' + (language === 'kh' ? 'សុំឡើងតែដើម (Hardship)' : 'Hardship Settlement')
+                        : borrower.loanType === 'luy_rab'
+                        ? '🔢 ' + (language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab')
+                        : '⚡️ ' + (language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok')}
                     </span>
                   )}
                   {borrower.statusTag && (
@@ -1956,6 +1962,36 @@ export default function BorrowerDetail({
                 </div>
               </div>
             </div>
+
+            {/* Hardship Settlement Specific Profile Banner */}
+            {borrower.loanType === 'hardship_settlement' && (
+              <div className="mx-6 mt-4 p-4.5 bg-gradient-to-r from-amber-950 via-slate-900 to-amber-900 border-2 border-amber-500/60 rounded-2xl shadow-xl text-amber-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-xs rounded-xl shadow-md">
+                      🤝 {language === 'kh' ? 'កិច្ចព្រមព្រៀងសុំឡើងតែដើម' : 'Hardship Principal Settlement'}
+                    </span>
+                    <span className="text-xs text-amber-300 font-extrabold px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                      {language === 'kh' ? 'គ្មានការប្រាក់បន្ថែម (0% Interest)' : '0% Interest'}
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-amber-200/90 leading-relaxed pt-1">
+                    {language === 'kh'
+                      ? `កូនបំណុលបានស្នើសុំឡើងតែដើមសរុប ${formatMoney(borrower.principal, borrower.currency)} ដោយព្រមព្រៀងបង់ប្រាក់ឡើងដើមក្នុងមួយថ្ងៃ ${formatMoney(borrower.installmentAmount, borrower.currency)} រហូតដល់គ្រប់ចំនួន ${borrower.duration} ថ្ងៃ។`
+                      : `Hardship settlement of ${formatMoney(borrower.principal, borrower.currency)} paid at ${formatMoney(borrower.installmentAmount, borrower.currency)}/day for ${borrower.duration} days.`}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl shrink-0">
+                  <span className="text-xs font-bold text-amber-300">
+                    {language === 'kh' ? 'វគ្គបង់ក្នុងមួយថ្ងៃ៖' : 'Daily Rate:'}
+                  </span>
+                  <span className="text-sm font-black text-white">
+                    {formatMoney(borrower.installmentAmount, borrower.currency)}/{language === 'kh' ? 'ថ្ងៃ' : 'day'}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {borrower.interestOnlyExtension && (
               <div className="mx-6 mt-4 p-4.5 bg-amber-50 border-2 border-amber-500/30 rounded-2xl flex flex-col gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">

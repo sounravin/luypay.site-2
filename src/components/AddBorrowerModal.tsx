@@ -167,7 +167,14 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
         setProfilePhoto(prefilledData.profilePhoto || '');
         setNotes(prefilledData.notes || '');
         setDuration(prefilledData.loanDuration ? prefilledData.loanDuration.toString() : '24');
-        setLoanType(prefilledData.loanType || 'luy_chok');
+        if (prefilledData.loanType === 'hardship_settlement' || prefilledData.notes?.includes('សុំឡើងតែដើម')) {
+          setLoanType('hardship_settlement');
+          setInterestValue('0');
+          setInterestType('percent');
+          setPaymentMode('all');
+        } else {
+          setLoanType(prefilledData.loanType || 'luy_chok');
+        }
         setIsTotalToPayManuallyEdited(false);
         setIsInstallmentManuallyEdited(false);
 
@@ -881,12 +888,20 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
               <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider flex justify-between items-center">
                 <span>{language === 'kh' ? 'ប្រភេទកម្ចី (Loan Type)' : 'Loan Type'}</span>
                 <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
-                  loanType === 'luy_rab' ? 'bg-purple-100 text-purple-900 border border-purple-200/80' : 'bg-amber-100 text-amber-900 border border-amber-200/80'
+                  loanType === 'luy_rab'
+                    ? 'bg-purple-100 text-purple-900 border border-purple-200/80'
+                    : loanType === 'hardship_settlement'
+                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                      : 'bg-amber-100 text-amber-900 border border-amber-200/80'
                 }`}>
-                  {loanType === 'luy_rab' ? (language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab') : (language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok')}
+                  {loanType === 'luy_rab'
+                    ? (language === 'kh' ? 'កម្ចីលុយរាប់' : 'Luy Rab')
+                    : loanType === 'hardship_settlement'
+                      ? (language === 'kh' ? 'សុំឡើងតែដើម (0%)' : 'Interest-Only 0%')
+                      : (language === 'kh' ? 'កម្ចីលុយឆក់' : 'Luy Chok')}
                 </span>
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -926,6 +941,30 @@ export default function AddBorrowerModal({ isOpen, onClose, onSave, prefilledDat
                   </span>
                   <span className="text-[10px] text-slate-600 font-medium mt-0.5">
                     {language === 'kh' ? '$100 1ខែ (30ថ្ងៃ) ការ $60' : '$100 30d = $60 interest'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoanType('hardship_settlement');
+                    setInterestValue('0');
+                    setInterestType('percent');
+                    setPaymentMode('all');
+                    setIsTotalToPayManuallyEdited(false);
+                    setIsInstallmentManuallyEdited(false);
+                  }}
+                  className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                    loanType === 'hardship_settlement'
+                      ? 'bg-amber-500/20 border-amber-500 text-amber-950 shadow-xs ring-2 ring-amber-500/20'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="font-extrabold text-xs flex items-center gap-1">
+                    🧮 {language === 'kh' ? 'សុំឡើងតែដើម (0%)' : 'Interest-Only 0%'}
+                  </span>
+                  <span className="text-[10px] text-slate-600 font-medium mt-0.5">
+                    {language === 'kh' ? 'បង់ត្រឹមតែប្រាក់ដើម ការប្រាក់ 0%' : '0% Interest repayment'}
                   </span>
                 </button>
               </div>

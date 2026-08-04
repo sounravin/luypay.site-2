@@ -31,10 +31,13 @@ import KhmerAvatarFrame from './components/KhmerAvatarFrame';
 import KhmerAvatarFrameModal from './components/KhmerAvatarFrameModal';
 import BorrowerApplyForm from './components/BorrowerApplyForm';
 import PaymentDelayRequestForm from './components/PaymentDelayRequestForm';
+import HardshipSettlementRequestForm from './components/HardshipSettlementRequestForm';
 import LoanApplicationTracker from './components/LoanApplicationTracker';
 import LoanApplicationsControlPanel from './components/LoanApplicationsControlPanel';
+import HardshipControlPanel from './components/HardshipControlPanel';
+import { InterestOnlyManagementPanel } from './components/InterestOnlyManagementPanel';
 import { LoanApplication } from './types';
-import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText, X, Layout } from 'lucide-react';
+import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText, X, Layout, Calculator } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDoc, getDocs } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import { safeStorage, largeMediaStorage } from './lib/safeStorage';
@@ -152,8 +155,8 @@ export default function App() {
   const [selectedBorrowerId, setSelectedBorrowerId] = useState<string | null>(null);
   const [selectedBorrowerIds, setSelectedBorrowerIds] = useState<string[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [filterTab, setFilterTab] = useState<'active' | 'completed' | 'archived' | 'all'>('active');
-  const [standingFilter, setStandingFilter] = useState<'all' | 'good' | 'regular' | 'late' | 'dueSoon'>('all');
+  const [filterTab, setFilterTab] = useState<'active' | 'completed' | 'archived' | 'all' | 'hardship'>('active');
+  const [standingFilter, setStandingFilter] = useState<'all' | 'good' | 'regular' | 'late' | 'dueSoon' | 'hardship'>('all');
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
 
   // Secure Auth State
@@ -164,13 +167,14 @@ export default function App() {
   const [isMember, setIsMember] = useState<boolean>(() => safeStorage.getItem('luypay_is_member') === 'true');
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
-  const [activeSection, setActiveSection] = useState<'ledger' | 'admin_dashboard' | 'pricing' | 'loan_applications' | 'members_admin'>('ledger');
+  const [activeSection, setActiveSection] = useState<'ledger' | 'admin_dashboard' | 'pricing' | 'loan_applications' | 'members_admin' | 'hardship_panel' | 'interest_only_management'>('ledger');
   const [prefilledData, setPrefilledData] = useState<{
     name?: string;
     phone?: string;
     principal?: number;
     profilePhoto?: string;
     notes?: string;
+    loanType?: 'luy_chok' | 'luy_rab' | 'hardship_settlement';
     applicationId?: string;
     loanDuration?: number;
     idCardNumber?: string;
@@ -192,6 +196,10 @@ export default function App() {
   const [isDelayMode, setIsDelayMode] = useState<boolean>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('delay') === 'true' || params.get('extension') === 'true';
+  });
+  const [isHardshipMode, setIsHardshipMode] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('hardship') === 'true' || params.get('settlement') === 'true';
   });
   const [trackId, setTrackId] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -3111,6 +3119,9 @@ export default function App() {
       if (b.isArchived || !isCompleted) return false;
     } else if (filterTab === 'archived') {
       if (!b.isArchived) return false;
+    } else if (filterTab === 'hardship') {
+      const isHardship = b.loanType === 'hardship_settlement' || b.interestOnlyExtension === true || (b.notes && b.notes.includes('សុំឡើងតែដើម'));
+      if (!isHardship) return false;
     }
 
     // 2. Filter by Standing Status Tag
@@ -3121,6 +3132,10 @@ export default function App() {
       if (standingFilter === 'dueSoon') {
         const daysLeft = getDaysUntilNextPayment(b);
         if (daysLeft === null || daysLeft > 3) return false;
+      }
+      if (standingFilter === 'hardship') {
+        const isHardship = b.loanType === 'hardship_settlement' || b.interestOnlyExtension === true || (b.notes && b.notes.includes('សុំឡើងតែដើម'));
+        if (!isHardship) return false;
       }
     }
 
@@ -3242,6 +3257,30 @@ export default function App() {
             onBackToPortal={() => {
               window.history.replaceState({}, document.title, window.location.pathname);
               setIsDelayMode(false);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Render Standalone Public Hardship Settlement Request form if viewing hardship link
+  if (isHardshipMode) {
+    return (
+      <div className="min-h-screen bg-[#030712] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+        {/* Animated Background Auroras */}
+        <div className="absolute top-10 left-10 w-80 h-80 rounded-full bg-amber-600/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-orange-600/10 blur-3xl pointer-events-none" />
+        
+        <div className="w-full max-w-3xl z-10">
+          <HardshipSettlementRequestForm 
+            lenderUsername={applyLenderId} 
+            onSubmitSuccess={() => {
+              showToast(language === 'kh' ? 'បានផ្ញើសំណើសុំឡើងតែដើមរួចរាល់!' : 'Hardship settlement request submitted successfully!', 'success');
+            }}
+            onBackToPortal={() => {
+              window.history.replaceState({}, document.title, window.location.pathname);
+              setIsHardshipMode(false);
             }}
           />
         </div>
@@ -3400,18 +3439,33 @@ export default function App() {
                   </div>
 
                   {/* Fast Loan Application Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playClickSound();
-                      setIsApplyMode(true);
-                    }}
-                    className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white font-black text-sm rounded-2xl shadow-lg shadow-emerald-900/30 border border-emerald-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 group"
-                  >
-                    <Sparkles className="w-4 h-4 text-emerald-200 animate-pulse group-hover:rotate-12 transition-transform" />
-                    <span>{language === 'kh' ? '⚡ ស្នើសុំកម្ចីរហ័ស (លុយឆក់)' : '⚡ Apply for Fast Loan'}</span>
-                    <ChevronRight className="w-4 h-4 text-emerald-200 group-hover:translate-x-1 transition-transform ml-auto" />
-                  </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setIsApplyMode(true);
+                      }}
+                      className="w-full py-3.5 px-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white font-black text-xs rounded-2xl shadow-lg shadow-emerald-900/30 border border-emerald-400/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 group"
+                    >
+                      <Sparkles className="w-4 h-4 text-emerald-200 animate-pulse group-hover:rotate-12 transition-transform shrink-0" />
+                      <span>{language === 'kh' ? '⚡ ស្នើសុំកម្ចីរហ័ស' : '⚡ Fast Loan Application'}</span>
+                      <ChevronRight className="w-4 h-4 text-emerald-200 group-hover:translate-x-1 transition-transform ml-auto shrink-0" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClickSound();
+                        setIsHardshipMode(true);
+                      }}
+                      className="w-full py-3.5 px-3 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:via-orange-500 hover:to-amber-600 text-white font-black text-xs rounded-2xl shadow-lg shadow-amber-900/30 border border-amber-400/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 group"
+                    >
+                      <Calculator className="w-4 h-4 text-amber-200 animate-pulse group-hover:rotate-12 transition-transform shrink-0" />
+                      <span>{language === 'kh' ? '🧮 ស្នើសុំឡើងតែដើម' : '🧮 Hardship Request'}</span>
+                      <ChevronRight className="w-4 h-4 text-amber-200 group-hover:translate-x-1 transition-transform ml-auto shrink-0" />
+                    </button>
+                  </div>
 
                   <SignInForm
                     onSubmit={handleCredentialsLogin}
@@ -5537,21 +5591,42 @@ export default function App() {
           )}
 
           {isLoggedIn && (
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setActiveSection('loan_applications')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-extrabold rounded-xl transition-all border duration-200 cursor-pointer ${
-                activeSection === 'loan_applications'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-500 shadow-lg shadow-blue-600/25'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border-transparent'
-              }`}
-            >
-              <span className="flex items-center gap-2.5">
-                <FileText className="w-4 h-4 text-blue-400 shrink-0" />
-                <span>📂 សំណើសុំកម្ចី (លុយឆក់)</span>
-              </span>
-            </motion.button>
+            <>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setActiveSection('loan_applications')}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-extrabold rounded-xl transition-all border duration-200 cursor-pointer ${
+                  activeSection === 'loan_applications'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-500 shadow-lg shadow-blue-600/25'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border-transparent'
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <FileText className="w-4 h-4 text-blue-400 shrink-0" />
+                  <span>📂 សំណើសុំកម្ចី (លុយឆក់)</span>
+                </span>
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setActiveSection('hardship_panel')}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-extrabold rounded-xl transition-all border duration-200 cursor-pointer ${
+                  activeSection === 'hardship_panel'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black border-amber-400 shadow-lg shadow-amber-500/25'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border-transparent'
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <Calculator className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>🧮 ផ្ទាំងគ្រប់គ្រងសុំឡើងតែដើម</span>
+                </span>
+                <span className="text-[9px] bg-amber-400/20 text-amber-300 font-black px-1.5 py-0.5 rounded-full">
+                  0%
+                </span>
+              </motion.button>
+            </>
           )}
 
           <motion.button
@@ -5883,20 +5958,48 @@ export default function App() {
               <span>🤝 {language === 'kh' ? 'គ្រប់គ្រងភាគហ៊ុន' : 'Shareholders'}</span>
             </button>
             {isLoggedIn && (
-              <button
-                onClick={() => setActiveSection('loan_applications')}
-                className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  activeSection === 'loan_applications'
-                    ? mobileHeaderStyle === 'angkor'
-                      ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
-                      : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
-                    : mobileHeaderStyle === 'angkor'
-                      ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
-                      : 'bg-white/10 text-current hover:text-white'
-                }`}
-              >
-                <span>📂 {language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveSection('loan_applications')}
+                  className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    activeSection === 'loan_applications'
+                      ? mobileHeaderStyle === 'angkor'
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
+                        : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
+                      : mobileHeaderStyle === 'angkor'
+                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
+                        : 'bg-white/10 text-current hover:text-white'
+                  }`}
+                >
+                  <span>📂 {language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveSection('hardship_panel')}
+                  className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    activeSection === 'hardship_panel'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black shadow-md border border-amber-300'
+                      : mobileHeaderStyle === 'angkor'
+                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
+                        : 'bg-white/10 text-current hover:text-white'
+                  }`}
+                >
+                  <span>📩 {language === 'kh' ? 'សំណើសុំឡើងដើម' : 'Hardship Requests'}</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveSection('interest_only_management')}
+                  className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    activeSection === 'interest_only_management'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black shadow-md border border-amber-300'
+                      : mobileHeaderStyle === 'angkor'
+                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
+                        : 'bg-white/10 text-current hover:text-white'
+                  }`}
+                >
+                  <span>🧮 {language === 'kh' ? 'គ្រប់គ្រងសុំឡើងដើម' : 'Interest-Only Panel'}</span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -6109,6 +6212,64 @@ export default function App() {
             );
           }
 
+          if (activeSection === 'hardship_panel') {
+            return (
+              <HardshipControlPanel
+                currentUser={currentUser}
+                showToast={showToast}
+                onApproveAndCreateBorrower={(app) => {
+                  setPrefilledData({
+                    name: app.name,
+                    phone: app.phone,
+                    principal: app.amountRequested,
+                    profilePhoto: app.selfiePhoto,
+                    notes: `សំណើសុំឡើងតែដើម 0% ID: ${app.id}`,
+                    loanType: 'hardship_settlement',
+                    applicationId: app.id,
+                    loanDuration: app.loanDuration,
+                    idCardNumber: app.idCardNumber,
+                    dob: app.dob,
+                    address: app.address,
+                    idExpiryDate: app.idExpiryDate,
+                    idExpiryStatus: app.idExpiryStatus,
+                    latitude: app.latitude,
+                    longitude: app.longitude,
+                    locationAccuracy: app.locationAccuracy,
+                    gpsCapturedAt: app.gpsCapturedAt
+                  });
+                  setActiveSection('interest_only_management');
+                  setIsAddModalOpen(true);
+                }}
+              />
+            );
+          }
+
+          if (activeSection === 'interest_only_management') {
+            return (
+              <InterestOnlyManagementPanel
+                borrowers={borrowers}
+                currentUser={currentUser}
+                language={language}
+                onSelectBorrower={(id) => {
+                  setSelectedBorrowerId(id);
+                  setActiveSection('ledger');
+                }}
+                onAddNewInterestOnly={() => {
+                  setPrefilledData({
+                    notes: 'សំណើសុំឡើងតែដើម 0%',
+                    loanType: 'hardship_settlement',
+                  });
+                  setIsAddModalOpen(true);
+                }}
+                onUpdateBorrower={(updated) => {
+                  const updatedList = borrowers.map((b) => (b.id === updated.id ? updated : b));
+                  saveBorrowers(updatedList);
+                }}
+                showToast={showToast}
+              />
+            );
+          }
+
           // Otherwise, render default ledger content:
           return (
             <>
@@ -6219,6 +6380,12 @@ export default function App() {
                     className={`px-3 py-2 text-xs font-black rounded-xl transition cursor-pointer flex-1 text-center whitespace-nowrap ${filterTab === 'active' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' : `${currentThemeConfig.textMuted} hover:bg-slate-800/10 dark:hover:bg-white/5`}`}
                   >
                     📝 {t('activeLoanLabel')} ({borrowers.filter(b => !b.isArchived && (Array.isArray(b.payments) ? b.payments.reduce((sum, p) => sum + (p?.amount || 0), 0) : 0) < b.totalToPay).length})
+                  </button>
+                  <button
+                    onClick={() => setFilterTab('hardship')}
+                    className={`px-3 py-2 text-xs font-black rounded-xl transition cursor-pointer flex-1 text-center whitespace-nowrap ${filterTab === 'hardship' ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md' : `${currentThemeConfig.textMuted} hover:bg-slate-800/10 dark:hover:bg-white/5`}`}
+                  >
+                    🧮 {language === 'kh' ? 'សុំឡើងតែដើម' : 'Interest-Only'} ({borrowers.filter(b => b.loanType === 'hardship_settlement' || b.interestOnlyExtension || b.notes?.includes('សុំឡើងតែដើម')).length})
                   </button>
                   <button
                     onClick={() => setFilterTab('completed')}

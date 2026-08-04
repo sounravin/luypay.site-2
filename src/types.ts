@@ -76,7 +76,7 @@ export interface Borrower {
   locationAccuracy?: number;
   gpsCapturedAt?: string;
   lenderInfo?: LenderInfo;
-  loanType?: 'luy_chok' | 'luy_rab';
+  loanType?: 'luy_chok' | 'luy_rab' | 'hardship_settlement';
 }
 
 export interface Shareholder {
@@ -192,6 +192,8 @@ export interface LoanApplication {
   loanDuration?: number; // Duration of loan in days
   paymentType?: string;
   interestMethod?: string;
+  notes?: string;
+  reason?: string;
   // Extracted ID Card Data (Reendem / OCR)
   idCardNumber?: string;
   extractedName?: string;
@@ -205,7 +207,7 @@ export interface LoanApplication {
   locationAccuracy?: number;
   gpsCapturedAt?: string;
   lenderInfo?: LenderInfo;
-  loanType?: 'luy_chok' | 'luy_rab';
+  loanType?: 'luy_chok' | 'luy_rab' | 'hardship_settlement';
 }
 
 export interface PaymentDelayRequest {

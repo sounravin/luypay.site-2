@@ -9,12 +9,13 @@ import {
   ExternalLink, Eye, AlertCircle, CheckCircle, ChevronDown, 
   Trash2, Search, Sparkles, UserCheck, ShieldAlert, RefreshCw, AlertTriangle, CreditCard, MapPin,
   Volume2, VolumeX, Bell, BellOff, Lock, Navigation, Plus, Camera, Upload, User, Clock, Compass, ShieldCheck,
-  LayoutGrid, Grid, List
+  LayoutGrid, Grid, List, Calculator
 } from 'lucide-react';
 import { checkExpiryStatus, scanIdCardImage } from '../utils/ocrHelper';
 import { playNewApplicationAlertSound } from '../utils';
 import DigitalLoanContractModal from './DigitalLoanContractModal';
 import GPSLocationViewerModal from './GPSLocationViewerModal';
+import HardshipPrincipalCalculatorModal from './HardshipPrincipalCalculatorModal';
 
 
 interface LoanApplicationsControlPanelProps {
@@ -75,6 +76,14 @@ export default function LoanApplicationsControlPanel({
   const [requireGps, setRequireGps] = useState<boolean>(() => {
     const saved = localStorage.getItem('loan_app_require_gps');
     return saved !== null ? saved === 'true' : false;
+  });
+
+  // Hardship Settlement Calculator Modal State
+  const [isHardshipCalcOpen, setIsHardshipCalcOpen] = useState(false);
+  const [hardshipPrefill, setHardshipPrefill] = useState<{ borrowerName?: string; borrowerPhone?: string; principal?: number }>({
+    borrowerName: '',
+    borrowerPhone: '',
+    principal: 550
   });
 
   // Real-time listener for Payment Delay Requests
@@ -186,7 +195,10 @@ export default function LoanApplicationsControlPanel({
       }
 
       snapshot.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() } as LoanApplication);
+        const appData = doc.data() as LoanApplication;
+        if (appData.loanType !== 'hardship_settlement' && !(appData as any).isHardship) {
+          list.push({ id: doc.id, ...appData } as LoanApplication);
+        }
       });
 
       // Sort by newest first
@@ -218,6 +230,17 @@ export default function LoanApplicationsControlPanel({
       language === 'kh' 
         ? '📋 ចម្លងតំណភ្ជាប់ស្នើសុំកម្ចីរួចរាល់! អាចផ្ញើអោយកូនបំណុលបំពេញបាន។' 
         : '📋 Loan application link copied successfully!',
+      'success'
+    );
+  };
+
+  const copyHardshipLink = () => {
+    const hardshipUrl = `${window.location.origin}/?hardship=true&lender=${currentUser}`;
+    navigator.clipboard.writeText(hardshipUrl);
+    showToast(
+      language === 'kh' 
+        ? '📋 ចម្លងតំណភ្ជាប់ស្នើសុំឡើងតែដើមរួចរាល់! អាចផ្ញើអោយកូនបំណុលបាន។' 
+        : '📋 Hardship settlement link copied successfully!',
       'success'
     );
   };
@@ -468,7 +491,7 @@ export default function LoanApplicationsControlPanel({
     <div className="space-y-6">
       
       {/* Mode Switcher Tabs */}
-      <div className="flex bg-slate-900 border border-slate-800 p-1.5 rounded-3xl shadow-2xl gap-2">
+      <div className="flex flex-col sm:flex-row bg-slate-900 border border-slate-800 p-1.5 rounded-3xl shadow-2xl gap-2">
         <button
           onClick={() => setPanelMode('applications')}
           className={`flex-1 py-3 px-4 rounded-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center justify-center gap-2 ${
@@ -493,12 +516,24 @@ export default function LoanApplicationsControlPanel({
           }`}
         >
           <Clock className="w-4 h-4" />
-          <span>{language === 'kh' ? '⏰ សំណើសុំពន្យារពេលបង់ប្រាក់ (GPS Track)' : '⏰ Payment Extension Requests'}</span>
+          <span>{language === 'kh' ? '⏰ សំណើសុំពន្យារពេល' : '⏰ Payment Extensions'}</span>
           {pendingDelayCount > 0 && (
             <span className="px-2 py-0.5 bg-rose-500 text-white rounded-md text-xs font-mono font-bold animate-pulse shadow-md">
               {pendingDelayCount}
             </span>
           )}
+        </button>
+
+        {/* Hardship Settlement Calculator Tool Button */}
+        <button
+          onClick={() => {
+            setHardshipPrefill({ borrowerName: '', borrowerPhone: '', principal: 550 });
+            setIsHardshipCalcOpen(true);
+          }}
+          className="py-3 px-4 rounded-2xl text-xs sm:text-sm font-black transition cursor-pointer flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 shadow-lg shadow-amber-500/20 active:scale-95 border border-amber-300/40 shrink-0"
+        >
+          <Calculator className="w-4 h-4 text-slate-950" />
+          <span>{language === 'kh' ? '🧮 គណនាសុំឡើងតែដើម' : '🧮 Hardship Calc'}</span>
         </button>
       </div>
 
@@ -787,6 +822,37 @@ export default function LoanApplicationsControlPanel({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-black rounded-xl transition flex items-center justify-center gap-1.5 border border-slate-700"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                {language === 'kh' ? 'មើល' : 'Preview'}
+              </a>
+            </div>
+          </div>
+
+          {/* Copy Hardship Settlement Link Box */}
+          <div className="p-3 bg-slate-950/80 border border-amber-900/60 rounded-2xl flex flex-col sm:flex-row items-center gap-3">
+            <div className="text-left space-y-0.5 flex-1">
+              <p className="text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                <span>🤝</span>
+                <span>{language === 'kh' ? 'តំណសុំឡើងតែដើម' : 'Hardship Form Link'}</span>
+              </p>
+              <p className="text-xs font-bold text-amber-200 select-all truncate max-w-[180px]">
+                {`${window.location.origin}/?hardship=true&lender=${currentUser}`}
+              </p>
+            </div>
+            <div className="flex gap-2 w-full sm:w-auto shrink-0">
+              <button
+                onClick={copyHardshipLink}
+                className="flex-1 sm:flex-none px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-amber-600/10 active:scale-95"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                {language === 'kh' ? 'ចម្លង' : 'Copy'}
+              </button>
+              <a
+                href={`/?hardship=true&lender=${currentUser}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-black rounded-xl transition flex items-center justify-center gap-1.5 border border-amber-900/50"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 {language === 'kh' ? 'មើល' : 'Preview'}
@@ -1844,6 +1910,17 @@ export default function LoanApplicationsControlPanel({
         isOpen={isGpsModalOpen}
         onClose={() => setIsGpsModalOpen(false)}
         locationData={selectedGpsModalData}
+      />
+
+      {/* Hardship Principal Settlement Calculator Modal */}
+      <HardshipPrincipalCalculatorModal
+        isOpen={isHardshipCalcOpen}
+        onClose={() => setIsHardshipCalcOpen(false)}
+        defaultBorrowerName={hardshipPrefill.borrowerName}
+        defaultBorrowerPhone={hardshipPrefill.borrowerPhone}
+        defaultPrincipal={hardshipPrefill.principal}
+        currentUser={currentUser}
+        showToast={showToast}
       />
 
     </div>
