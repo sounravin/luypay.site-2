@@ -49,13 +49,19 @@ export const InterestOnlyManagementPanel: React.FC<InterestOnlyManagementPanelPr
   const [editReason, setEditReason] = useState('');
   const [editNote, setEditNote] = useState('');
 
-  // Helper to determine if a borrower is in "Interest-Only / Hardship" status
+  // Helper to determine if a borrower is in "Interest-Only / Hardship" status and belongs to currentUser
   const isInterestOnlyBorrower = (b: Borrower) => {
-    return (
+    const bLender = (b.createdBy || b.lenderId || b.lenderUsername || '').toLowerCase();
+    const userLower = (currentUser || 'sounravin').toLowerCase();
+    const matchesAccount = !bLender || bLender === userLower;
+
+    const isHardship = (
       b.loanType === 'hardship_settlement' ||
       b.interestOnlyExtension === true ||
       (b.notes && b.notes.includes('សុំឡើងតែដើម'))
     );
+
+    return matchesAccount && isHardship;
   };
 
   // Filter interest-only borrowers

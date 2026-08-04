@@ -70,7 +70,8 @@ export default function HardshipControlPanel({
         const isHardshipType = data.loanType === 'hardship_settlement' || (data as any).isHardship === true;
         
         if (isHardshipType) {
-          if (currentUser === 'sounravin' || !data.lenderId || (data.lenderId && data.lenderId.toLowerCase() === userLower)) {
+          const reqLender = (data.lenderId || data.lenderUsername || 'sounravin').toLowerCase();
+          if (reqLender === userLower) {
             list.push({ id: docSnap.id, ...data });
           }
         }

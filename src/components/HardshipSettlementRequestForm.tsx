@@ -247,7 +247,8 @@ ${scheduleItems.map(item => {
         notes: `សំណើសុំឡើងតែដើមចំនួន ${currSymbol}${validPrincipal} (${totalInstallments} ថ្ងៃ x ${currSymbol}${validDailyRate}/ថ្ងៃ)`,
         status: 'pending',
         createdAt: new Date().toISOString(),
-        lenderUsername: lenderUsername || 'sounravin',
+        lenderUsername: (lenderUsername || 'sounravin').toLowerCase(),
+        lenderId: (lenderUsername || 'sounravin').toLowerCase(),
         scheduleSummary: scheduleItems,
 
         // GPS Location Fields automatically sent to control panel

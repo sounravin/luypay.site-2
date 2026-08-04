@@ -5901,39 +5901,41 @@ export default function App() {
             </div>
           </div>
 
-          {/* Mobile Nav buttons row */}
-          <div className={`flex items-center gap-2 border-t pt-2.5 relative z-10 ${
+          {/* Mobile Nav buttons grid */}
+          <div className={`grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap gap-2 border-t pt-3 relative z-10 ${
             mobileHeaderStyle === 'angkor' ? 'border-amber-600/30' : 'border-white/10'
           }`}>
             <button
               onClick={() => setActiveSection('ledger')}
-              className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`py-2.5 px-3 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
                 activeSection === 'ledger'
                   ? mobileHeaderStyle === 'angkor'
                     ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
                     : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
                   : mobileHeaderStyle === 'angkor'
-                    ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
-                    : 'bg-white/10 text-current hover:text-white'
+                    ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/20'
+                    : 'bg-white/10 text-slate-200 hover:text-white border border-white/5'
               }`}
             >
-              <span>📝 {language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger Records'}</span>
+              <span className="text-sm">📝</span>
+              <span className="truncate">{language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger Records'}</span>
             </button>
 
             {currentUser === 'sounravin' && (
               <button
                 onClick={() => setActiveSection('admin_dashboard')}
-                className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all relative cursor-pointer flex items-center justify-center gap-1.5 ${
+                className={`py-2.5 px-3 text-[11px] font-black rounded-xl text-center transition-all relative cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
                   activeSection === 'admin_dashboard'
                     ? mobileHeaderStyle === 'angkor'
                       ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
                       : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
                     : mobileHeaderStyle === 'angkor'
-                      ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
-                      : 'bg-white/10 text-current hover:text-white'
+                      ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/20'
+                      : 'bg-white/10 text-slate-200 hover:text-white border border-white/5'
                 }`}
               >
-                <span>📊 {language === 'kh' ? 'គ្រប់គ្រងប្រព័ន្ធ' : 'Manage System'}</span>
+                <span className="text-sm">📊</span>
+                <span className="truncate">{language === 'kh' ? 'គ្រប់គ្រងប្រព័ន្ធ' : 'Manage System'}</span>
                 {subRequests.filter(r => r.status === 'pending').length > 0 && (
                   <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[8px] rounded-md font-black bg-rose-500 text-white animate-pulse">
                     {subRequests.filter(r => r.status === 'pending').length}
@@ -5947,57 +5949,62 @@ export default function App() {
                 setIsShareholderModalOpen(true);
                 playClickSound();
               }}
-              className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`py-2.5 px-3 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
                 isShareholderModalOpen
                   ? 'bg-emerald-600 text-white shadow-md'
                   : mobileHeaderStyle === 'angkor'
-                    ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
-                    : 'bg-white/10 text-current hover:text-white'
+                    ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/20'
+                    : 'bg-white/10 text-slate-200 hover:text-white border border-white/5'
               }`}
             >
-              <span>🤝 {language === 'kh' ? 'គ្រប់គ្រងភាគហ៊ុន' : 'Shareholders'}</span>
+              <span className="text-sm">🤝</span>
+              <span className="truncate">{language === 'kh' ? 'គ្រប់គ្រងភាគហ៊ុន' : 'Shareholders'}</span>
             </button>
+
             {isLoggedIn && (
               <>
                 <button
                   onClick={() => setActiveSection('loan_applications')}
-                  className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`py-2.5 px-3 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
                     activeSection === 'loan_applications'
                       ? mobileHeaderStyle === 'angkor'
                         ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-300'
                         : `bg-gradient-to-r ${currentThemeConfig.accent} text-white shadow-md`
                       : mobileHeaderStyle === 'angkor'
-                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
-                        : 'bg-white/10 text-current hover:text-white'
+                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/20'
+                        : 'bg-white/10 text-slate-200 hover:text-white border border-white/5'
                   }`}
                 >
-                  <span>📂 {language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}</span>
+                  <span className="text-sm">📂</span>
+                  <span className="truncate">{language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}</span>
                 </button>
 
                 <button
                   onClick={() => setActiveSection('hardship_panel')}
-                  className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`py-2.5 px-3 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
                     activeSection === 'hardship_panel'
                       ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black shadow-md border border-amber-300'
                       : mobileHeaderStyle === 'angkor'
-                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
-                        : 'bg-white/10 text-current hover:text-white'
+                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/20'
+                        : 'bg-white/10 text-slate-200 hover:text-white border border-white/5'
                   }`}
                 >
-                  <span>📩 {language === 'kh' ? 'សំណើសុំឡើងដើម' : 'Hardship Requests'}</span>
+                  <span className="text-sm">📩</span>
+                  <span className="truncate">{language === 'kh' ? 'សំណើសុំឡើងដើម' : 'Hardship Requests'}</span>
                 </button>
 
                 <button
                   onClick={() => setActiveSection('interest_only_management')}
-                  className={`flex-1 py-2 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`py-2.5 px-3 text-[11px] font-black rounded-xl text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs ${
                     activeSection === 'interest_only_management'
                       ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black shadow-md border border-amber-300'
                       : mobileHeaderStyle === 'angkor'
-                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/10'
-                        : 'bg-white/10 text-current hover:text-white'
+                        ? 'bg-amber-950/40 text-amber-300 hover:text-amber-200 hover:bg-amber-950/60 border border-amber-500/20'
+                        : 'bg-white/10 text-slate-200 hover:text-white border border-white/5'
                   }`}
                 >
-                  <span>🧮 {language === 'kh' ? 'គ្រប់គ្រងសុំឡើងដើម' : 'Interest-Only Panel'}</span>
+                  <span className="text-sm">🧮</span>
+                  <span className="truncate">{language === 'kh' ? 'គ្រប់គ្រងសុំឡើងដើម' : 'Interest-Only Panel'}</span>
                 </button>
               </>
             )}
