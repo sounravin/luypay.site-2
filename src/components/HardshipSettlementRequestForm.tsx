@@ -555,49 +555,6 @@ ${scheduleItems.map(item => {
 
             </div>
 
-            {/* Realtime Calculations Card */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                  {language === 'kh' ? 'ប្រាក់ដើមត្រូវសង' : 'Total Principal'}
-                </p>
-                <p className="text-xl font-black text-white">
-                  {currSymbol}{validPrincipal.toLocaleString()} <span className="text-xs text-slate-400 font-normal">{currency}</span>
-                </p>
-              </div>
-
-              <div className="p-4 bg-amber-950/30 border border-amber-800/40 rounded-2xl space-y-1">
-                <p className="text-[10px] font-black text-amber-300 uppercase tracking-wider">
-                  {language === 'kh' ? 'ប្រាក់សុំឡើងក្នុងមួយថ្ងៃ' : 'Daily Rate Request'}
-                </p>
-                <p className="text-xl font-black text-amber-300">
-                  {currSymbol}{validDailyRate.toLocaleString()} <span className="text-xs text-amber-200/70 font-normal">/ ថ្ងៃ</span>
-                </p>
-              </div>
-
-              <div className="p-4 bg-blue-950/30 border border-blue-800/40 rounded-2xl space-y-1">
-                <p className="text-[10px] font-black text-blue-300 uppercase tracking-wider">
-                  {language === 'kh' ? 'ចំនួនថ្ងៃត្រូវសងសរុប' : 'Calculated Total Days'}
-                </p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-black text-blue-400">{totalInstallments}</span>
-                  <span className="text-xs font-bold text-blue-300">ថ្ងៃ ({totalInstallments} ដង)</span>
-                </div>
-              </div>
-
-              <div className="p-4 bg-emerald-950/30 border border-emerald-800/40 rounded-2xl space-y-1">
-                <p className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">
-                  {language === 'kh' ? 'ថ្ងៃបញ្ចប់ការសង' : 'Calculated End Date'}
-                </p>
-                <p className="text-sm font-black text-emerald-300">
-                  {endDateFormatted}
-                </p>
-                <p className="text-[10px] text-emerald-400/80 font-mono">
-                  {endDateIso}
-                </p>
-              </div>
-            </div>
-
             {/* Submit Action Button */}
             <button
               type="submit"
@@ -609,7 +566,7 @@ ${scheduleItems.map(item => {
               ) : (
                 <>
                   <Send className="w-5 h-5 text-slate-950" />
-                  <span>{language === 'kh' ? 'បញ្ជូនសំណើសុំឡើងតែដើមនេះទៅកាន់ម្ចាស់បំណុល' : 'Submit Hardship Request to Lender'}</span>
+                  <span>{language === 'kh' ? 'បញ្ជួនសំណើរ' : 'Submit Request'}</span>
                 </>
               )}
             </button>
