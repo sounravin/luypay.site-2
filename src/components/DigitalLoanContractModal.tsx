@@ -112,23 +112,30 @@ export default function DigitalLoanContractModal({
 
       const element = contractRef.current;
 
-      // Force fixed A4 aspect ratio & width (800px HD layout with crisp 2x resolution)
+      // Render crisp A4 resolution (800px x 1131px, 2x pixel ratio = 1600px x 2262px)
       const exportOptions = {
         quality: 0.98,
-        pixelRatio: 2, // High resolution output for printing/saving (1600px width)
+        pixelRatio: 2,
         cacheBust: true,
         backgroundColor: '#ffffff',
         width: 800,
+        height: 1131,
         style: {
           width: '800px',
           maxWidth: '800px',
           minWidth: '800px',
+          height: '1131px',
+          maxHeight: '1131px',
+          minHeight: '1131px',
           margin: '0 auto',
-          padding: '40px 48px',
+          padding: '48px 56px',
           borderRadius: '0px',
           boxShadow: 'none',
           transform: 'none',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
         }
       };
 
@@ -142,7 +149,7 @@ export default function DigitalLoanContractModal({
       const blob = dataUrlToBlob(dataUrl);
       const blobUrl = URL.createObjectURL(blob);
 
-      // Attempt immediate programmatic link download
+      // Programmatic file download
       const link = document.createElement('a');
       link.download = fileName;
       link.href = blobUrl;
@@ -150,7 +157,7 @@ export default function DigitalLoanContractModal({
       link.click();
       document.body.removeChild(link);
 
-      // Open interactive mobile preview dialog so Mobile/iOS/Webview users can long-press or tap to save
+      // Open mobile friendly view modal
       setExportedPreview({
         blobUrl,
         dataUrl,
@@ -161,8 +168,8 @@ export default function DigitalLoanContractModal({
       if (showToast) {
         showToast(
           language === 'kh'
-            ? `✅ បានបង្កើត File A4 (${format.toUpperCase()}) រួចរាល់! អាច Save ក្នុងទូរស័ព្ទបាន!`
-            : `✅ Successfully created A4 ${format.toUpperCase()} file!`,
+            ? `✅ បានបង្កើត File A4 ពេញផ្ទាំង (${format.toUpperCase()}) រួចរាល់!`
+            : `✅ Successfully generated full A4 ${format.toUpperCase()} contract!`,
           'success'
         );
       }
@@ -401,149 +408,153 @@ export default function DigitalLoanContractModal({
           )}
 
           {/* Printable Document Sheet Container */}
-          <div ref={contractRef} className="printable-contract bg-white text-slate-900 p-6 sm:p-10 rounded-2xl shadow-xl space-y-6 border border-slate-200">
+          <div ref={contractRef} className="printable-contract bg-white text-slate-900 p-8 sm:p-12 rounded-2xl shadow-xl space-y-6 border border-slate-200 min-h-[1131px] flex flex-col justify-between w-full max-w-[800px] mx-auto box-sizing-border">
             
-            {/* Header / Emblem */}
-            <div className="text-center space-y-1 pb-4 border-b-2 border-slate-900">
-              <p className="font-black text-sm sm:text-base tracking-widest text-slate-900 uppercase">
-                ព្រះរាជាណាចក្រកម្ពុជា
-              </p>
-              <p className="font-black text-xs sm:text-sm tracking-wider text-slate-800">
-                ជាតិ សាសនា ព្រះមហាក្សត្រ
-              </p>
-              <div className="pt-3">
-                <h1 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight">
-                  លិខិតកិច្ចសន្យាខ្ចីប្រាក់ (លុយឆក់ Digital)
-                </h1>
-                <p className="text-[11px] text-slate-600 font-bold mt-0.5">
-                  DIGITAL QUICK LOAN AGREEMENT CONTRACT
+            {/* Upper Content Group */}
+            <div className="space-y-6">
+              {/* Header / Emblem */}
+              <div className="text-center space-y-1.5 pb-4 border-b-2 border-slate-900">
+                <p className="font-black text-lg sm:text-xl tracking-widest text-slate-900 uppercase">
+                  ព្រះរាជាណាចក្រកម្ពុជា
                 </p>
-              </div>
-            </div>
-
-            {/* Date & Location */}
-            <div className="text-right text-xs font-bold text-slate-700 italic">
-              ធ្វើនៅបាត់ដំបង, ថ្ងៃទី {contractDate}
-            </div>
-
-            {/* Parties Details */}
-            <div className="space-y-5 text-xs sm:text-sm leading-relaxed text-slate-900 font-medium">
-              
-              {/* Party A: Lender (ម្ចាស់បំណុល) */}
-              <div className="p-4 bg-slate-50 border border-slate-300 rounded-xl space-y-2">
-                <div className="flex items-center justify-between border-b border-slate-300 pb-1.5">
-                  <h3 className="font-black text-slate-900 text-sm flex items-center gap-1.5">
-                    <span>ភាគី "ក" (ម្ចាស់បំណុល / LENDER):</span>
-                  </h3>
-                  <span className="text-[10px] bg-slate-200 text-slate-800 px-2 py-0.5 rounded font-bold">
-                    ទិន្នន័យផ្លូវការក្នុងប្រព័ន្ធ
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-slate-800">
-                  <p><span className="font-bold text-slate-900">គោត្តនាម និងនាម៖</span> {lender.name}</p>
-                  <p><span className="font-bold text-slate-900">លេខអត្តសញ្ញាណប័ណ្ណ៖</span> {lender.idCardNumber}</p>
-                  <p><span className="font-bold text-slate-900">ថ្ងៃខែឆ្នាំកំណើត៖</span> {lender.dob}</p>
-                  <p><span className="font-bold text-slate-900">ភេទ៖</span> {lender.gender} (<span className="font-bold">កម្ពស់៖</span> {lender.height})</p>
-                  <p className="sm:col-span-2"><span className="font-bold text-slate-900">អាសយដ្ឋានបច្ចុប្បន្ន៖</span> {lender.address}</p>
+                <p className="font-black text-sm sm:text-base tracking-wider text-slate-800">
+                  ជាតិ សាសនា ព្រះមហាក្សត្រ
+                </p>
+                <div className="pt-3">
+                  <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight py-0.5">
+                    លិខិតកិច្ចសន្យាខ្ចីប្រាក់ (លុយឆក់ Digital)
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-600 font-extrabold tracking-wide mt-0.5">
+                    DIGITAL QUICK LOAN AGREEMENT CONTRACT
+                  </p>
                 </div>
               </div>
 
-              {/* Party B: Borrower (កូនបំណុល) */}
-              <div className="p-4 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between border-b border-blue-200 pb-1.5">
-                  <h3 className="font-black text-blue-950 text-sm flex items-center gap-1.5">
-                    <span>ភាគី "ខ" (អ្នកខ្ចីប្រាក់ / BORROWER):</span>
-                  </h3>
-                  <div className="flex items-center gap-1.5">
-                    {/* Expiry Badge Status */}
-                    {borrowerIdExpiryStatus === 'expired' && (
-                      <span className="text-[10px] bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded font-black flex items-center gap-1">
-                        🔴 ID ផុតកំណត់
-                      </span>
-                    )}
-                    {borrowerIdExpiryStatus === 'expiring_soon' && (
-                      <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded font-black flex items-center gap-1">
-                        🟡 ID ជិតផុតកំណត់
-                      </span>
-                    )}
-                    {borrowerIdExpiryStatus === 'valid' && (
-                      <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded font-black flex items-center gap-1">
-                        🟢 ID មានសុពលភាព
-                      </span>
-                    )}
+              {/* Date & Location */}
+              <div className="text-right text-sm font-bold text-slate-800 italic">
+                ធ្វើនៅបាត់ដំបង, ថ្ងៃទី {contractDate}
+              </div>
+
+              {/* Parties Details */}
+              <div className="space-y-5 text-sm sm:text-[15px] leading-relaxed text-slate-900 font-medium">
+                
+                {/* Party A: Lender (ម្ចាស់បំណុល) */}
+                <div className="p-5 bg-slate-50 border-2 border-slate-300 rounded-2xl space-y-2.5">
+                  <div className="flex items-center justify-between border-b border-slate-300 pb-2">
+                    <h3 className="font-black text-slate-950 text-base flex items-center gap-1.5">
+                      <span>ភាគី "ក" (ម្ចាស់បំណុល / LENDER):</span>
+                    </h3>
+                    <span className="text-xs bg-slate-200 text-slate-900 px-2.5 py-0.5 rounded-md font-extrabold">
+                      ទិន្នន័យផ្លូវការក្នុងប្រព័ន្ធ
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-slate-900">
+                    <p><span className="font-bold text-slate-950">គោត្តនាម និងនាម៖</span> {lender.name}</p>
+                    <p><span className="font-bold text-slate-950">លេខអត្តសញ្ញាណប័ណ្ណ៖</span> {lender.idCardNumber}</p>
+                    <p><span className="font-bold text-slate-950">ថ្ងៃខែឆ្នាំកំណើត៖</span> {lender.dob}</p>
+                    <p><span className="font-bold text-slate-950">ភេទ៖</span> {lender.gender} (<span className="font-bold">កម្ពស់៖</span> {lender.height})</p>
+                    <p className="sm:col-span-2"><span className="font-bold text-slate-950">អាសយដ្ឋានបច្ចុប្បន្ន៖</span> {lender.address}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-slate-800">
-                  <p><span className="font-bold text-slate-900">គោត្តនាម និងនាម៖</span> <span className="font-black text-blue-900">{borrowerName || '................................'}</span></p>
-                  <p><span className="font-bold text-slate-900">លេខអត្តសញ្ញាណប័ណ្ណ៖</span> <span className="font-black text-blue-900">{borrowerId || '................................'}</span></p>
-                  <p><span className="font-bold text-slate-900">ថ្ងៃខែឆ្នាំកំណើត៖</span> {borrowerDob || '....................'}</p>
-                  <p><span className="font-bold text-slate-900">លេខទូរស័ព្ទទំនាក់ទំនង៖</span> {borrowerPhone || '....................'}</p>
-                  <p><span className="font-bold text-slate-900">សុពលភាព ID៖</span> {borrowerIdExpiry || 'មិនទាន់បញ្ជាក់'}</p>
-                  <p className="sm:col-span-2"><span className="font-bold text-slate-900">អាសយដ្ឋានបច្ចុប្បន្ន៖</span> {borrowerAddress || '................................................'}</p>
-                </div>
-              </div>
 
-              {/* Loan Clauses */}
-              <div className="space-y-3 pt-2">
-                <h4 className="font-black text-slate-950 underline text-sm">
-                  ភាគីទាំងពីរបានព្រមព្រៀងគ្នាលើប្រការដូចខាងក្រោម៖
-                </h4>
-
-                <div className="space-y-2 text-xs sm:text-sm text-slate-800 leading-relaxed">
-                  <p>
-                    <span className="font-black text-slate-950">ប្រការ ១ (ចំនួនទឹកប្រាក់កម្ចី)៖</span> ភាគី "ក" បានយល់ព្រមអោយ ភាគី "ខ" ខ្ចីប្រាក់ចំនួន <span className="font-black text-emerald-800 text-base">${amountUSD.toLocaleString()} USD</span> (ប្រាក់ដុល្លារអាមេរិក) ដោយគិតចាប់ពីថ្ងៃចុះកិច្ចសន្យានេះតទៅ។
-                  </p>
-
-                  <p>
-                    <span className="font-black text-slate-950">ប្រការ ២ (រយៈពេល និងការបង់ប្រាក់)៖</span> ភាគី "ខ" សន្យាសងប្រាក់ដើម និងការប្រាក់មក ភាគី "ក" វិញក្នុងរយៈពេល <span className="font-black text-slate-950">{durationDays} ថ្ងៃ</span> ដោយបង់ជាប្រភេទ <span className="font-bold text-slate-900">បង់រាល់ថ្ងៃ (Daily)</span> តាមគំរូគណនា {interestMethod === 'flat' ? 'ការប្រាក់ថេរ' : interestMethod === 'declining' ? 'ការប្រាក់ថយចុះ' : 'គ្មានការប្រាក់'}។
-                  </p>
-
-                  <p>
-                    <span className="font-black text-slate-950">ប្រការ ៣ (សុពលភាពអត្តសញ្ញាណប័ណ្ណ)៖</span> ភាគី "ខ" ធានាថា អត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ ដែលបានផ្តល់ជូនក្នុងប្រព័ន្ធ គឺជាឯកសារពិតប្រាកដ មានសុពលភាព និងត្រឹមត្រូវតាមច្បាប់។
-                  </p>
-
-                  <p>
-                    <span className="font-black text-slate-950">ប្រការ ៤ (កាតព្វកិច្ចផ្លូវច្បាប់)៖</span> ប្រសិនបើ ភាគី "ខ" គេចវេស មិនព្រមសងប្រាក់តាមការកំណត់ ឬផ្តល់ព័ត៌មានភូតភរ ភាគី "ក" មានសិទ្ធិពេញលេញក្នុងការចាត់វិធានការតាមផ្លូវច្បាប់ជាធរមាន ដើម្បីទាមទារសំណងប្រាក់ដើម ការប្រាក់ និងសេវាច្បាប់ផ្សេងៗ។
-                  </p>
-                </div>
-              </div>
-
-              {/* Fingerprint & Signatures Section */}
-              <div className="pt-6 border-t-2 border-slate-900 space-y-4">
-                <p className="text-center font-bold text-xs text-slate-700">
-                  កិច្ចសន្យានេះ ធ្វើឡើងជា ២ ច្បាប់ មានតម្លៃច្បាប់ស្មើៗគ្នា ហើយភាគីទាំងពីរបានអាន យល់ព្រម និងផ្ដិតស្នាមមេដៃទុកជាភស្តុតាង។
-                </p>
-
-                <div className="grid grid-cols-2 gap-6 pt-4 text-center">
-                  
-                  {/* Thumbprint Party A (Lender) */}
-                  <div className="space-y-2 flex flex-col items-center">
-                    <p className="font-black text-xs text-slate-900 uppercase">
-                      ស្នាមមេដៃស្តាំ/ឆ្វេង ភាគី "ក" (ម្ចាស់បំណុល)
-                    </p>
-                    <p className="font-bold text-slate-800 text-xs">{lender.name}</p>
-                    <div className="w-28 h-36 border-2 border-dashed border-slate-400 rounded-xl flex flex-col items-center justify-center bg-slate-50 text-[10px] text-slate-400 font-bold p-2">
-                      <span>កន្លែងផ្ដិតមេដៃ</span>
-                      <span className="text-[9px] text-slate-400 mt-1">( Thumbprint Box )</span>
+                {/* Party B: Borrower (កូនបំណុល) */}
+                <div className="p-5 bg-blue-50/70 border-2 border-blue-200 rounded-2xl space-y-2.5">
+                  <div className="flex items-center justify-between border-b border-blue-200 pb-2">
+                    <h3 className="font-black text-blue-950 text-base flex items-center gap-1.5">
+                      <span>ភាគី "ខ" (អ្នកខ្ចីប្រាក់ / BORROWER):</span>
+                    </h3>
+                    <div className="flex items-center gap-1.5">
+                      {/* Expiry Badge Status */}
+                      {borrowerIdExpiryStatus === 'expired' && (
+                        <span className="text-xs bg-rose-100 text-rose-800 border border-rose-300 px-2.5 py-0.5 rounded-md font-black flex items-center gap-1">
+                          🔴 ID ផុតកំណត់
+                        </span>
+                      )}
+                      {borrowerIdExpiryStatus === 'expiring_soon' && (
+                        <span className="text-xs bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-md font-black flex items-center gap-1">
+                          🟡 ID ជិតផុតកំណត់
+                        </span>
+                      )}
+                      {borrowerIdExpiryStatus === 'valid' && (
+                        <span className="text-xs bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-md font-black flex items-center gap-1">
+                          🟢 ID មានសុពលភាព
+                        </span>
+                      )}
                     </div>
                   </div>
-
-                  {/* Thumbprint Party B (Borrower) */}
-                  <div className="space-y-2 flex flex-col items-center">
-                    <p className="font-black text-xs text-slate-900 uppercase">
-                      ស្នាមមេដៃស្តាំ/ឆ្វេង ភាគី "ខ" (កូនបំណុល)
-                    </p>
-                    <p className="font-bold text-slate-800 text-xs">{borrowerName || 'អ្នកខ្ចីប្រាក់'}</p>
-                    <div className="w-28 h-36 border-2 border-dashed border-slate-400 rounded-xl flex flex-col items-center justify-center bg-slate-50 text-[10px] text-slate-400 font-bold p-2">
-                      <span>កន្លែងផ្ដិតមេដៃ</span>
-                      <span className="text-[9px] text-slate-400 mt-1">( Thumbprint Box )</span>
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-slate-900">
+                    <p><span className="font-bold text-slate-950">គោត្តនាម និងនាម៖</span> <span className="font-black text-blue-900">{borrowerName || '................................'}</span></p>
+                    <p><span className="font-bold text-slate-950">លេខអត្តសញ្ញាណប័ណ្ណ៖</span> <span className="font-black text-blue-900">{borrowerId || '................................'}</span></p>
+                    <p><span className="font-bold text-slate-950">ថ្ងៃខែឆ្នាំកំណើត៖</span> {borrowerDob || '....................'}</p>
+                    <p><span className="font-bold text-slate-950">លេខទូរស័ព្ទទំនាក់ទំនង៖</span> {borrowerPhone || '....................'}</p>
+                    <p><span className="font-bold text-slate-950">សុពលភាព ID៖</span> {borrowerIdExpiry || 'មិនទាន់បញ្ជាក់'}</p>
+                    <p className="sm:col-span-2"><span className="font-bold text-slate-950">អាសយដ្ឋានបច្ចុប្បន្ន៖</span> {borrowerAddress || '................................................'}</p>
                   </div>
-
                 </div>
-              </div>
 
+                {/* Loan Clauses */}
+                <div className="space-y-3.5 pt-2">
+                  <h4 className="font-black text-slate-950 underline text-base sm:text-lg">
+                    ភាគីទាំងពីរបានព្រមព្រៀងគ្នាលើប្រការដូចខាងក្រោម៖
+                  </h4>
+
+                  <div className="space-y-3 text-sm sm:text-[15px] text-slate-900 leading-relaxed">
+                    <p>
+                      <span className="font-black text-slate-950">ប្រការ ១ (ចំនួនទឹកប្រាក់កម្ចី)៖</span> ភាគី "ក" បានយល់ព្រមអោយ ភាគី "ខ" ខ្ចីប្រាក់ចំនួន <span className="font-black text-emerald-800 text-lg sm:text-xl">${amountUSD.toLocaleString()} USD</span> (ប្រាក់ដុល្លារអាមេរិក) ដោយគិតចាប់ពីថ្ងៃចុះកិច្ចសន្យានេះតទៅ។
+                    </p>
+
+                    <p>
+                      <span className="font-black text-slate-950">ប្រការ ២ (រយៈពេល និងការបង់ប្រាក់)៖</span> ភាគី "ខ" សន្យាសងប្រាក់ដើម និងការប្រាក់មក ភាគី "ក" វិញក្នុងរយៈពេល <span className="font-black text-slate-950">{durationDays} ថ្ងៃ</span> ដោយបង់ជាប្រភេទ <span className="font-bold text-slate-900">បង់រាល់ថ្ងៃ (Daily)</span> តាមគំរូគណនា {interestMethod === 'flat' ? 'ការប្រាក់ថេរ' : interestMethod === 'declining' ? 'ការប្រាក់ថយចុះ' : 'គ្មានការប្រាក់'}។
+                    </p>
+
+                    <p>
+                      <span className="font-black text-slate-950">ប្រការ ៣ (សុពលភាពអត្តសញ្ញាណប័ណ្ណ)៖</span> ភាគី "ខ" ធានាថា អត្តសញ្ញាណប័ណ្ណសញ្ជាតិខ្មែរ ដែលបានផ្តល់ជូនក្នុងប្រព័ន្ធ គឺជាឯកសារពិតប្រាកដ មានសុពលភាព និងត្រឹមត្រូវតាមច្បាប់។
+                    </p>
+
+                    <p>
+                      <span className="font-black text-slate-950">ប្រការ ៤ (កាតព្វកិច្ចផ្លូវច្បាប់)៖</span> ប្រសិនបើ ភាគី "ខ" គេចវេស មិនព្រមសងប្រាក់តាមការកំណត់ ឬផ្តល់ព័ត៌មានភូតភរ ភាគី "ក" មានសិទ្ធិពេញលេញក្នុងការចាត់វិធានការតាមផ្លូវច្បាប់ជាធរមាន ដើម្បីទាមទារសំណងប្រាក់ដើម ការប្រាក់ និងសេវាច្បាប់ផ្សេងៗ។
+                    </p>
+                  </div>
+                </div>
+
+              </div>
             </div>
+
+            {/* Fingerprint & Signatures Section (Anchored at the Bottom of A4) */}
+            <div className="pt-6 border-t-2 border-slate-900 space-y-4 mt-6">
+              <p className="text-center font-bold text-xs sm:text-sm text-slate-800 leading-relaxed">
+                កិច្ចសន្យានេះ ធ្វើឡើងជា ២ ច្បាប់ មានតម្លៃច្បាប់ស្មើៗគ្នា ហើយភាគីទាំងពីរបានអាន យល់ព្រម និងផ្ដិតស្នាមមេដៃទុកជាភស្តុតាង។
+              </p>
+
+              <div className="grid grid-cols-2 gap-6 pt-2 text-center">
+                
+                {/* Thumbprint Party A (Lender) */}
+                <div className="space-y-2 flex flex-col items-center">
+                  <p className="font-black text-xs sm:text-sm text-slate-950 uppercase">
+                    ស្នាមមេដៃស្តាំ/ឆ្វេង ភាគី "ក" (ម្ចាស់បំណុល)
+                  </p>
+                  <p className="font-bold text-slate-900 text-xs sm:text-sm">{lender.name}</p>
+                  <div className="w-32 sm:w-36 h-40 border-2 border-dashed border-slate-400 rounded-2xl flex flex-col items-center justify-center bg-slate-50 text-xs text-slate-400 font-bold p-2 shadow-inner">
+                    <span>កន្លែងផ្ដិតមេដៃ</span>
+                    <span className="text-[10px] text-slate-400 mt-1">( Thumbprint Box )</span>
+                  </div>
+                </div>
+
+                {/* Thumbprint Party B (Borrower) */}
+                <div className="space-y-2 flex flex-col items-center">
+                  <p className="font-black text-xs sm:text-sm text-slate-950 uppercase">
+                    ស្នាមមេដៃស្តាំ/ឆ្វេង ភាគី "ខ" (កូនបំណុល)
+                  </p>
+                  <p className="font-bold text-slate-900 text-xs sm:text-sm">{borrowerName || 'អ្នកខ្ចីប្រាក់'}</p>
+                  <div className="w-32 sm:w-36 h-40 border-2 border-dashed border-slate-400 rounded-2xl flex flex-col items-center justify-center bg-slate-50 text-xs text-slate-400 font-bold p-2 shadow-inner">
+                    <span>កន្លែងផ្ដិតមេដៃ</span>
+                    <span className="text-[10px] text-slate-400 mt-1">( Thumbprint Box )</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
           </div>
 
         </div>
