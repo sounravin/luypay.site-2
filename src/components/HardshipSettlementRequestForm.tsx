@@ -538,27 +538,6 @@ ${scheduleItems.map(item => {
 
               </div>
 
-              {/* Preset Chips */}
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800">
-                <span className="text-[11px] font-bold text-slate-400">
-                  ⚡️ {language === 'kh' ? 'ជ្រើសរើសចំនួនប្រាក់លឿន៖' : 'Quick Rates:'}
-                </span>
-                {presetDailyAmounts.map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setDailyRate(amt)}
-                    className={`px-2.5 py-1 text-xs font-black rounded-lg transition cursor-pointer border ${
-                      dailyRate === amt
-                        ? 'bg-amber-500 text-slate-950 border-amber-400 shadow'
-                        : 'bg-slate-900 text-slate-300 border-slate-750 hover:bg-slate-800 hover:text-white'
-                    }`}
-                  >
-                    {currSymbol}{amt} / ថ្ងៃ
-                  </button>
-                ))}
-              </div>
-
               {/* Note / Reason */}
               <div className="space-y-1.5 pt-2 border-t border-slate-800">
                 <label className="font-bold text-xs text-slate-300 flex items-center gap-1">
@@ -616,56 +595,6 @@ ${scheduleItems.map(item => {
                 <p className="text-[10px] text-emerald-400/80 font-mono">
                   {endDateIso}
                 </p>
-              </div>
-            </div>
-
-            {/* Preview Schedule Table */}
-            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-indigo-400" />
-                  <span>{language === 'kh' ? 'មើលគំរូកាលវិភាគសងប្រាក់លម្អិត' : 'Detailed Repayment Schedule Preview'}</span>
-                </h3>
-                <span className="text-[10px] text-slate-400 font-bold">
-                  {scheduleItems.length} {language === 'kh' ? 'ថ្ងៃ' : 'days'}
-                </span>
-              </div>
-
-              <div className="max-h-52 overflow-y-auto rounded-xl border border-slate-800">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-900 text-slate-400 font-black">
-                      <th className="p-2 border-b border-slate-800 text-center w-12">លើកទី</th>
-                      <th className="p-2 border-b border-slate-800">កាលបរិច្ឆេទ</th>
-                      <th className="p-2 border-b border-slate-800 text-right">ចំនួនប្រាក់</th>
-                      <th className="p-2 border-b border-slate-800 text-right">ប្រាក់នៅសល់</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60 font-medium text-slate-300">
-                    {scheduleItems.slice(0, 30).map((item) => (
-                      <tr key={item.step} className={item.step === totalInstallments ? 'bg-amber-500/10 font-bold text-amber-300' : ''}>
-                        <td className="p-2 text-center font-mono text-slate-400">{item.step}</td>
-                        <td className="p-2">
-                          <span>{item.dateFormatted}</span>
-                          <span className="text-[10px] text-slate-500 block font-mono">{item.isoDate}</span>
-                        </td>
-                        <td className="p-2 text-right font-black text-emerald-400">
-                          {currSymbol}{item.amount.toFixed(2)}
-                        </td>
-                        <td className="p-2 text-right font-semibold text-slate-400">
-                          {currSymbol}{item.remaining.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                    {scheduleItems.length > 30 && (
-                      <tr>
-                        <td colSpan={4} className="p-2 text-center text-[11px] text-slate-500 italic bg-slate-900/50">
-                          ...{language === 'kh' ? `និង ${scheduleItems.length - 30} ថ្ងៃទៀត` : `and ${scheduleItems.length - 30} more days`}...
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
               </div>
             </div>
 

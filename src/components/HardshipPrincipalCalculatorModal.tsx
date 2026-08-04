@@ -439,28 +439,6 @@ ${scheduleItems.map(item => {
                   className="w-full px-3 py-2.5 bg-slate-900 border border-slate-750 rounded-xl font-semibold text-white focus:outline-none focus:border-amber-500 transition"
                 />
               </div>
-
-            </div>
-
-            {/* Quick Preset Buttons for Daily Amount */}
-            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800/80">
-              <span className="text-[11px] font-bold text-slate-400">
-                ⚡️ {language === 'kh' ? 'ជ្រើសរើសចំនួនប្រាក់លឿន៖' : 'Quick Rate Chips:'}
-              </span>
-              {presetDailyAmounts.map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => setDailyRate(amt)}
-                  className={`px-2.5 py-1 text-xs font-black rounded-lg transition cursor-pointer border ${
-                    dailyRate === amt
-                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow'
-                      : 'bg-slate-900 text-slate-300 border-slate-750 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  {currSymbol}{amt} / ថ្ងៃ
-                </button>
-              ))}
             </div>
           </div>
 
