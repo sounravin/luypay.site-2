@@ -233,4 +233,27 @@ export interface PaymentDelayRequest {
   rejectedReason?: string;
 }
 
+export interface WebsiteVisitorLog {
+  id: string;
+  visitorId: string;
+  ip: string;
+  country: string;
+  countryCode: string;
+  province: string;
+  provinceCode?: string;
+  city?: string;
+  isp: string;
+  device: 'Mobile' | 'Tablet' | 'Desktop';
+  browser: string;
+  os: string;
+  route: string;
+  domain: string;
+  timestamp: string;
+  lastActive: string;
+  isOnline: boolean;
+  userAgent?: string;
+  pageViews?: number;
+}
+
+
 

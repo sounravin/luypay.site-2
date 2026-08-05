@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserX, UserCheck, ShieldAlert, Check, X, Search, Calendar, Award, Trash2, Edit2, Lock, Plus, RefreshCw, QrCode, Upload, Image, Settings, AlertCircle, Camera, Layout, Smartphone, Monitor } from 'lucide-react';
+import { Users, UserX, UserCheck, ShieldAlert, Check, X, Search, Calendar, Award, Trash2, Edit2, Lock, Plus, RefreshCw, QrCode, Upload, Image, Settings, AlertCircle, Camera, Layout, Smartphone, Monitor, Globe } from 'lucide-react';
 import { doc, setDoc, deleteDoc, getDoc, writeBatch, collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Member, SubscriptionRequest } from '../types';
 import { safeStorage, largeMediaStorage } from '../lib/safeStorage';
+import DigitalVisitorAnalyticsDashboard from './DigitalVisitorAnalyticsDashboard';
 
 interface AdminMembersDashboardProps {
   members: Member[];
@@ -26,7 +27,7 @@ export default function AdminMembersDashboard({
   appTheme = 'slate',
   onOpenAvatarFrameModal
 }: AdminMembersDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'requests' | 'directory' | 'qr_settings' | 'logo_settings' | 'sponsor_settings' | 'portal_settings' | 'layout_settings'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'directory' | 'qr_settings' | 'logo_settings' | 'sponsor_settings' | 'portal_settings' | 'layout_settings' | 'website_analytics'>('requests');
   const [searchQuery, setSearchQuery] = useState('');
   const [showResellerInfo, setShowResellerInfo] = useState(false);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
@@ -951,6 +952,19 @@ export default function AdminMembersDashboard({
             >
               <Users className="w-4 h-4 text-emerald-500" />
               <span>បញ្ជីសមាជិកទាំងអស់ ({totalMembersCount})</span>
+            </button>
+            
+            {/* DIGITAL Website Visitor Analytics Tab */}
+            <button
+              onClick={() => setActiveTab('website_analytics')}
+              className={`px-4 py-2 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'website_analytics'
+                  ? 'bg-slate-950 text-cyan-400 shadow-sm border border-cyan-500/40 ring-2 ring-cyan-500/20'
+                  : 'text-slate-600 hover:text-slate-900 bg-slate-200/50'
+              }`}
+            >
+              <Globe className="w-4 h-4 text-cyan-500 animate-pulse" />
+              <span>{language === 'kh' ? '🌐 តាមដានអ្នកទស្សនា Web' : '🌐 Digital Website Analytics'}</span>
             </button>
 
             {/* Grouped Settings Dropdown Menu */}
@@ -2720,6 +2734,16 @@ export default function AdminMembersDashboard({
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 8: Digital Website Visitor Analytics */}
+          {activeTab === 'website_analytics' && (
+            <div className="p-2 sm:p-4 bg-slate-950 animate-in fade-in duration-200 rounded-3xl">
+              <DigitalVisitorAnalyticsDashboard
+                language={language}
+                showToast={showToast}
+              />
             </div>
           )}
         </div>

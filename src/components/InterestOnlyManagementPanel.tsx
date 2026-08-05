@@ -51,7 +51,7 @@ export const InterestOnlyManagementPanel: React.FC<InterestOnlyManagementPanelPr
 
   // Helper to determine if a borrower is in "Interest-Only / Hardship" status and belongs to currentUser
   const isInterestOnlyBorrower = (b: Borrower) => {
-    const bLender = (b.createdBy || b.lenderId || b.lenderUsername || '').toLowerCase();
+    const bLender = ((b as any).createdBy || (b as any).lenderId || (b as any).lenderUsername || b.userId || '').toLowerCase();
     const userLower = (currentUser || 'sounravin').toLowerCase();
     const matchesAccount = !bLender || bLender === userLower;
 

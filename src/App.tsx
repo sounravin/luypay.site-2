@@ -28,6 +28,7 @@ import PricingPanel from './components/PricingPanel';
 import NotificationBell, { playNotificationSound } from './components/NotificationBell';
 import PlanApprovalModal from './components/PlanApprovalModal';
 import KhmerAvatarFrame from './components/KhmerAvatarFrame';
+import { trackCurrentVisit } from './lib/visitorTracker';
 import KhmerAvatarFrameModal from './components/KhmerAvatarFrameModal';
 import BorrowerApplyForm from './components/BorrowerApplyForm';
 import PaymentDelayRequestForm from './components/PaymentDelayRequestForm';
@@ -257,6 +258,11 @@ export default function App() {
   useEffect(() => {
     shareholdersRef.current = shareholders;
   }, [shareholders]);
+
+  // Track digital website visits to luypay.site
+  useEffect(() => {
+    trackCurrentVisit(window.location.pathname || '/');
+  }, []);
 
   // Sync local shareholders when currentUser switches
   useEffect(() => {
