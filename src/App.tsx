@@ -38,7 +38,7 @@ import LoanApplicationsControlPanel from './components/LoanApplicationsControlPa
 import HardshipControlPanel from './components/HardshipControlPanel';
 import { InterestOnlyManagementPanel } from './components/InterestOnlyManagementPanel';
 import { LoanApplication } from './types';
-import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText, X, Layout, Calculator } from 'lucide-react';
+import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText, X, Layout, Calculator, Menu, LayoutGrid } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDoc, getDocs } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import { safeStorage, largeMediaStorage } from './lib/safeStorage';
@@ -481,7 +481,7 @@ export default function App() {
         console.warn('Failed to parse saved layout config:', e);
       }
     }
-    return { cardLayer: 'default', mobileLayoutMode: 'app_menu' };
+    return { cardLayer: 'default', mobileLayoutMode: 'app_menu', showMarqueeBanner: true };
   });
 
   const handleQuickChangeLayoutLayer = async (newLayer: 'default' | 'compact' | 'detailed') => {
@@ -880,7 +880,7 @@ export default function App() {
     const unsubscribeLayout = onSnapshot(doc(db, 'settings', 'layout_config'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        const merged = { cardLayer: 'default', mobileLayoutMode: 'app_menu', ...data };
+        const merged = { cardLayer: 'default', mobileLayoutMode: 'app_menu', showMarqueeBanner: true, ...data };
         setLayoutConfig(merged);
         safeStorage.setItem('luypay_layout_config', JSON.stringify(merged));
       }
@@ -1239,6 +1239,7 @@ export default function App() {
     }
   };
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [settingOldPassword, setSettingOldPassword] = useState('');
   const [settingNewPassword, setSettingNewPassword] = useState('');
   const [settingConfirmNewPassword, setSettingConfirmNewPassword] = useState('');
@@ -5232,7 +5233,7 @@ export default function App() {
       )}
 
       {/* Marquee Banner */}
-      {enableKhmerArt && (
+      {layoutConfig?.showMarqueeBanner !== false && enableKhmerArt && (
         <div id="global-marquee-banner" className="bg-purple-600 text-white font-bold text-xs py-2 shadow-sm border-b border-purple-700/20 select-none shrink-0 z-40 overflow-hidden w-full">
           <div className="animate-marquee-smooth flex">
             {isSuperAdmin ? (
@@ -5888,101 +5889,6 @@ export default function App() {
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
-          </div>
-
-          {/* Super App Mobile Navigation - Clean Horizontal Scroll Segmented Pill Bar */}
-          <div className={`flex items-center gap-2 overflow-x-auto no-scrollbar border-t pt-2.5 pb-0.5 relative z-10 ${
-            mobileHeaderStyle === 'angkor' ? 'border-amber-600/30' : 'border-slate-800'
-          }`}>
-            <button
-              onClick={() => setActiveSection('ledger')}
-              className={`flex-none py-2 px-3.5 text-xs font-black rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-xs border active:scale-95 ${
-                activeSection === 'ledger'
-                  ? mobileHeaderStyle === 'angkor'
-                    ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/25 border-amber-300 ring-2 ring-amber-400/30'
-                    : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 border-emerald-300 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-400/30'
-                  : mobileHeaderStyle === 'angkor'
-                    ? 'bg-amber-950/50 text-amber-300 hover:text-amber-100 hover:bg-amber-900/60 border-amber-500/30'
-                    : 'bg-slate-800/80 hover:bg-slate-750 text-slate-200 hover:text-white border-slate-700/80'
-              }`}
-            >
-              <span className="text-sm">📝</span>
-              <span>{language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger Records'}</span>
-            </button>
-
-            {currentUser === 'sounravin' && (
-              <button
-                onClick={() => setActiveSection('admin_dashboard')}
-                className={`flex-none py-2 px-3.5 text-xs font-black rounded-2xl transition-all relative cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-xs border active:scale-95 ${
-                  activeSection === 'admin_dashboard'
-                    ? mobileHeaderStyle === 'angkor'
-                      ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/25 border-amber-300 ring-2 ring-amber-400/30'
-                      : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 border-emerald-300 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-400/30'
-                    : mobileHeaderStyle === 'angkor'
-                      ? 'bg-amber-950/50 text-amber-300 hover:text-amber-100 hover:bg-amber-900/60 border-amber-500/30'
-                      : 'bg-slate-800/80 hover:bg-slate-750 text-slate-200 hover:text-white border-slate-700/80'
-                }`}
-              >
-                <span className="text-sm">📊</span>
-                <span>{language === 'kh' ? 'គ្រប់គ្រងប្រព័ន្ធ' : 'Manage System'}</span>
-                {subRequests.filter(r => r.status === 'pending').length > 0 && (
-                  <span className="px-1.5 py-0.5 text-[9px] rounded-full font-black bg-rose-500 text-white animate-pulse shadow-xs">
-                    {subRequests.filter(r => r.status === 'pending').length}
-                  </span>
-                )}
-              </button>
-            )}
-
-            <button
-              onClick={() => {
-                setIsShareholderModalOpen(true);
-                playClickSound();
-              }}
-              className={`flex-none py-2 px-3.5 text-xs font-black rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-xs border active:scale-95 ${
-                isShareholderModalOpen
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md border-emerald-300'
-                  : mobileHeaderStyle === 'angkor'
-                    ? 'bg-amber-950/50 text-amber-300 hover:text-amber-100 hover:bg-amber-900/60 border-amber-500/30'
-                    : 'bg-slate-800/80 hover:bg-slate-750 text-slate-200 hover:text-white border-slate-700/80'
-              }`}
-            >
-              <span className="text-sm">🤝</span>
-              <span>{language === 'kh' ? 'គ្រប់គ្រងភាគហ៊ុន' : 'Shareholders'}</span>
-            </button>
-
-            {isLoggedIn && (
-              <>
-                <button
-                  onClick={() => setActiveSection('loan_applications')}
-                  className={`flex-none py-2 px-3.5 text-xs font-black rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-xs border active:scale-95 ${
-                    activeSection === 'loan_applications'
-                      ? mobileHeaderStyle === 'angkor'
-                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/25 border-amber-300 ring-2 ring-amber-400/30'
-                        : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 border-emerald-300 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-400/30'
-                      : mobileHeaderStyle === 'angkor'
-                        ? 'bg-amber-950/50 text-amber-300 hover:text-amber-100 hover:bg-amber-900/60 border-amber-500/30'
-                        : 'bg-slate-800/80 hover:bg-slate-750 text-slate-200 hover:text-white border-slate-700/80'
-                  }`}
-                >
-                  <span className="text-sm">📂</span>
-                  <span>{language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveSection('hardship_panel')}
-                  className={`flex-none py-2 px-3.5 text-xs font-black rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-xs border active:scale-95 ${
-                    activeSection === 'hardship_panel'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black shadow-md border-amber-300 ring-2 ring-amber-400/30'
-                      : mobileHeaderStyle === 'angkor'
-                        ? 'bg-amber-950/50 text-amber-300 hover:text-amber-100 hover:bg-amber-900/60 border-amber-500/30'
-                        : 'bg-slate-800/80 hover:bg-slate-750 text-slate-200 hover:text-white border-slate-700/80'
-                  }`}
-                >
-                  <span className="text-sm">📩</span>
-                  <span>{language === 'kh' ? 'សំណើសុំឡើងដើម' : 'Hardship Requests'}</span>
-                </button>
-              </>
-            )}
           </div>
         </div>
 
@@ -6763,36 +6669,336 @@ export default function App() {
               )}
             </button>
 
-            {/* Tab 5: Settings / Admin */}
+            {/* Tab 5: Menus (Super App Pop-up Sheet Trigger) */}
             <button
               type="button"
               onClick={() => {
-                setActiveSection('members_admin');
-                setIsSettingsOpen(false);
+                setIsMobileMenuOpen(prev => !prev);
                 playClickSound();
               }}
               className={`flex flex-col items-center gap-1 cursor-pointer transition-all py-1.5 px-3 rounded-2xl relative active:scale-90 ${
-                (activeSection === 'members_admin' || isSettingsOpen)
+                isMobileMenuOpen
                   ? 'text-emerald-400 font-black'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <div className={`p-1.5 rounded-xl transition-all ${
-                (activeSection === 'members_admin' || isSettingsOpen)
+                isMobileMenuOpen
                   ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
                   : 'bg-transparent'
               }`}>
-                <Settings className="w-5 h-5" />
+                <LayoutGrid className="w-5 h-5" />
               </div>
               <span className="text-[10px] font-bold tracking-tight">
-                {language === 'kh' ? 'ការកំណត់' : 'Settings'}
+                {language === 'kh' ? 'ម៉ឺនុយ' : 'Menus'}
               </span>
-              {(activeSection === 'members_admin' || isSettingsOpen) && (
+              {isMobileMenuOpen && (
                 <span className="absolute -bottom-1.5 w-5 h-1 bg-emerald-400 rounded-full shadow-sm shadow-emerald-400/80 animate-pulse" />
               )}
             </button>
           </div>
         </nav>
+      )}
+
+      {/* Pop-up Menus Sheet / Modal (Opened when clicking Menus button on bottom dock) */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+          {/* Backdrop overlay click handler */}
+          <div className="absolute inset-0" onClick={() => setIsMobileMenuOpen(false)} />
+
+          <div className="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col relative z-10 max-h-[85vh] animate-in slide-in-from-bottom duration-300">
+            {/* Top visual drag handle */}
+            <div className="w-12 h-1.5 bg-slate-700/80 rounded-full mx-auto mt-3 mb-1 shrink-0" />
+
+            {/* Header */}
+            <div className="px-5 py-3 border-b border-slate-800/80 flex items-center justify-between shrink-0 bg-slate-900/90">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 flex items-center justify-center shadow-md shadow-emerald-500/20 font-black">
+                  <LayoutGrid className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-white tracking-tight flex items-center gap-1.5">
+                    <span>{language === 'kh' ? 'ម៉ឺនុយប្រព័ន្ធ' : 'App Menus'}</span>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">Super App</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    {language === 'kh' ? 'ជ្រើសរើសមុខងារដែលអ្នកចង់ប្រើប្រាស់' : 'Select a menu or action'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition cursor-pointer active:scale-90"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Menu Options Grid */}
+            <div className="p-4 overflow-y-auto space-y-4">
+              {/* Section 1: Core App Features */}
+              <div>
+                <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 px-1">
+                  {language === 'kh' ? 'មុខងារចម្បង' : 'Core Features'}
+                </h4>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* 1. បញ្ជីកម្ចី (Ledger Records) */}
+                  <button
+                    onClick={() => {
+                      setActiveSection('ledger');
+                      setIsMobileMenuOpen(false);
+                      setIsSettingsOpen(false);
+                      playClickSound();
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group active:scale-95 ${
+                      activeSection === 'ledger' && !isSettingsOpen
+                        ? 'bg-gradient-to-br from-emerald-950/80 to-slate-900 border-emerald-500/50 text-white ring-1 ring-emerald-500/30 shadow-lg shadow-emerald-950/40'
+                        : 'bg-slate-800/60 hover:bg-slate-800 border-slate-700/60 text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
+                        📝
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+                    </div>
+                    <div>
+                      <span className="font-extrabold text-xs block text-slate-100 group-hover:text-emerald-400 transition-colors">
+                        {language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger Records'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {language === 'kh' ? 'បញ្ជីអ្នកខ្ចី និងតាមដានការបង់' : 'Manage borrowers & payments'}
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* 2. គ្រប់គ្រងភាគហ៊ុន (Shareholders Management) */}
+                  <button
+                    onClick={() => {
+                      setIsShareholderModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                      playClickSound();
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group active:scale-95 ${
+                      isShareholderModalOpen
+                        ? 'bg-gradient-to-br from-teal-950/80 to-slate-900 border-teal-500/50 text-white ring-1 ring-teal-500/30 shadow-lg shadow-teal-950/40'
+                        : 'bg-slate-800/60 hover:bg-slate-800 border-slate-700/60 text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-teal-500/15 border border-teal-500/30 text-teal-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
+                        🤝
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-teal-400 transition-colors" />
+                    </div>
+                    <div>
+                      <span className="font-extrabold text-xs block text-slate-100 group-hover:text-teal-400 transition-colors">
+                        {language === 'kh' ? 'គ្រប់គ្រងភាគហ៊ុន' : 'Shareholders'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {language === 'kh' ? 'ដើមទុន ភាគលាភ & ដៃគូ' : 'Capitals, shares & partners'}
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* 3. សំណើកម្ចី (Loan Requests) */}
+                  <button
+                    onClick={() => {
+                      setActiveSection('loan_applications');
+                      setIsMobileMenuOpen(false);
+                      setIsSettingsOpen(false);
+                      playClickSound();
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group active:scale-95 ${
+                      activeSection === 'loan_applications' && !isSettingsOpen
+                        ? 'bg-gradient-to-br from-cyan-950/80 to-slate-900 border-cyan-500/50 text-white ring-1 ring-cyan-500/30 shadow-lg shadow-cyan-950/40'
+                        : 'bg-slate-800/60 hover:bg-slate-800 border-slate-700/60 text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform relative">
+                        📂
+                        {subRequests.filter(r => r.status === 'pending').length > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full shadow-md shadow-rose-500/50 animate-pulse">
+                            {subRequests.filter(r => r.status === 'pending').length}
+                          </span>
+                        )}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition-colors" />
+                    </div>
+                    <div>
+                      <span className="font-extrabold text-xs block text-slate-100 group-hover:text-cyan-400 transition-colors">
+                        {language === 'kh' ? 'សំណើកម្ចី' : 'Loan Applications'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {language === 'kh' ? 'ពិនិត្យ និងអនុម័តសំណើ' : 'Review & approve requests'}
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* 4. សំណើសុំឡើងដើម (Hardship Requests) */}
+                  <button
+                    onClick={() => {
+                      setActiveSection('hardship_panel');
+                      setIsMobileMenuOpen(false);
+                      setIsSettingsOpen(false);
+                      playClickSound();
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group active:scale-95 ${
+                      activeSection === 'hardship_panel' && !isSettingsOpen
+                        ? 'bg-gradient-to-br from-amber-950/80 to-slate-900 border-amber-500/50 text-white ring-1 ring-amber-500/30 shadow-lg shadow-amber-950/40'
+                        : 'bg-slate-800/60 hover:bg-slate-800 border-slate-700/60 text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
+                        📩
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors" />
+                    </div>
+                    <div>
+                      <span className="font-extrabold text-xs block text-slate-100 group-hover:text-amber-400 transition-colors">
+                        {language === 'kh' ? 'សំណើសុំឡើងដើម' : 'Hardship Requests'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {language === 'kh' ? 'សម្រួល & បន្ថែមដើមទុន' : 'Hardship & restructuring'}
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* 5. គ្រប់គ្រងប្រព័ន្ធ (Admin Dashboard - only for sounravin) */}
+                  {currentUser === 'sounravin' && (
+                    <button
+                      onClick={() => {
+                        setActiveSection('admin_dashboard');
+                        setIsMobileMenuOpen(false);
+                        setIsSettingsOpen(false);
+                        playClickSound();
+                      }}
+                      className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group active:scale-95 ${
+                        activeSection === 'admin_dashboard' && !isSettingsOpen
+                          ? 'bg-gradient-to-br from-indigo-950/80 to-slate-900 border-indigo-500/50 text-white ring-1 ring-indigo-500/30 shadow-lg shadow-indigo-950/40'
+                          : 'bg-slate-800/60 hover:bg-slate-800 border-slate-700/60 text-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
+                          📊
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-xs block text-slate-100 group-hover:text-indigo-400 transition-colors">
+                          {language === 'kh' ? 'គ្រប់គ្រងប្រព័ន្ធ' : 'Admin Dashboard'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block mt-0.5">
+                          {language === 'kh' ? 'ស្ថិតិ & គ្រប់គ្រងទូទៅ' : 'System stats & controls'}
+                        </span>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 6. គម្រោងកម្មវិធី (Subscription Plans) */}
+                  <button
+                    onClick={() => {
+                      setActiveSection('pricing');
+                      setIsMobileMenuOpen(false);
+                      setIsSettingsOpen(false);
+                      playClickSound();
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group active:scale-95 ${
+                      activeSection === 'pricing' && !isSettingsOpen
+                        ? 'bg-gradient-to-br from-yellow-950/80 to-slate-900 border-yellow-500/50 text-white ring-1 ring-yellow-500/30 shadow-lg shadow-yellow-950/40'
+                        : 'bg-slate-800/60 hover:bg-slate-800 border-slate-700/60 text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-yellow-500/15 border border-yellow-500/30 text-yellow-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
+                        🏆
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-yellow-400 transition-colors" />
+                    </div>
+                    <div>
+                      <span className="font-extrabold text-xs block text-slate-100 group-hover:text-yellow-400 transition-colors">
+                        {language === 'kh' ? 'គម្រោងកម្មវិធី' : 'Pricing Plans'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {language === 'kh' ? 'ទិញ ឬបន្តសមាជិកភាព' : 'View membership plans'}
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Section 2: Management & Settings */}
+              <div className="pt-2 border-t border-slate-800/80">
+                <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 px-1">
+                  {language === 'kh' ? 'ការកំណត់ & គណនី' : 'Settings & Account'}
+                </h4>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* 7. ការកំណត់ប្រព័ន្ធ (System Settings) */}
+                  <button
+                    onClick={() => {
+                      setIsSettingsOpen(true);
+                      setIsMobileMenuOpen(false);
+                      playClickSound();
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group active:scale-95 ${
+                      isSettingsOpen
+                        ? 'bg-gradient-to-br from-purple-950/80 to-slate-900 border-purple-500/50 text-white ring-1 ring-purple-500/30 shadow-lg shadow-purple-950/40'
+                        : 'bg-slate-800/60 hover:bg-slate-800 border-slate-700/60 text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
+                        ⚙️
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-purple-400 transition-colors" />
+                    </div>
+                    <div>
+                      <span className="font-extrabold text-xs block text-slate-100 group-hover:text-purple-400 transition-colors">
+                        {language === 'kh' ? 'ការកំណត់ប្រព័ន្ធ' : 'System Settings'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {language === 'kh' ? 'ពាក្យសម្ងាត់ ភាសា & QR' : 'Security, language & QR'}
+                      </span>
+                    </div>
+                  </button>
+
+                  {/* 8. សមាជិកប្រព័ន្ធ (Members Admin) */}
+                  <button
+                    onClick={() => {
+                      setActiveSection('members_admin');
+                      setIsMobileMenuOpen(false);
+                      setIsSettingsOpen(false);
+                      playClickSound();
+                    }}
+                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group active:scale-95 ${
+                      activeSection === 'members_admin' && !isSettingsOpen
+                        ? 'bg-gradient-to-br from-blue-950/80 to-slate-900 border-blue-500/50 text-white ring-1 ring-blue-500/30 shadow-lg shadow-blue-950/40'
+                        : 'bg-slate-800/60 hover:bg-slate-800 border-slate-700/60 text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
+                        👥
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors" />
+                    </div>
+                    <div>
+                      <span className="font-extrabold text-xs block text-slate-100 group-hover:text-blue-400 transition-colors">
+                        {language === 'kh' ? 'សមាជិកប្រព័ន្ធ' : 'Members Admin'}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {language === 'kh' ? 'បញ្ជីគណនី និងសិទ្ធិប្រើប្រាស់' : 'Users & account controls'}
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
           </>
         )}

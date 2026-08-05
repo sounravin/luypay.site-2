@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserX, UserCheck, ShieldAlert, Check, X, Search, Calendar, Award, Trash2, Edit2, Lock, Plus, RefreshCw, QrCode, Upload, Image, Settings, AlertCircle, Camera, Layout, Smartphone, Monitor, Globe } from 'lucide-react';
+import { Users, UserX, UserCheck, ShieldAlert, Check, X, Search, Calendar, Award, Trash2, Edit2, Lock, Plus, RefreshCw, QrCode, Upload, Image, Settings, AlertCircle, Camera, Layout, Smartphone, Monitor, Globe, Volume2 } from 'lucide-react';
 import { doc, setDoc, deleteDoc, getDoc, writeBatch, collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Member, SubscriptionRequest } from '../types';
@@ -82,6 +82,7 @@ export default function AdminMembersDashboard({
   // Layout states
   const [layoutCardLayer, setLayoutCardLayer] = useState<'default' | 'compact' | 'detailed'>('default');
   const [mobileLayoutMode, setMobileLayoutMode] = useState<'app_menu' | 'original'>('app_menu');
+  const [showMarqueeBanner, setShowMarqueeBanner] = useState<boolean>(true);
   const [isLayoutSaving, setIsLayoutSaving] = useState(false);
 
   // Fetch current configurations
@@ -108,6 +109,7 @@ export default function AdminMembersDashboard({
             const parsed = JSON.parse(savedLayoutLocal);
             if (parsed.cardLayer) setLayoutCardLayer(parsed.cardLayer);
             if (parsed.mobileLayoutMode) setMobileLayoutMode(parsed.mobileLayoutMode);
+            if (parsed.showMarqueeBanner !== undefined) setShowMarqueeBanner(parsed.showMarqueeBanner);
           } catch (e) {}
         }
         const layoutDocRef = doc(db, 'settings', 'layout_config');
@@ -115,9 +117,11 @@ export default function AdminMembersDashboard({
         if (layoutSnap.exists()) {
           const cloudLayer = layoutSnap.data().cardLayer || 'default';
           const cloudMobileMode = layoutSnap.data().mobileLayoutMode || 'app_menu';
+          const cloudShowMarquee = layoutSnap.data().showMarqueeBanner !== false;
           setLayoutCardLayer(cloudLayer);
           setMobileLayoutMode(cloudMobileMode);
-          safeStorage.setItem('luypay_layout_config', JSON.stringify({ cardLayer: cloudLayer, mobileLayoutMode: cloudMobileMode }));
+          setShowMarqueeBanner(cloudShowMarquee);
+          safeStorage.setItem('luypay_layout_config', JSON.stringify({ cardLayer: cloudLayer, mobileLayoutMode: cloudMobileMode, showMarqueeBanner: cloudShowMarquee }));
         }
 
         // Load Sponsor Config
@@ -196,14 +200,15 @@ export default function AdminMembersDashboard({
   const handleSaveLayoutConfig = async () => {
     setIsLayoutSaving(true);
     // Save locally first for instant reaction
-    safeStorage.setItem('luypay_layout_config', JSON.stringify({ cardLayer: layoutCardLayer, mobileLayoutMode }));
-    window.dispatchEvent(new CustomEvent('layout_config_updated', { detail: { cardLayer: layoutCardLayer, mobileLayoutMode } }));
+    safeStorage.setItem('luypay_layout_config', JSON.stringify({ cardLayer: layoutCardLayer, mobileLayoutMode, showMarqueeBanner }));
+    window.dispatchEvent(new CustomEvent('layout_config_updated', { detail: { cardLayer: layoutCardLayer, mobileLayoutMode, showMarqueeBanner } }));
 
     try {
       const docRef = doc(db, 'settings', 'layout_config');
       await setDoc(docRef, {
         cardLayer: layoutCardLayer,
-        mobileLayoutMode
+        mobileLayoutMode,
+        showMarqueeBanner
       }, { merge: true });
       showToast(language === 'kh' ? 'បានរក្សាទុកទម្រង់បង្ហាញជោគជ័យ!' : 'Layout configuration saved successfully!', 'success');
     } catch (err) {
@@ -2710,6 +2715,41 @@ export default function AdminMembersDashboard({
                         </div>
                         {mobileLayoutMode === 'original' && <Check className="w-5 h-5 text-indigo-600 shrink-0" />}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Marquee Announcement Banner Toggle */}
+                  <div className="pt-6 border-t border-slate-100">
+                    <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-purple-50/70 border border-purple-200/80">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                          <Volume2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-slate-900">
+                            {language === 'kh' ? 'ផ្ទាំងរំកិលអក្សរជូនដំណឹងខាងលើ (Top Marquee Banner)' : 'Top Marquee Banner'}
+                          </h4>
+                          <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+                            {language === 'kh' 
+                              ? 'បង្ហាញ ឬបិទផ្ទាំងពណ៌ស្វាយរំកិលអក្សរជូនដំណឹងនៅផ្នែកខាងលើបង្អស់នៃកម្មវិធី' 
+                              : 'Show or hide the top purple scrolling marquee announcement banner'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowMarqueeBanner(!showMarqueeBanner)}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          showMarqueeBanner ? 'bg-purple-600' : 'bg-slate-300'
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                            showMarqueeBanner ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
                     </div>
                   </div>
 
