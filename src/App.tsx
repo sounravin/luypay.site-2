@@ -5859,25 +5859,6 @@ export default function App() {
 
             {/* Header Right Quick Control Buttons */}
             <div className="flex items-center gap-1.5 shrink-0">
-              {/* Style Switcher Button */}
-              <button
-                onClick={() => {
-                  const nextStyle = mobileHeaderStyle === 'default' ? 'angkor' : 'default';
-                  setMobileHeaderStyle(nextStyle);
-                  safeStorage.setItem('luypay_mobile_header_style', nextStyle);
-                  playClickSound();
-                }}
-                className={`px-2.5 py-2 rounded-2xl transition-all cursor-pointer border flex items-center gap-1 shadow-sm active:scale-90 ${
-                  mobileHeaderStyle === 'angkor'
-                    ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/35 border-amber-400/40'
-                    : 'bg-slate-800/80 hover:bg-slate-700 text-amber-400 border-slate-700/60'
-                }`}
-                title={language === 'kh' ? 'ប្តូររចនាប័ទ្មអង្គរវត្ត' : 'Switch Header Style'}
-              >
-                <Sparkles className={`w-3.5 h-3.5 ${mobileHeaderStyle === 'angkor' ? 'text-yellow-400 animate-spin-slow' : 'text-amber-400'}`} />
-                {mobileHeaderStyle === 'angkor' && <span className="text-[9px] font-black uppercase text-amber-200">អង្គរ</span>}
-              </button>
-
               {/* Mobile Notification Bell */}
               <NotificationBell borrowers={borrowers} onSelectBorrower={setSelectedBorrowerId} isMobile={true} />
 
@@ -5909,43 +5890,43 @@ export default function App() {
             </div>
           </div>
 
-          {/* Super App Mobile Navigation Buttons Grid */}
-          <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 border-t pt-3 relative z-10 ${
+          {/* Super App Mobile Navigation - Clean Horizontal Scroll Segmented Pill Bar */}
+          <div className={`flex items-center gap-2 overflow-x-auto no-scrollbar border-t pt-2.5 pb-0.5 relative z-10 ${
             mobileHeaderStyle === 'angkor' ? 'border-amber-600/30' : 'border-slate-800'
           }`}>
             <button
               onClick={() => setActiveSection('ledger')}
-              className={`py-3 px-3 text-xs font-black rounded-2xl text-center transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm border active:scale-95 ${
+              className={`flex-none py-2 px-3.5 text-xs font-black rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-xs border active:scale-95 ${
                 activeSection === 'ledger'
                   ? mobileHeaderStyle === 'angkor'
-                    ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-lg shadow-amber-500/25 border-amber-300 ring-2 ring-amber-400/30'
-                    : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 border-emerald-300 shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-400/30'
+                    ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/25 border-amber-300 ring-2 ring-amber-400/30'
+                    : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 border-emerald-300 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-400/30'
                   : mobileHeaderStyle === 'angkor'
                     ? 'bg-amber-950/50 text-amber-300 hover:text-amber-100 hover:bg-amber-900/60 border-amber-500/30'
                     : 'bg-slate-800/80 hover:bg-slate-750 text-slate-200 hover:text-white border-slate-700/80'
               }`}
             >
               <span className="text-sm">📝</span>
-              <span className="truncate">{language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger Records'}</span>
+              <span>{language === 'kh' ? 'បញ្ជីកម្ចី' : 'Ledger Records'}</span>
             </button>
 
             {currentUser === 'sounravin' && (
               <button
                 onClick={() => setActiveSection('admin_dashboard')}
-                className={`py-3 px-3 text-xs font-black rounded-2xl text-center transition-all relative cursor-pointer flex items-center justify-center gap-2 shadow-sm border active:scale-95 ${
+                className={`flex-none py-2 px-3.5 text-xs font-black rounded-2xl transition-all relative cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-xs border active:scale-95 ${
                   activeSection === 'admin_dashboard'
                     ? mobileHeaderStyle === 'angkor'
-                      ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-lg shadow-amber-500/25 border-amber-300 ring-2 ring-amber-400/30'
-                      : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 border-emerald-300 shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-400/30'
+                      ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/25 border-amber-300 ring-2 ring-amber-400/30'
+                      : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 border-emerald-300 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-400/30'
                     : mobileHeaderStyle === 'angkor'
                       ? 'bg-amber-950/50 text-amber-300 hover:text-amber-100 hover:bg-amber-900/60 border-amber-500/30'
                       : 'bg-slate-800/80 hover:bg-slate-750 text-slate-200 hover:text-white border-slate-700/80'
                 }`}
               >
                 <span className="text-sm">📊</span>
-                <span className="truncate">{language === 'kh' ? 'គ្រប់គ្រងប្រព័ន្ធ' : 'Manage System'}</span>
+                <span>{language === 'kh' ? 'គ្រប់គ្រងប្រព័ន្ធ' : 'Manage System'}</span>
                 {subRequests.filter(r => r.status === 'pending').length > 0 && (
-                  <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[9px] rounded-full font-black bg-rose-500 text-white animate-pulse shadow-xs">
+                  <span className="px-1.5 py-0.5 text-[9px] rounded-full font-black bg-rose-500 text-white animate-pulse shadow-xs">
                     {subRequests.filter(r => r.status === 'pending').length}
                   </span>
                 )}
@@ -5957,48 +5938,48 @@ export default function App() {
                 setIsShareholderModalOpen(true);
                 playClickSound();
               }}
-              className={`py-3 px-3 text-xs font-black rounded-2xl text-center transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm border active:scale-95 ${
+              className={`flex-none py-2 px-3.5 text-xs font-black rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-xs border active:scale-95 ${
                 isShareholderModalOpen
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-lg border-emerald-300'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md border-emerald-300'
                   : mobileHeaderStyle === 'angkor'
                     ? 'bg-amber-950/50 text-amber-300 hover:text-amber-100 hover:bg-amber-900/60 border-amber-500/30'
                     : 'bg-slate-800/80 hover:bg-slate-750 text-slate-200 hover:text-white border-slate-700/80'
               }`}
             >
               <span className="text-sm">🤝</span>
-              <span className="truncate">{language === 'kh' ? 'គ្រប់គ្រងភាគហ៊ុន' : 'Shareholders'}</span>
+              <span>{language === 'kh' ? 'គ្រប់គ្រងភាគហ៊ុន' : 'Shareholders'}</span>
             </button>
 
             {isLoggedIn && (
               <>
                 <button
                   onClick={() => setActiveSection('loan_applications')}
-                  className={`py-3 px-3 text-xs font-black rounded-2xl text-center transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm border active:scale-95 ${
+                  className={`flex-none py-2 px-3.5 text-xs font-black rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-xs border active:scale-95 ${
                     activeSection === 'loan_applications'
                       ? mobileHeaderStyle === 'angkor'
-                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-lg shadow-amber-500/25 border-amber-300 ring-2 ring-amber-400/30'
-                        : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 border-emerald-300 shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-400/30'
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 shadow-md shadow-amber-500/25 border-amber-300 ring-2 ring-amber-400/30'
+                        : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 border-emerald-300 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-400/30'
                       : mobileHeaderStyle === 'angkor'
                         ? 'bg-amber-950/50 text-amber-300 hover:text-amber-100 hover:bg-amber-900/60 border-amber-500/30'
                         : 'bg-slate-800/80 hover:bg-slate-750 text-slate-200 hover:text-white border-slate-700/80'
                   }`}
                 >
                   <span className="text-sm">📂</span>
-                  <span className="truncate">{language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}</span>
+                  <span>{language === 'kh' ? 'សំណើកម្ចី' : 'Requests'}</span>
                 </button>
 
                 <button
                   onClick={() => setActiveSection('hardship_panel')}
-                  className={`py-3 px-3 text-xs font-black rounded-2xl text-center transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm border active:scale-95 ${
+                  className={`flex-none py-2 px-3.5 text-xs font-black rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-xs border active:scale-95 ${
                     activeSection === 'hardship_panel'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black shadow-lg border-amber-300 ring-2 ring-amber-400/30'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black shadow-md border-amber-300 ring-2 ring-amber-400/30'
                       : mobileHeaderStyle === 'angkor'
                         ? 'bg-amber-950/50 text-amber-300 hover:text-amber-100 hover:bg-amber-900/60 border-amber-500/30'
                         : 'bg-slate-800/80 hover:bg-slate-750 text-slate-200 hover:text-white border-slate-700/80'
                   }`}
                 >
                   <span className="text-sm">📩</span>
-                  <span className="truncate">{language === 'kh' ? 'សំណើសុំឡើងដើម' : 'Hardship Requests'}</span>
+                  <span>{language === 'kh' ? 'សំណើសុំឡើងដើម' : 'Hardship Requests'}</span>
                 </button>
               </>
             )}
