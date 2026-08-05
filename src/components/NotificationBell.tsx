@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Borrower } from '../types';
 import { getDaysUntilNextPayment, formatMoney } from '../utils';
-import { Bell, Phone, Clock, Volume2 } from 'lucide-react';
+import { Bell, Phone, Clock, Volume2, X } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -11,6 +12,9 @@ export const playNotificationSound = () => {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContextClass) return;
     const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
 
     // Frequency combinations for a warm golden coin chime / resonance
     const playTone = (freq: number, type: OscillatorType, volume: number, duration: number, delay = 0) => {
@@ -82,8 +86,9 @@ export default function NotificationBell({ borrowers, onSelectBorrower, isMobile
   const onlineList = borrowers.filter((b) => b.isOnline === true);
 
   // Toggle notification panel and play sound
-  const toggleDropdown = () => {
-    if (!isOpen && (dueSoonList.length > 0 || onlineList.length > 0)) {
+  const toggleDropdown = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!isOpen) {
       playNotificationSound();
     }
     setIsOpen(!isOpen);
@@ -127,7 +132,7 @@ export default function NotificationBell({ borrowers, onSelectBorrower, isMobile
   }, []);
 
   return (
-    <div ref={containerRef} className="z-50 relative">
+    <div ref={containerRef} className="z-[100] relative inline-block">
       {/* SVG definitions for beautiful golden gradients */}
       <svg className="absolute w-0 h-0 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -142,11 +147,12 @@ export default function NotificationBell({ borrowers, onSelectBorrower, isMobile
 
       {/* Notification Bell Trigger Button: Unified Premium Khmer Golden Style */}
       <button
+        type="button"
         onClick={toggleDropdown}
-        className={`relative flex items-center justify-center rounded-xl transition-all duration-300 cursor-pointer border select-none focus:outline-none shadow-lg bg-[#0c1836] hover:bg-amber-950/40 border-[#dfb035]/50 text-[#FFE082] hover:border-[#dfb035] hover:text-amber-300 ${
+        className={`relative flex items-center justify-center rounded-xl transition-all duration-300 cursor-pointer border select-none focus:outline-none shadow-lg bg-[#0c1836] hover:bg-amber-950/40 border-[#dfb035]/50 text-[#FFE082] hover:border-[#dfb035] hover:text-amber-300 active:scale-95 ${
           sidebarMode ? 'p-2' : 'p-2.5'
         }`}
-        title={language === 'kh' ? 'ការជូនដំណឹងត្រូវទូទាត់ប្រាក់' : 'Payment Notifications'}
+        title={language === 'kh' ? 'មជ្ឈមណ្ឌលជូនដំណឹង (Notifications)' : 'Notification Center'}
       >
         <Bell className={`${sidebarMode ? 'w-4 h-4' : 'w-4.5 h-4.5'} ${dueSoonList.length > 0 ? 'animate-wiggle text-amber-400' : ''}`} />
         
@@ -169,76 +175,82 @@ export default function NotificationBell({ borrowers, onSelectBorrower, isMobile
         )}
       </button>
 
-      {/* Popover Dropdown Panel: Clean Relative Absolute Alignment */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Overlay background to capture clicks and close smoothly */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.15 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/40 z-[90]"
-            />
-            
-            <motion.div
-              initial={
-                sidebarMode
-                  ? { opacity: 0, x: -20, scale: 0.95 }
-                  : { opacity: 0, y: 12, scale: 0.95 }
-              }
-              animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-              exit={
-                sidebarMode
-                  ? { opacity: 0, x: -16, scale: 0.95 }
-                  : { opacity: 0, y: 8, scale: 0.95 }
-              }
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              className={`border-2 rounded-2xl shadow-2xl overflow-hidden z-[100] ${
-                sidebarMode
-                  ? 'absolute left-full top-0 ml-4 w-88 md:w-96 origin-left'
-                  : 'fixed md:absolute top-24 md:top-auto md:mt-2.5 left-4 right-4 md:left-auto md:right-0 w-auto md:w-96 max-w-sm md:max-w-md mx-auto md:mx-0 origin-top md:origin-top-right'
-              } bg-[#070c19] border-[#b37e1b]/70 text-slate-100 dark-glow-amber`}
-            >
-              {/* Decorative Double Border Outline */}
-              <div className="absolute inset-[3px] border border-[#dfb035]/20 rounded-[13px] pointer-events-none z-10" />
-
-              {/* Authentic Khmer Corner Ornaments */}
-              <KhmerCorner className="absolute top-[3px] left-[3px] w-5 h-5 pointer-events-none z-10" />
-              <KhmerCorner className="absolute top-[3px] right-[3px] w-5 h-5 pointer-events-none rotate-90 z-10" />
-              <KhmerCorner className="absolute bottom-[3px] left-[3px] w-5 h-5 pointer-events-none -rotate-90 z-10" />
-              <KhmerCorner className="absolute bottom-[3px] right-[3px] w-5 h-5 pointer-events-none rotate-180 z-10" />
-
-              {/* Custom Watermark Pattern for the popover panel */}
-              <div 
-                className="absolute inset-0 opacity-[0.03] pointer-events-none" 
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M16 0 L32 16 L16 32 L0 16 Z M16 6 L26 16 L16 26 L6 16 Z M16 11 L21 16 L16 21 L11 16 Z' fill='%23dfb035' fill-opacity='1'/%3E%3C/svg%3E")`,
-                  backgroundSize: '16px 16px'
+      {/* Popover Dropdown Panel: Rendered at Document Root via createPortal to guarantee front visibility */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <div className="fixed inset-0 z-[99999] pointer-events-auto flex items-start sm:items-start justify-center sm:justify-end p-3 sm:p-6 sm:pt-16">
+              {/* Overlay background to capture clicks and close smoothly */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
                 }}
+                className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs z-[99998]"
               />
+              
+              <motion.div
+                initial={{ opacity: 0, y: -16, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -12, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="relative z-[99999] w-full max-w-md bg-[#070c19] border-2 border-[#b37e1b]/80 text-slate-100 rounded-2xl shadow-2xl overflow-hidden mt-2 sm:mt-0 dark-glow-amber max-h-[85vh] flex flex-col"
+              >
+                {/* Decorative Double Border Outline */}
+                <div className="absolute inset-[3px] border border-[#dfb035]/20 rounded-[13px] pointer-events-none z-10" />
 
-              {/* Header */}
-              <div className="bg-gradient-to-r from-[#101b36] via-[#16274e] to-[#101b36] px-5 py-3 text-white flex items-center justify-between border-b border-[#dfb035]/30 relative z-10 pl-6">
-                <div className="flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-amber-400 animate-wiggle" />
-                  <h3 className="font-extrabold text-xs tracking-wider uppercase text-[#FFE082]">
-                    {language === 'kh' ? 'មជ្ឈមណ្ឌលជូនដំណឹង' : 'Notification Center'}
-                  </h3>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    playNotificationSound();
+                {/* Authentic Khmer Corner Ornaments */}
+                <KhmerCorner className="absolute top-[3px] left-[3px] w-5 h-5 pointer-events-none z-10" />
+                <KhmerCorner className="absolute top-[3px] right-[3px] w-5 h-5 pointer-events-none rotate-90 z-10" />
+                <KhmerCorner className="absolute bottom-[3px] left-[3px] w-5 h-5 pointer-events-none -rotate-90 z-10" />
+                <KhmerCorner className="absolute bottom-[3px] right-[3px] w-5 h-5 pointer-events-none rotate-180 z-10" />
+
+                {/* Custom Watermark Pattern for the popover panel */}
+                <div 
+                  className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M16 0 L32 16 L16 32 L0 16 Z M16 6 L26 16 L16 26 L6 16 Z M16 11 L21 16 L16 21 L11 16 Z' fill='%23dfb035' fill-opacity='1'/%3E%3C/svg%3E")`,
+                    backgroundSize: '16px 16px'
                   }}
-                  className="flex items-center gap-1 bg-[#1a2e5d] hover:bg-[#254284] border border-[#dfb035]/40 text-[#FFE082] hover:text-amber-300 text-[9px] px-2 py-0.5 rounded-md transition-all cursor-pointer select-none active:scale-95 shadow-inner"
-                  title={language === 'kh' ? 'តេស្តសំឡេងជួង' : 'Test chime sound'}
-                >
-                  <Volume2 className="w-3 h-3 text-amber-400" />
-                  <span>{language === 'kh' ? 'តេស្តសំឡេង' : 'Sound Test'}</span>
-                </button>
-              </div>
+                />
+
+                {/* Header */}
+                <div className="bg-gradient-to-r from-[#101b36] via-[#16274e] to-[#101b36] px-4 sm:px-5 py-3 text-white flex items-center justify-between border-b border-[#dfb035]/30 relative z-10 pl-6">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-amber-400 animate-wiggle" />
+                    <h3 className="font-extrabold text-xs tracking-wider uppercase text-[#FFE082]">
+                      {language === 'kh' ? 'មជ្ឈមណ្ឌលជូនដំណឹង' : 'Notification Center'}
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playNotificationSound();
+                      }}
+                      className="flex items-center gap-1 bg-[#1a2e5d] hover:bg-[#254284] border border-[#dfb035]/40 text-[#FFE082] hover:text-amber-300 text-[9px] px-2 py-1 rounded-md transition-all cursor-pointer select-none active:scale-95 shadow-inner"
+                      title={language === 'kh' ? 'តេស្តសំឡេងជួង' : 'Test chime sound'}
+                    >
+                      <Volume2 className="w-3 h-3 text-amber-400" />
+                      <span>{language === 'kh' ? 'តេស្តសំឡេង' : 'Sound Test'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsOpen(false);
+                      }}
+                      className="p-1 text-slate-400 hover:text-white bg-[#1a2e5d]/60 hover:bg-[#254284] border border-[#dfb035]/30 rounded-lg transition cursor-pointer active:scale-90"
+                      title={language === 'kh' ? 'បិទ' : 'Close'}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
 
               {/* Segmented Tabs for Payments vs Online Status */}
               <div className="flex border-b border-[#dfb035]/20 relative z-10 bg-[#070e20] text-[11px] font-black uppercase">
@@ -434,9 +446,11 @@ export default function NotificationBell({ borrowers, onSelectBorrower, isMobile
                 {language === 'kh' ? '🔔 ចុចលើគណនីដើម្បីពិនិត្យសមតុល្យ និងប្រវត្តិលម្អិត' : '🔔 Click on borrower to view detail & records'}
               </div>
             </motion.div>
-          </>
+          </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+    )}
     </div>
   );
 }

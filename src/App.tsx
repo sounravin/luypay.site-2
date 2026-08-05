@@ -2770,6 +2770,14 @@ export default function App() {
     setSelectedBorrowerId(borrower.id);
   };
 
+  const handleSelectBorrowerFromBell = (id: string) => {
+    setSelectedBorrowerId(id);
+    setActiveSection('ledger');
+    setIsSettingsOpen(false);
+    setIsMobileMenuOpen(false);
+    playClickSound();
+  };
+
   const handleToggleSelectBorrower = (borrowerId: string) => {
     setSelectedBorrowerIds((prev) =>
       prev.includes(borrowerId)
@@ -4374,7 +4382,7 @@ export default function App() {
                   >
                     <Settings className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                   </button>
-                  <NotificationBell borrowers={borrowers} onSelectBorrower={setSelectedBorrowerId} isMobile={true} />
+                  <NotificationBell borrowers={borrowers} onSelectBorrower={handleSelectBorrowerFromBell} isMobile={true} />
                 </div>
               </div>
 
@@ -4982,20 +4990,25 @@ export default function App() {
                 
                 {/* Tab 1: Home */}
                 <button
-                  onClick={() => { setActiveSection('ledger'); playClickSound(); }}
-                  className={`flex flex-col items-center gap-0.5 transition cursor-pointer py-1 px-2.5 rounded-xl border-transparent bg-transparent ${activeSection === 'ledger' ? `${activeTabColorClass} font-black scale-105` : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                  onClick={() => {
+                    setActiveSection('ledger');
+                    setIsSettingsOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    playClickSound();
+                  }}
+                  className={`flex flex-col items-center gap-0.5 transition cursor-pointer py-1 px-2.5 rounded-xl border-transparent bg-transparent ${activeSection === 'ledger' && !isSettingsOpen ? `${activeTabColorClass} font-black scale-105` : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                 >
                   <BookOpen className="w-5 h-5" />
                   <span className="text-[9px] font-bold">{language === 'kh' ? 'ទំព័រដើម' : 'Home'}</span>
                 </button>
 
-                {/* Tab 2: Pricing */}
+                {/* Tab 2: Settings */}
                 <button
-                  onClick={() => { setActiveSection('pricing'); playClickSound(); }}
-                  className={`flex flex-col items-center gap-0.5 transition cursor-pointer py-1 px-2.5 rounded-xl border-transparent bg-transparent ${activeSection === 'pricing' ? `${activeTabColorClass} font-black scale-105` : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                  onClick={() => { setIsSettingsOpen(true); playClickSound(); }}
+                  className={`flex flex-col items-center gap-0.5 transition cursor-pointer py-1 px-2.5 rounded-xl border-transparent bg-transparent ${isSettingsOpen ? `${activeTabColorClass} font-black scale-105` : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
                 >
-                  <Award className="w-5 h-5" />
-                  <span className="text-[9px] font-bold">{language === 'kh' ? 'គម្រោង' : 'Plans'}</span>
+                  <Settings className="w-5 h-5" />
+                  <span className="text-[9px] font-bold">{language === 'kh' ? 'ការកំណត់' : 'Settings'}</span>
                 </button>
 
                 {/* Tab 3: Quick Add Loan (Float Center Accent) */}
@@ -5323,7 +5336,7 @@ export default function App() {
             <div className="border-l border-slate-700/60 pl-1 ml-0.5 flex items-center shrink-0">
               <NotificationBell
                 borrowers={borrowers}
-                onSelectBorrower={setSelectedBorrowerId}
+                onSelectBorrower={handleSelectBorrowerFromBell}
                 sidebarMode={true}
               />
             </div>
@@ -5861,7 +5874,7 @@ export default function App() {
             {/* Header Right Quick Control Buttons */}
             <div className="flex items-center gap-1.5 shrink-0">
               {/* Mobile Notification Bell */}
-              <NotificationBell borrowers={borrowers} onSelectBorrower={setSelectedBorrowerId} isMobile={true} />
+              <NotificationBell borrowers={borrowers} onSelectBorrower={handleSelectBorrowerFromBell} isMobile={true} />
 
               {/* System Settings Button */}
               <button
@@ -6171,7 +6184,7 @@ export default function App() {
                 selectedCount={selectedBorrowerIds.length}
                 onBulkAutoCheck={handleBulkAutoCheck}
                 borrowers={borrowers}
-                onSelectBorrower={setSelectedBorrowerId}
+                onSelectBorrower={handleSelectBorrowerFromBell}
                 buttonStyle={buttonStyle}
               />
 
@@ -6565,6 +6578,8 @@ export default function App() {
               onClick={() => {
                 setActiveSection('ledger');
                 setIsSettingsOpen(false);
+                setIsMobileMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 playClickSound();
               }}
               className={`flex flex-col items-center gap-1 cursor-pointer transition-all py-1.5 px-3 rounded-2xl relative active:scale-90 ${
@@ -6640,31 +6655,31 @@ export default function App() {
               </span>
             </button>
 
-            {/* Tab 4: Plans */}
+            {/* Tab 4: System Settings */}
             <button
               type="button"
               onClick={() => {
-                setActiveSection('pricing');
-                setIsSettingsOpen(false);
+                setIsSettingsOpen(true);
+                setIsMobileMenuOpen(false);
                 playClickSound();
               }}
               className={`flex flex-col items-center gap-1 cursor-pointer transition-all py-1.5 px-3 rounded-2xl relative active:scale-90 ${
-                activeSection === 'pricing' && !isSettingsOpen
+                isSettingsOpen
                   ? 'text-emerald-400 font-black'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <div className={`p-1.5 rounded-xl transition-all ${
-                activeSection === 'pricing' && !isSettingsOpen
+                isSettingsOpen
                   ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
                   : 'bg-transparent'
               }`}>
-                <Award className="w-5 h-5" />
+                <Settings className="w-5 h-5" />
               </div>
               <span className="text-[10px] font-bold tracking-tight">
-                {language === 'kh' ? 'គម្រោង' : 'Plans'}
+                {language === 'kh' ? 'ការកំណត់' : 'Settings'}
               </span>
-              {activeSection === 'pricing' && !isSettingsOpen && (
+              {isSettingsOpen && (
                 <span className="absolute -bottom-1.5 w-5 h-1 bg-emerald-400 rounded-full shadow-sm shadow-emerald-400/80 animate-pulse" />
               )}
             </button>
@@ -6748,6 +6763,7 @@ export default function App() {
                       setActiveSection('ledger');
                       setIsMobileMenuOpen(false);
                       setIsSettingsOpen(false);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                       playClickSound();
                     }}
                     className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group active:scale-95 ${
@@ -6935,7 +6951,7 @@ export default function App() {
                 <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 px-1">
                   {language === 'kh' ? 'ការកំណត់ & គណនី' : 'Settings & Account'}
                 </h4>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {/* 7. ការកំណត់ប្រព័ន្ធ (System Settings) */}
                   <button
                     onClick={() => {
@@ -6961,36 +6977,6 @@ export default function App() {
                       </span>
                       <span className="text-[10px] text-slate-400 block mt-0.5">
                         {language === 'kh' ? 'ពាក្យសម្ងាត់ ភាសា & QR' : 'Security, language & QR'}
-                      </span>
-                    </div>
-                  </button>
-
-                  {/* 8. សមាជិកប្រព័ន្ធ (Members Admin) */}
-                  <button
-                    onClick={() => {
-                      setActiveSection('members_admin');
-                      setIsMobileMenuOpen(false);
-                      setIsSettingsOpen(false);
-                      playClickSound();
-                    }}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group active:scale-95 ${
-                      activeSection === 'members_admin' && !isSettingsOpen
-                        ? 'bg-gradient-to-br from-blue-950/80 to-slate-900 border-blue-500/50 text-white ring-1 ring-blue-500/30 shadow-lg shadow-blue-950/40'
-                        : 'bg-slate-800/60 hover:bg-slate-800 border-slate-700/60 text-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 flex items-center justify-center text-lg font-bold group-hover:scale-110 transition-transform">
-                        👥
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors" />
-                    </div>
-                    <div>
-                      <span className="font-extrabold text-xs block text-slate-100 group-hover:text-blue-400 transition-colors">
-                        {language === 'kh' ? 'សមាជិកប្រព័ន្ធ' : 'Members Admin'}
-                      </span>
-                      <span className="text-[10px] text-slate-400 block mt-0.5">
-                        {language === 'kh' ? 'បញ្ជីគណនី និងសិទ្ធិប្រើប្រាស់' : 'Users & account controls'}
                       </span>
                     </div>
                   </button>
