@@ -3582,19 +3582,36 @@ export default function App() {
                     </p>
                   </div>
 
-                  {/* Fast Loan Application Button */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* Fast Loan Application Super App Buttons */}
+                  <div className="grid grid-cols-2 gap-2.5">
                     <button
                       type="button"
                       onClick={() => {
                         playClickSound();
                         setIsApplyMode(true);
                       }}
-                      className="w-full py-3.5 px-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500 text-white font-black text-xs rounded-2xl shadow-lg shadow-emerald-900/30 border border-emerald-400/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 group"
+                      className="relative overflow-hidden group p-3 sm:p-3.5 bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 hover:from-emerald-500 hover:to-cyan-600 border border-emerald-400/40 rounded-2xl shadow-xl shadow-emerald-950/40 transition-all cursor-pointer active:scale-97 text-left flex items-center justify-between gap-2"
                     >
-                      <Sparkles className="w-4 h-4 text-emerald-200 animate-pulse group-hover:rotate-12 transition-transform shrink-0" />
-                      <span>{language === 'kh' ? '⚡ ស្នើសុំកម្ចីរហ័ស' : '⚡ Fast Loan Application'}</span>
-                      <ChevronRight className="w-4 h-4 text-emerald-200 group-hover:translate-x-1 transition-transform ml-auto shrink-0" />
+                      {/* Glossy Sheen Effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+                      
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/20 border border-white/30 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform">
+                          <Sparkles className="w-4 h-4 text-white animate-pulse" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] sm:text-xs font-black text-white tracking-tight truncate drop-shadow-xs">
+                            {language === 'kh' ? '⚡ ស្នើសុំថ្មីរហ័ស' : '⚡ Fast Loan'}
+                          </p>
+                          <p className="text-[9px] font-bold text-emerald-100/80 truncate">
+                            {language === 'kh' ? 'អនុម័តលឿន' : 'Instant Approval'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-white/20 border border-white/30 flex items-center justify-center shrink-0 group-hover:bg-white/35 group-hover:translate-x-0.5 transition-all">
+                        <ChevronRight className="w-3.5 h-3.5 text-white" />
+                      </div>
                     </button>
 
                     <button
@@ -3603,11 +3620,28 @@ export default function App() {
                         playClickSound();
                         setIsHardshipMode(true);
                       }}
-                      className="w-full py-3.5 px-3 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:via-orange-500 hover:to-amber-600 text-white font-black text-xs rounded-2xl shadow-lg shadow-amber-900/30 border border-amber-400/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 group"
+                      className="relative overflow-hidden group p-3 sm:p-3.5 bg-gradient-to-br from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 border border-amber-400/40 rounded-2xl shadow-xl shadow-amber-950/40 transition-all cursor-pointer active:scale-97 text-left flex items-center justify-between gap-2"
                     >
-                      <Calculator className="w-4 h-4 text-amber-200 animate-pulse group-hover:rotate-12 transition-transform shrink-0" />
-                      <span>{language === 'kh' ? '🧮 ស្នើសុំឡើងតែដើម' : '🧮 Hardship Request'}</span>
-                      <ChevronRight className="w-4 h-4 text-amber-200 group-hover:translate-x-1 transition-transform ml-auto shrink-0" />
+                      {/* Glossy Sheen Effect */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
+
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/20 border border-white/30 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform">
+                          <Calculator className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] sm:text-xs font-black text-white tracking-tight truncate drop-shadow-xs">
+                            {language === 'kh' ? '🧾 ស្នើសុំឡើងតែដើម' : '🧾 Hardship'}
+                          </p>
+                          <p className="text-[9px] font-bold text-amber-100/80 truncate">
+                            {language === 'kh' ? 'សម្រាលការបង់' : 'Settlement Plan'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-white/20 border border-white/30 flex items-center justify-center shrink-0 group-hover:bg-white/35 group-hover:translate-x-0.5 transition-all">
+                        <ChevronRight className="w-3.5 h-3.5 text-white" />
+                      </div>
                     </button>
                   </div>
 
@@ -3644,40 +3678,7 @@ export default function App() {
                     </p>
                   </div>
 
-                  {/* Divider */}
-                  <div className="flex items-center gap-3">
-                    <div className="h-px bg-slate-800/60 flex-1"></div>
-                    <span className="text-[9px] text-slate-500 font-black uppercase tracking-wider">{t('orSocials')}</span>
-                    <div className="h-px bg-slate-800/60 flex-1"></div>
-                  </div>
 
-                  {/* Social Sign-In Buttons */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => triggerFirebaseGoogleSignIn()}
-                      className="py-2.5 bg-slate-950/40 hover:bg-slate-950/60 border border-slate-800 rounded-xl text-xs font-bold text-slate-200 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-98"
-                    >
-                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.61c-.29 1.5-1.14 2.78-2.4 3.63v3.02h3.86c2.26-2.08 3.56-5.14 3.56-8.5Z"/>
-                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3.02c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.32v3.11C3.31 21.88 7.37 24 12 24Z"/>
-                        <path fill="#FBBC05" d="M5.27 14.27a7.2 7.2 0 0 1 0-4.54V6.62H1.32a11.96 11.96 0 0 0 0 10.76l3.95-3.11Z"/>
-                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.93 1.19 15.24 0 12 0 7.37 0 3.31 2.12 1.32 5.62l3.95 3.11c.95-2.85 3.6-4.98 6.73-4.98Z"/>
-                      </svg>
-                      <span>Google</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => triggerFirebaseFacebookSignIn()}
-                      className="py-2.5 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/20 rounded-xl text-xs font-bold text-[#1877F2] transition flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-98"
-                    >
-                      <svg className="w-4 h-4 shrink-0 fill-current" viewBox="0 0 24 24">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                      </svg>
-                      <span>Facebook</span>
-                    </button>
-                  </div>
                 </motion.div>
               )}
 
