@@ -458,8 +458,8 @@ export default function App() {
     logoText: '៚',
     logoBgColor: '#2563EB',
     logoTextColor: '#FFFFFF',
-    logoImageUrl: '/app_logo.svg',
-    systemName: 'ប្រព័ន្ធលុយឆក់'
+    logoImageUrl: '/official_logo.svg',
+    systemName: 'លុយឆក&លុយឈ្នួល'
   });
 
   // Real-time Sponsor Configuration from Firestore settings/sponsor_config
@@ -861,7 +861,8 @@ export default function App() {
         const data = docSnap.data();
         setLogoConfig({
           logoType: 'image',
-          logoImageUrl: '/app_logo.svg',
+          logoImageUrl: '/official_logo.svg',
+          systemName: 'លុយឆក&លុយឈ្នួល',
           ...data
         });
       }
@@ -1023,7 +1024,7 @@ export default function App() {
     const isSmall = sizeClass.includes("w-8");
     const isXSmall = sizeClass.includes("w-6");
     
-    const imgSrc = (logoConfig?.logoType === 'image' && logoConfig?.logoImageUrl) ? logoConfig.logoImageUrl : '/app_logo.svg';
+    const imgSrc = (logoConfig?.logoType === 'image' && logoConfig?.logoImageUrl) ? logoConfig.logoImageUrl : '/official_logo.svg';
 
     return (
       <img

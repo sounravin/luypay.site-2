@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { IPhoneAppShowcase } from './IPhoneAppShowcase';
 import { 
   ShieldCheck, 
   Zap, 
@@ -306,89 +307,9 @@ export const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
 
           </div>
 
-          {/* Right Preview Card Showcase */}
-          <div className="lg:col-span-5 relative">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="relative rounded-3xl bg-slate-900/95 sm:backdrop-blur-xl border border-slate-800 p-4 sm:p-6 shadow-2xl shadow-blue-900/20 space-y-4"
-            >
-              {/* Top Bar Decoration */}
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-rose-500/80 inline-block" />
-                  <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
-                  <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
-                  <span className="text-xs font-mono text-slate-400 ml-2 font-bold">LUY-PAY Live Dashboard</span>
-                </div>
-                <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span>Realtime Sync</span>
-                </span>
-              </div>
-
-              {/* Sample Stats Card Inside Showcase */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">{language === 'kh' ? 'ប្រាក់កម្ចីដើមសរុប' : 'Total Loans'}</p>
-                  <p className="text-lg font-black text-white mt-1">$24,500.00</p>
-                  <span className="text-[10px] text-emerald-400 font-bold">↑ +12.5% {language === 'kh' ? 'ខែនេះ' : 'this month'}</span>
-                </div>
-                <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800/80">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">{language === 'kh' ? 'ប្រមូលបានសរុប' : 'Total Collected'}</p>
-                  <p className="text-lg font-black text-emerald-400 mt-1">$18,920.00</p>
-                  <span className="text-[10px] text-slate-400 font-bold">92% {language === 'kh' ? 'អត្រាសង' : 'recovery'}</span>
-                </div>
-              </div>
-
-              {/* Mini Simulated Live Payment Feed */}
-              <div className="bg-slate-950/90 rounded-2xl border border-slate-800 p-3.5 space-y-2.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300 font-extrabold flex items-center gap-1.5">
-                    <QrCode className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{language === 'kh' ? 'ផ្ទៀងផ្ទាត់ ABA KHQR ថ្មីៗ' : 'Live KHQR Verification'}</span>
-                  </span>
-                  <span className="text-[9px] font-mono text-slate-400">Auto Checking</span>
-                </div>
-
-                <div className="space-y-2 text-xs font-mono">
-                  <div className="p-2.5 rounded-xl bg-slate-900/90 border border-emerald-500/30 flex items-center justify-between">
-                    <div>
-                      <p className="text-emerald-300 font-extrabold">លី សុខា (KH-8821)</p>
-                      <p className="text-[10px] text-slate-400">ABA Merchant • $15.00</p>
-                    </div>
-                    <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                      ✓ Paid
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-slate-200 font-extrabold">ចាន់ ធារ៉ា (KH-1024)</p>
-                      <p className="text-[10px] text-slate-400">Telegram Sync • $20.00</p>
-                    </div>
-                    <span className="bg-blue-500/20 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                      ✓ Paid
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating Badge Overlay */}
-              <div
-                className="absolute -bottom-3 left-2 sm:-bottom-4 sm:-left-4 bg-slate-900 border border-blue-500/40 p-2.5 sm:p-3 rounded-2xl shadow-xl flex items-center gap-2.5 sm:gap-3"
-              >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold">
-                  <Send className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-[11px] sm:text-xs font-extrabold text-white">Telegram Bot Alerts</p>
-                  <p className="text-[9px] sm:text-[10px] text-slate-400">{language === 'kh' ? 'ផ្ញើសារបង្កាន់ដៃភ្លាមៗ 24/7' : 'Instant Receipts Sent'}</p>
-                </div>
-              </div>
-
-            </motion.div>
+          {/* Right iPhone Showcase Video/Slide Animation */}
+          <div className="lg:col-span-5 relative flex items-center justify-center">
+            <IPhoneAppShowcase language={language} />
           </div>
 
         </div>
