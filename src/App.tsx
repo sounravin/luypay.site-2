@@ -1310,6 +1310,11 @@ export default function App() {
   const [regName, setRegName] = useState('');
   const [regEmailOrId, setRegEmailOrId] = useState('');
   const [regError, setRegError] = useState('');
+  const [socialStep, setSocialStep] = useState<'account_select' | 'plan_select'>('account_select');
+  const [pendingSocialAccount, setPendingSocialAccount] = useState<{ emailOrId: string; name: string; type: 'google' | 'facebook' } | null>(null);
+  const [socialSelectedPlan, setSocialSelectedPlan] = useState<'1_month' | '3_months' | '1_year' | 'trial'>('3_months');
+  const [customSocialEmail, setCustomSocialEmail] = useState('');
+  const [customSocialName, setCustomSocialName] = useState('');
 
   // Shared Borrower state for read-only view
   const [shareId, setShareId] = useState<string | null>(() => {
@@ -1722,43 +1727,100 @@ export default function App() {
     }
   };
 
-  const handleSocialAccountSelect = async (emailOrId: string, name: string, type: 'google' | 'facebook') => {
+  const handleSocialAccountSelect = async (
+    emailOrId: string, 
+    name: string, 
+    type: 'google' | 'facebook',
+    planChoice?: '1_month' | '3_months' | '1_year' | 'trial'
+  ) => {
     setAuthLoading(true);
     try {
       const cleanId = emailOrId.trim().toLowerCase();
       const docRef = doc(db, 'members', cleanId);
       const docSnap = await getDoc(docRef);
+
       if (!docSnap.exists()) {
+        // If plan is not selected yet, prompt plan selection step
+        if (!planChoice) {
+          setPendingSocialAccount({ emailOrId: cleanId, name, type });
+          setSocialStep('plan_select');
+          setAuthLoading(false);
+          return;
+        }
+
+        // Calculate expiry date based on selected plan
+        const now = new Date();
+        let expiryDate = new Date();
+        if (planChoice === '1_month') {
+          expiryDate.setMonth(now.getMonth() + 1);
+        } else if (planChoice === '3_months') {
+          expiryDate.setMonth(now.getMonth() + 3);
+        } else if (planChoice === '1_year') {
+          expiryDate.setFullYear(now.getFullYear() + 1);
+        } else { // 'trial'
+          expiryDate.setDate(now.getDate() + 7);
+        }
+
         const newMember = {
           username: cleanId,
-          email: type === 'google' ? cleanId : `${cleanId}@facebook.com`,
-          displayName: name,
-          createdAt: new Date().toISOString(),
+          email: type === 'google' ? (cleanId.includes('@') ? cleanId : `${cleanId}@gmail.com`) : (cleanId.includes('@') ? cleanId : `${cleanId}@facebook.com`),
+          displayName: name || (type === 'google' ? cleanId.split('@')[0] : cleanId),
+          authProvider: type,
+          createdAt: now.toISOString(),
           invitesCount: 0,
-          inviteLink: `${window.location.origin}/?ref=${cleanId}`
+          inviteLink: `${window.location.origin}/?ref=${cleanId}`,
+          isApproved: true, // Auto-approve social auth members
+          selectedPlan: planChoice === 'trial' ? '1_month' : planChoice,
+          subscriptionExpires: expiryDate.toISOString(),
+          isBlocked: false,
+          lastApprovedAt: now.toISOString()
         };
+
         await setDoc(docRef, newMember);
+
+        // Record subscription request log for admin oversight
+        try {
+          const subReqRef = doc(db, 'subscription_requests', `${cleanId}_${Date.now()}`);
+          await setDoc(subReqRef, {
+            username: cleanId,
+            email: newMember.email,
+            displayName: newMember.displayName,
+            plan: planChoice === 'trial' ? '1_month' : planChoice,
+            createdAt: now.toISOString(),
+            status: 'approved',
+            approvedAt: now.toISOString(),
+            notes: `ចុះឈ្មោះស្វ័យប្រវត្តតាមរយៈ ${type === 'google' ? 'Google' : 'Facebook'} Social Login`
+          });
+        } catch (subErr) {
+          console.warn('Subscription log creation note:', subErr);
+        }
       }
-      
+
       safeStorage.setItem('luypay_logged_in', 'true');
       safeStorage.setItem('luypay_current_user', cleanId);
-      safeStorage.setItem('luypay_user_display_name', name);
+      safeStorage.setItem('luypay_user_display_name', name || cleanId);
       safeStorage.setItem('luypay_auth_type', type);
       safeStorage.setItem('luypay_is_member', 'true');
+
       setProfileLoading(true);
       setHasLoadedProfile(false);
       setIsLoggedIn(true);
       setCurrentUser(cleanId);
-      setUserDisplayName(name);
+      setUserDisplayName(name || cleanId);
       setUserAuthType(type);
       setIsMember(true);
-      showToast(`សមកាលកម្មជាមួយ ${type === 'google' ? 'Google' : 'Facebook'} (${cleanId}) បានជោគជ័យ!`);
+
+      showToast(`🎉 ភ្ជាប់គណនី ${type === 'google' ? 'Google' : 'Facebook'} ជ្រើសរើសគម្រោង និងចូលប្រើប្រាស់ស្វ័យប្រវត្តិ!`);
     } catch (err) {
       console.error(err);
       showToast('មានបញ្ហាក្នុងការតភ្ជាប់គណនី!', 'info');
     } finally {
       setAuthLoading(false);
       setShowAuthModal(false);
+      setSocialStep('account_select');
+      setPendingSocialAccount(null);
+      setCustomSocialEmail('');
+      setCustomSocialName('');
     }
   };
 
@@ -3606,7 +3668,7 @@ export default function App() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
                   className="space-y-6"
                 >
                   <div className="bg-slate-950/40 border border-slate-800/60 p-4 rounded-2xl text-xs space-y-1.5">
@@ -3659,7 +3721,19 @@ export default function App() {
           <div className="fixed inset-0 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
             <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-100 flex flex-col animate-in fade-in zoom-in-95 duration-200 my-8">
               {/* Header */}
-              <div className="p-5 border-b border-slate-100 flex flex-col items-center text-center space-y-2">
+              <div className="p-5 border-b border-slate-100 flex flex-col items-center text-center space-y-2 relative">
+                <button
+                  onClick={() => {
+                    setShowAuthModal(false);
+                    setSocialStep('account_select');
+                    setPendingSocialAccount(null);
+                  }}
+                  className="absolute right-4 top-4 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition cursor-pointer"
+                  title="Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
                 <div className="p-3 bg-slate-50 rounded-2xl">
                   {authModalType === 'google' ? (
                     <svg className="w-8 h-8" viewBox="0 0 24 24">
@@ -3675,10 +3749,14 @@ export default function App() {
                   )}
                 </div>
                 <h3 className="text-sm font-black text-slate-800">
-                  {authModalType === 'google' ? t('socialAuthTitleGoogle') : t('socialAuthTitleFacebook')}
+                  {socialStep === 'plan_select' 
+                    ? 'ជ្រើសរើសទិញគម្រោងសមាជិកភាព' 
+                    : (authModalType === 'google' ? t('socialAuthTitleGoogle') : t('socialAuthTitleFacebook'))}
                 </h3>
                 <p className="text-[11px] text-slate-500 font-bold leading-relaxed px-4">
-                  {t('socialAuthDesc')}
+                  {socialStep === 'plan_select'
+                    ? 'បន្ទាប់ពីជ្រើសរើសគម្រោង ប្រព័ន្ធនឹងភ្ជាប់គណនី និង Login ចូលដោយស្វ័យប្រវត្តិ!'
+                    : (authModalType === 'google' ? 'បញ្ចូលអាសយដ្ឋាន Gmail របស់អ្នកដើម្បីចូលប្រើប្រាស់ ឬចុះឈ្មោះ' : 'បញ្ចូលគណនី Facebook របស់អ្នកដើម្បីចូលប្រើប្រាស់ ឬចុះឈ្មោះ')}
                 </p>
               </div>
 
@@ -3687,68 +3765,177 @@ export default function App() {
                   <div className={`w-9 h-9 border-4 border-t-transparent rounded-full animate-spin ${authModalType === 'facebook' ? 'border-[#1877F2]' : 'border-emerald-600'}`}></div>
                   <span className="text-xs font-bold text-slate-500">{t('syncCloudLoading')}</span>
                 </div>
-              ) : (
-                <div className="max-h-[380px] overflow-y-auto px-5 pb-5 space-y-5">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">{t('quickAccounts')}</p>
-                  <div className="space-y-1.5">
-                    {authModalType === 'google' ? (
-                      <>
-                        <button
-                          onClick={() => handleSocialAccountSelect('sounravin@gmail.com', 'Soun Ravin', 'google')}
-                          className="w-full p-2.5 hover:bg-slate-50 border border-slate-100 rounded-xl transition flex items-center gap-3 text-left cursor-pointer"
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-extrabold text-xs flex items-center justify-center shrink-0">SR</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-slate-800 truncate">Soun Ravin</p>
-                            <p className="text-[10px] text-slate-400 font-bold truncate">sounravin@gmail.com</p>
-                          </div>
-                          <span className="text-[9px] text-blue-600 font-black bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-lg shrink-0">{t('adminBadge')}</span>
-                        </button>
+              ) : socialStep === 'plan_select' ? (
+                /* STEP 2: Plan Selection & Auto Login */
+                <div className="p-5 space-y-4">
+                  {pendingSocialAccount && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-xl font-black text-xs text-white flex items-center justify-center shrink-0 ${pendingSocialAccount.type === 'facebook' ? 'bg-[#1877F2]' : 'bg-emerald-600'}`}>
+                          {pendingSocialAccount.type === 'facebook' ? 'FB' : 'G'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-black text-slate-800 truncate">{pendingSocialAccount.name || pendingSocialAccount.emailOrId}</p>
+                          <p className="text-[10px] text-slate-500 font-semibold truncate">{pendingSocialAccount.emailOrId}</p>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 shrink-0">
+                        ភ្ជាប់ស្វ័យប្រវត្តិ
+                      </span>
+                    </div>
+                  )}
 
-                        <button
-                          onClick={() => handleSocialAccountSelect('ProzzLop@gmail.com', 'Prozz Lop', 'google')}
-                          className="w-full p-2.5 hover:bg-slate-50 border border-slate-100 rounded-xl transition flex items-center gap-3 text-left cursor-pointer"
+                  <div>
+                    <label className="text-xs font-extrabold text-slate-700 block mb-2">
+                      ជ្រើសរើសគម្រោងដែលលោកអ្នកពេញចិត្ត៖
+                    </label>
+                    <div className="space-y-2">
+                      {[
+                        { id: '1_month', name: 'គម្រោង ១ ខែ ($5)', price: '$5 / ខែ', desc: 'ប្រើប្រាស់គ្រប់មុខងាររយៈពេល ១ ខែពេញ', tag: '' },
+                        { id: '3_months', name: 'គម្រោង ៣ ខែ ($12)', price: '$12 / 3ខែ', desc: 'ចំណេញ 20% | ពេញនិយមបំផុត', tag: '🔥 ពេញនិយម' },
+                        { id: '1_year', name: 'គម្រោង ១ ឆ្នាំ ($35)', price: '$35 / ឆ្នាំ', desc: 'ចំណេញ 40% | សម្រាប់អាជីវកម្មវែងឆ្ងាយ', tag: '🚀 ចំណេញច្រើន' },
+                        { id: 'trial', name: 'សាកល្បងឥតគិតថ្លៃ ៧ ថ្ងៃ', price: 'FREE $0', desc: 'ចូលប្រើប្រាស់សាកល្បង ៧ ថ្ងៃដោយមិនគិតថ្លៃ', tag: '🎁 ឥតគិតថ្លៃ' }
+                      ].map((p) => (
+                        <div
+                          key={p.id}
+                          onClick={() => setSocialSelectedPlan(p.id as any)}
+                          className={`p-3.5 rounded-2xl border-2 transition cursor-pointer flex items-center justify-between ${
+                            socialSelectedPlan === p.id 
+                              ? 'border-emerald-500 bg-emerald-50/40 shadow-xs' 
+                              : 'border-slate-100 bg-white hover:border-slate-200'
+                          }`}
                         >
-                          <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white font-extrabold text-xs flex items-center justify-center shrink-0">PL</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-slate-800 truncate">Prozz Lop</p>
-                            <p className="text-[10px] text-slate-400 font-bold truncate">ProzzLop@gmail.com</p>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                              socialSelectedPlan === p.id ? 'border-emerald-600 bg-emerald-600' : 'border-slate-300'
+                            }`}>
+                              {socialSelectedPlan === p.id && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs font-black text-slate-800 truncate">{p.name}</p>
+                                {p.tag && (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+                                    {p.tag}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-500 font-semibold truncate">{p.desc}</p>
+                            </div>
                           </div>
-                          <span className="text-[9px] text-emerald-600 font-black bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-lg shrink-0">{t('userBadge')}</span>
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleSocialAccountSelect('sounravin@gmail.com', 'Soun Ravin', 'facebook')}
-                          className="w-full p-2.5 hover:bg-slate-50 border border-slate-100 rounded-xl transition flex items-center gap-3 text-left cursor-pointer"
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-extrabold text-xs flex items-center justify-center shrink-0">SR</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-slate-800 truncate">Soun Ravin</p>
-                            <p className="text-[10px] text-slate-400 font-bold truncate">sounravin@facebook.com</p>
-                          </div>
-                          <span className="text-[9px] text-blue-600 font-black bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-lg shrink-0">{t('adminBadge')}</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleSocialAccountSelect('ProzzLop', 'Prozz Lop', 'facebook')}
-                          className="w-full p-2.5 hover:bg-slate-50 border border-slate-100 rounded-xl transition flex items-center gap-3 text-left cursor-pointer"
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white font-extrabold text-xs flex items-center justify-center shrink-0">PL</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-slate-800 truncate">Prozz Lop</p>
-                            <p className="text-[10px] text-slate-400 font-bold truncate">ProzzLop@facebook.com</p>
-                          </div>
-                          <span className="text-[9px] text-emerald-600 font-black bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-lg shrink-0">{t('userBadge')}</span>
-                        </button>
-                      </>
-                    )}
+                          <span className="text-xs font-black text-emerald-700 shrink-0 ml-2">{p.price}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="pt-2">
+                  <div className="pt-2 space-y-2">
                     <button
-                      onClick={() => setShowAuthModal(false)}
+                      onClick={() => {
+                        if (pendingSocialAccount) {
+                          handleSocialAccountSelect(
+                            pendingSocialAccount.emailOrId,
+                            pendingSocialAccount.name,
+                            pendingSocialAccount.type,
+                            socialSelectedPlan
+                          );
+                        }
+                      }}
+                      className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold rounded-2xl text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <span>⚡ ភ្ជាប់គណនី ទិញគម្រោង & Auto Login</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSocialStep('account_select');
+                        setPendingSocialAccount(null);
+                      }}
+                      className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition cursor-pointer"
+                    >
+                      ← ត្រឡប់ទៅបញ្ចូលគណនីវិញ
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* STEP 1: Direct Account Input (No Quick Accounts) */
+                <div className="max-h-[460px] overflow-y-auto px-5 pb-5 space-y-4">
+                  <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0 ${
+                        authModalType === 'facebook' ? 'bg-[#1877F2]' : 'bg-emerald-600'
+                      }`}>
+                        {authModalType === 'facebook' ? 'FB' : 'G'}
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-slate-800">
+                          {authModalType === 'google' ? 'បញ្ចូលអាសយដ្ឋាន Gmail របស់អ្នក' : 'បញ្ចូលគណនី Facebook របស់អ្នក'}
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-medium">
+                          {authModalType === 'google'
+                            ? 'ភ្ជាប់ Gmail របស់អ្នកដើម្បីចូលប្រើប្រាស់ ឬចុះឈ្មោះគម្រោង'
+                            : 'ភ្ជាប់ Facebook របស់អ្នកដើម្បីចូលប្រើប្រាស់ ឬចុះឈ្មោះគម្រោង'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-1">
+                      <div>
+                        <label className="text-[11px] font-extrabold text-slate-700 block mb-1">
+                          {authModalType === 'google' ? 'អាសយដ្ឋាន Gmail / អ៊ីមែល *' : 'លេខទូរស័ព្ទ / អ៊ីមែល / Username Facebook *'}
+                        </label>
+                        <input
+                          type="text"
+                          value={customSocialEmail}
+                          onChange={(e) => setCustomSocialEmail(e.target.value)}
+                          placeholder={authModalType === 'google' ? 'ឧ. user@gmail.com' : 'ឧ. pich.rachana ឬ 012345678'}
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-emerald-500 shadow-2xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-extrabold text-slate-700 block mb-1">
+                          ឈ្មោះបង្ហាញ (Display Name) <span className="text-slate-400 font-normal">(ជម្រើស)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={customSocialName}
+                          onChange={(e) => setCustomSocialName(e.target.value)}
+                          placeholder="ឧ. ពេជ្រ រចនា"
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-emerald-500 shadow-2xs"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!customSocialEmail.trim()) {
+                            showToast(authModalType === 'google' ? 'សូមបញ្ចូលអាសយដ្ឋាន Gmail!' : 'សូមបញ្ចូលគណនី Facebook!', 'info');
+                            return;
+                          }
+                          handleSocialAccountSelect(
+                            customSocialEmail.trim(),
+                            customSocialName.trim() || customSocialEmail.trim(),
+                            authModalType
+                          );
+                        }}
+                        className={`w-full py-3 font-extrabold rounded-xl text-xs transition cursor-pointer text-white flex items-center justify-center gap-2 shadow-md ${
+                          authModalType === 'facebook' 
+                            ? 'bg-[#1877F2] hover:bg-blue-700 shadow-blue-600/20' 
+                            : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                        }`}
+                      >
+                        <span>🚀 ភ្ជាប់គណនី & បន្តទៅជ្រើសរើសគម្រោង →</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="pt-1">
+                    <button
+                      onClick={() => {
+                        setShowAuthModal(false);
+                        setSocialStep('account_select');
+                        setPendingSocialAccount(null);
+                      }}
                       className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer text-center"
                     >
                       {t('cancel')}
