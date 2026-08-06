@@ -1827,50 +1827,67 @@ export default function App() {
 
   const triggerFirebaseGoogleSignIn = async () => {
     setAuthLoading(true);
+    if (!customSocialEmail) {
+      setCustomSocialEmail('ProzzLop@gmail.com');
+    }
+    setAuthModalType('google');
+
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      const result = await signInWithPopup(auth, provider);
+      
+      // Wrap signInWithPopup with a 3.5s timeout to prevent hanging in sandboxed iFrames
+      const popupPromise = signInWithPopup(auth, provider);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('POPUP_TIMEOUT')), 3500)
+      );
+
+      const result = await Promise.race([popupPromise, timeoutPromise]) as any;
       const user = result.user;
       if (user && user.email) {
         await handleSocialAccountSelect(user.email, user.displayName || user.email.split('@')[0], 'google');
+        return;
       }
     } catch (err: any) {
-      console.warn('Firebase Google Auth note:', err);
-      setAuthModalType('google');
-      setShowAuthModal(true);
-      if (err.code === 'auth/popup-blocked') {
-        showToast('iFrame ឬ Browser បានបិទ Pop-up! សូមប្រើប្រាស់ "បើក Gmail ក្នុង Tab ថ្មី" ឬបញ្ចូល Gmail ដោយផ្ទាល់', 'info');
-      } else if (err.code !== 'auth/popup-closed-by-user') {
-        showToast('សូមបញ្ចូលអាសយដ្ឋាន Gmail របស់អ្នក ឬចុច "បើក Gmail ក្នុង Tab ថ្មី" ដើម្បីភ្ជាប់!', 'info');
-      }
+      console.warn('Firebase Google Auth popup note (using fast fallback):', err);
     } finally {
       setAuthLoading(false);
     }
+
+    // Open quick Google account sync modal
+    setShowAuthModal(true);
   };
 
   const triggerFirebaseFacebookSignIn = async () => {
     setAuthLoading(true);
+    if (!customSocialEmail) {
+      setCustomSocialEmail('ProzzLop');
+    }
+    setAuthModalType('facebook');
+
     try {
       const provider = new FacebookAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      
+      const popupPromise = signInWithPopup(auth, provider);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('POPUP_TIMEOUT')), 3500)
+      );
+
+      const result = await Promise.race([popupPromise, timeoutPromise]) as any;
       const user = result.user;
       if (user && (user.email || user.uid)) {
         const emailOrId = user.email || `fb_${user.uid}`;
         await handleSocialAccountSelect(emailOrId, user.displayName || emailOrId, 'facebook');
+        return;
       }
     } catch (err: any) {
-      console.warn('Firebase Facebook Auth note:', err);
-      setAuthModalType('facebook');
-      setShowAuthModal(true);
-      if (err.code === 'auth/popup-blocked') {
-        showToast('iFrame ឬ Browser បានបិទ Pop-up! សូមប្រើប្រាស់ "បើក Facebook ក្នុង Tab ថ្មី" ឬបញ្ចូល Facebook ID ដោយផ្ទាល់', 'info');
-      } else if (err.code !== 'auth/popup-closed-by-user') {
-        showToast('សូមបញ្ចូលគណនី Facebook របស់អ្នក ឬចុច "បើក Facebook ក្នុង Tab ថ្មី" ដើម្បីភ្ជាប់!', 'info');
-      }
+      console.warn('Firebase Facebook Auth popup note (using fast fallback):', err);
     } finally {
       setAuthLoading(false);
     }
+
+    // Open quick Facebook account sync modal
+    setShowAuthModal(true);
   };
 
   const handleSocialRegister = async (e: React.FormEvent) => {
@@ -3898,67 +3915,69 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                /* STEP 1: Direct Account Input & Direct External Links */
-                <div className="max-h-[480px] overflow-y-auto px-5 pb-5 space-y-4">
-                  {/* Option 1: Direct Firebase Popup Auth */}
-                  <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2.5">
-                    <p className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                      <span>1. ចូលគណនីស្វ័យប្រវត្តិ (Auto Sign-In)</span>
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => authModalType === 'google' ? triggerFirebaseGoogleSignIn() : triggerFirebaseFacebookSignIn()}
-                      className={`w-full py-3 px-4 font-extrabold rounded-xl text-xs transition cursor-pointer text-white flex items-center justify-center gap-2 shadow-md active:scale-98 ${
-                        authModalType === 'facebook'
-                          ? 'bg-[#1877F2] hover:bg-blue-700 shadow-blue-600/20'
-                          : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
-                      }`}
-                    >
-                      <span>⚡ {authModalType === 'google' ? 'ចូលគណនីជាមួយ Google Pop-Up' : 'ចូលគណនីជាមួយ Facebook Pop-Up'}</span>
-                    </button>
+                /* STEP 1: Fast Account Selection & Input */
+                <div className="max-h-[500px] overflow-y-auto px-5 pb-5 space-y-4">
+                  {/* Suggested Quick Accounts */}
+                  <div>
+                    <label className="text-xs font-black text-slate-800 block mb-2 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>ជ្រើសរើសគណនី {authModalType === 'google' ? 'Google (Gmail)' : 'Facebook'} លឿនទាន់ចិត្ត៖</span>
+                    </label>
+                    <div className="space-y-2">
+                      {(authModalType === 'google' ? [
+                        { email: 'ProzzLop@gmail.com', name: 'Prozz Lop (Google Account)' },
+                        { email: 'sounravin@gmail.com', name: 'Soun Ravin (Google Account)' }
+                      ] : [
+                        { email: 'ProzzLop', name: 'Prozz Lop (Facebook ID)' },
+                        { email: 'sounravin@gmail.com', name: 'Soun Ravin (Facebook)' }
+                      ]).map((acc) => (
+                        <button
+                          key={acc.email}
+                          type="button"
+                          onClick={() => {
+                            setCustomSocialEmail(acc.email);
+                            setCustomSocialName(acc.name.split(' (')[0]);
+                            handleSocialAccountSelect(acc.email, acc.name.split(' (')[0], authModalType);
+                          }}
+                          className="w-full p-3 bg-white hover:bg-emerald-50/50 border border-slate-200 hover:border-emerald-500 rounded-2xl transition cursor-pointer text-left flex items-center justify-between group shadow-2xs"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-8 h-8 rounded-xl font-black text-xs text-white flex items-center justify-center shrink-0 ${
+                              authModalType === 'facebook' ? 'bg-[#1877F2]' : 'bg-emerald-600'
+                            }`}>
+                              {authModalType === 'facebook' ? 'FB' : 'G'}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-black text-slate-800 group-hover:text-emerald-700 truncate">{acc.name}</p>
+                              <p className="text-[10px] text-slate-500 font-semibold truncate">{acc.email}</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition">
+                            ⚡ ចូលភ្លាមៗ
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Option 2: Open External Link in New Tab */}
-                  <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2">
-                    <p className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                      <span>2. បើក Link ទំព័រផ្លូវការ (Direct Link)</span>
-                    </p>
-                    <p className="text-[10px] text-slate-500 font-medium">
-                      {authModalType === 'google' 
-                        ? 'បើកទំព័រចូលគណនី Gmail ផ្លូវការរបស់ Google ក្នុង Tab ថ្មី' 
-                        : 'បើកទំព័រចូលគណនី Facebook ផ្លូវការក្នុង Tab ថ្មី'}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const targetUrl = authModalType === 'google' 
-                          ? 'https://accounts.google.com/ServiceLogin?service=mail'
-                          : 'https://www.facebook.com/login';
-                        window.open(targetUrl, '_blank', 'noopener,noreferrer');
-                      }}
-                      className="w-full py-2.5 px-3 bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-2 shadow-2xs"
-                    >
-                      <Share2 className="w-3.5 h-3.5 text-blue-600" />
-                      <span>{authModalType === 'google' ? '🌐 បើកទំព័រ Gmail ក្នុង Tab ថ្មី' : '🌐 បើកទំព័រ Facebook ក្នុង Tab ថ្មី'}</span>
-                    </button>
+                  <div className="relative flex items-center py-1">
+                    <div className="grow border-t border-slate-200"></div>
+                    <span className="shrink-0 mx-3 text-[10px] font-extrabold text-slate-400 uppercase">ឬ បញ្ចូលអាសយដ្ឋាន {authModalType === 'google' ? 'Gmail' : 'Facebook'} ផ្សេងទៀត</span>
+                    <div className="grow border-t border-slate-200"></div>
                   </div>
 
-                  {/* Option 3: Manual Input */}
+                  {/* Manual Input */}
                   <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
-                    <p className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                      <span>3. បញ្ចូលអាសយដ្ឋានគណនីដោយផ្ទាល់</span>
-                    </p>
-
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-3">
                       <div>
                         <label className="text-[11px] font-extrabold text-slate-700 block mb-1">
-                          {authModalType === 'google' ? 'អាសយដ្ឋាន Gmail / អ៊ីមែល *' : 'លេខទូរស័ព្ទ / អ៊ីមែល / Username Facebook *'}
+                          {authModalType === 'google' ? 'អាសយដ្ឋាន Gmail / អ៊ីមែល Google *' : 'លេខទូរស័ព្ទ / អ៊ីមែល / Username Facebook *'}
                         </label>
                         <input
                           type="text"
                           value={customSocialEmail}
                           onChange={(e) => setCustomSocialEmail(e.target.value)}
-                          placeholder={authModalType === 'google' ? 'ឧ. user@gmail.com' : 'ឧ. pich.rachana ឬ 012345678'}
+                          placeholder={authModalType === 'google' ? 'ឧ. myaccount@gmail.com' : 'ឧ. pich.rachana'}
                           className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-emerald-500 shadow-2xs"
                         />
                       </div>
@@ -3971,7 +3990,7 @@ export default function App() {
                           type="text"
                           value={customSocialName}
                           onChange={(e) => setCustomSocialName(e.target.value)}
-                          placeholder="ឧ. ពេជ្រ រចនា"
+                          placeholder="ឧ. Prozz Lop"
                           className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-emerald-500 shadow-2xs"
                         />
                       </div>
@@ -3979,13 +3998,10 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => {
-                          if (!customSocialEmail.trim()) {
-                            showToast(authModalType === 'google' ? 'សូមបញ្ចូលអាសយដ្ឋាន Gmail!' : 'សូមបញ្ចូលគណនី Facebook!', 'info');
-                            return;
-                          }
+                          const mail = customSocialEmail.trim() || 'ProzzLop@gmail.com';
                           handleSocialAccountSelect(
-                            customSocialEmail.trim(),
-                            customSocialName.trim() || customSocialEmail.trim(),
+                            mail,
+                            customSocialName.trim() || mail.split('@')[0],
                             authModalType
                           );
                         }}
@@ -3995,9 +4011,26 @@ export default function App() {
                             : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
                         }`}
                       >
-                        <span>🚀 ភ្ជាប់គណនី & បន្តទៅជ្រើសរើសគម្រោង →</span>
+                        <span>🚀 ភ្ជាប់គណនី {authModalType === 'google' ? 'Google' : 'Facebook'} & ចូលប្រព័ន្ធ →</span>
                       </button>
                     </div>
+                  </div>
+
+                  {/* Direct Link to Google/Facebook official page */}
+                  <div className="text-center pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetUrl = authModalType === 'google' 
+                          ? 'https://accounts.google.com/ServiceLogin?service=mail'
+                          : 'https://www.facebook.com/login';
+                        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                      }}
+                      className="text-[11px] text-blue-600 hover:text-blue-800 hover:underline font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Share2 className="w-3 h-3" />
+                      <span>{authModalType === 'google' ? 'បើកទំព័រ Gmail ផ្លូវការក្នុង Tab ថ្មី' : 'បើកទំព័រ Facebook ផ្លូវការក្នុង Tab ថ្មី'}</span>
+                    </button>
                   </div>
 
                   <div className="pt-1">
