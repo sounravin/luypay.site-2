@@ -40,7 +40,8 @@ import { InterestOnlyManagementPanel } from './components/InterestOnlyManagement
 import { LoanApplication } from './types';
 import { Search, Info, Check, CheckSquare, RefreshCw, Star, Lock, LogOut, ShieldCheck, Cloud, Mail, Key, ArrowLeft, Award, Activity, CheckCircle2, Share2, Copy, Plus, Percent, ChevronRight, Coins, Users, Bell, BookOpen, MessageSquare, Settings, ShieldAlert, Moon, Sun, Upload, Camera, Clock, QrCode, Sparkles, FileText, X, Layout, Calculator, Menu, LayoutGrid } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc, setDoc, deleteDoc, writeBatch, getDoc, getDocs } from 'firebase/firestore';
-import { db } from './lib/firebase';
+import { GoogleAuthProvider, FacebookAuthProvider, signInWithPopup } from 'firebase/auth';
+import { db, auth } from './lib/firebase';
 import { safeStorage, largeMediaStorage } from './lib/safeStorage';
 import { useLanguage } from './i18n';
 import { motion, AnimatePresence } from 'motion/react';
@@ -1824,6 +1825,54 @@ export default function App() {
     }
   };
 
+  const triggerFirebaseGoogleSignIn = async () => {
+    setAuthLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      if (user && user.email) {
+        await handleSocialAccountSelect(user.email, user.displayName || user.email.split('@')[0], 'google');
+      }
+    } catch (err: any) {
+      console.warn('Firebase Google Auth note:', err);
+      setAuthModalType('google');
+      setShowAuthModal(true);
+      if (err.code === 'auth/popup-blocked') {
+        showToast('iFrame ឬ Browser បានបិទ Pop-up! សូមប្រើប្រាស់ "បើក Gmail ក្នុង Tab ថ្មី" ឬបញ្ចូល Gmail ដោយផ្ទាល់', 'info');
+      } else if (err.code !== 'auth/popup-closed-by-user') {
+        showToast('សូមបញ្ចូលអាសយដ្ឋាន Gmail របស់អ្នក ឬចុច "បើក Gmail ក្នុង Tab ថ្មី" ដើម្បីភ្ជាប់!', 'info');
+      }
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const triggerFirebaseFacebookSignIn = async () => {
+    setAuthLoading(true);
+    try {
+      const provider = new FacebookAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      if (user && (user.email || user.uid)) {
+        const emailOrId = user.email || `fb_${user.uid}`;
+        await handleSocialAccountSelect(emailOrId, user.displayName || emailOrId, 'facebook');
+      }
+    } catch (err: any) {
+      console.warn('Firebase Facebook Auth note:', err);
+      setAuthModalType('facebook');
+      setShowAuthModal(true);
+      if (err.code === 'auth/popup-blocked') {
+        showToast('iFrame ឬ Browser បានបិទ Pop-up! សូមប្រើប្រាស់ "បើក Facebook ក្នុង Tab ថ្មី" ឬបញ្ចូល Facebook ID ដោយផ្ទាល់', 'info');
+      } else if (err.code !== 'auth/popup-closed-by-user') {
+        showToast('សូមបញ្ចូលគណនី Facebook របស់អ្នក ឬចុច "បើក Facebook ក្នុង Tab ថ្មី" ដើម្បីភ្ជាប់!', 'info');
+      }
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const handleSocialRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regName.trim() || !regEmailOrId.trim()) {
@@ -3589,12 +3638,8 @@ export default function App() {
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
-                      onClick={() => {
-                        setAuthModalType('google');
-                        setRegError('');
-                        setShowAuthModal(true);
-                      }}
-                      className="py-2.5 bg-slate-950/40 hover:bg-slate-950/60 border border-slate-800 rounded-xl text-xs font-bold text-slate-200 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                      onClick={() => triggerFirebaseGoogleSignIn()}
+                      className="py-2.5 bg-slate-950/40 hover:bg-slate-950/60 border border-slate-800 rounded-xl text-xs font-bold text-slate-200 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-98"
                     >
                       <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.61c-.29 1.5-1.14 2.78-2.4 3.63v3.02h3.86c2.26-2.08 3.56-5.14 3.56-8.5Z"/>
@@ -3607,12 +3652,8 @@ export default function App() {
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setAuthModalType('facebook');
-                        setRegError('');
-                        setShowAuthModal(true);
-                      }}
-                      className="py-2.5 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/20 rounded-xl text-xs font-bold text-[#1877F2] transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                      onClick={() => triggerFirebaseFacebookSignIn()}
+                      className="py-2.5 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/20 rounded-xl text-xs font-bold text-[#1877F2] transition flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-98"
                     >
                       <svg className="w-4 h-4 shrink-0 fill-current" viewBox="0 0 24 24">
                         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -3857,26 +3898,56 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                /* STEP 1: Direct Account Input (No Quick Accounts) */
-                <div className="max-h-[460px] overflow-y-auto px-5 pb-5 space-y-4">
+                /* STEP 1: Direct Account Input & Direct External Links */
+                <div className="max-h-[480px] overflow-y-auto px-5 pb-5 space-y-4">
+                  {/* Option 1: Direct Firebase Popup Auth */}
+                  <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2.5">
+                    <p className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                      <span>1. ចូលគណនីស្វ័យប្រវត្តិ (Auto Sign-In)</span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => authModalType === 'google' ? triggerFirebaseGoogleSignIn() : triggerFirebaseFacebookSignIn()}
+                      className={`w-full py-3 px-4 font-extrabold rounded-xl text-xs transition cursor-pointer text-white flex items-center justify-center gap-2 shadow-md active:scale-98 ${
+                        authModalType === 'facebook'
+                          ? 'bg-[#1877F2] hover:bg-blue-700 shadow-blue-600/20'
+                          : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                      }`}
+                    >
+                      <span>⚡ {authModalType === 'google' ? 'ចូលគណនីជាមួយ Google Pop-Up' : 'ចូលគណនីជាមួយ Facebook Pop-Up'}</span>
+                    </button>
+                  </div>
+
+                  {/* Option 2: Open External Link in New Tab */}
+                  <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2">
+                    <p className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                      <span>2. បើក Link ទំព័រផ្លូវការ (Direct Link)</span>
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      {authModalType === 'google' 
+                        ? 'បើកទំព័រចូលគណនី Gmail ផ្លូវការរបស់ Google ក្នុង Tab ថ្មី' 
+                        : 'បើកទំព័រចូលគណនី Facebook ផ្លូវការក្នុង Tab ថ្មី'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetUrl = authModalType === 'google' 
+                          ? 'https://accounts.google.com/ServiceLogin?service=mail'
+                          : 'https://www.facebook.com/login';
+                        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                      }}
+                      className="w-full py-2.5 px-3 bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-2 shadow-2xs"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-blue-600" />
+                      <span>{authModalType === 'google' ? '🌐 បើកទំព័រ Gmail ក្នុង Tab ថ្មី' : '🌐 បើកទំព័រ Facebook ក្នុង Tab ថ្មី'}</span>
+                    </button>
+                  </div>
+
+                  {/* Option 3: Manual Input */}
                   <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0 ${
-                        authModalType === 'facebook' ? 'bg-[#1877F2]' : 'bg-emerald-600'
-                      }`}>
-                        {authModalType === 'facebook' ? 'FB' : 'G'}
-                      </div>
-                      <div>
-                        <p className="text-xs font-black text-slate-800">
-                          {authModalType === 'google' ? 'បញ្ចូលអាសយដ្ឋាន Gmail របស់អ្នក' : 'បញ្ចូលគណនី Facebook របស់អ្នក'}
-                        </p>
-                        <p className="text-[10px] text-slate-500 font-medium">
-                          {authModalType === 'google'
-                            ? 'ភ្ជាប់ Gmail របស់អ្នកដើម្បីចូលប្រើប្រាស់ ឬចុះឈ្មោះគម្រោង'
-                            : 'ភ្ជាប់ Facebook របស់អ្នកដើម្បីចូលប្រើប្រាស់ ឬចុះឈ្មោះគម្រោង'}
-                        </p>
-                      </div>
-                    </div>
+                    <p className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                      <span>3. បញ្ចូលអាសយដ្ឋានគណនីដោយផ្ទាល់</span>
+                    </p>
 
                     <div className="space-y-3 pt-1">
                       <div>

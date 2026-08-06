@@ -1,9 +1,11 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase app
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
 
 // Initialize Firestore with persistentLocalCache to avoid hitting daily read quotas on every refresh
 let db: ReturnType<typeof getFirestore>;
@@ -31,5 +33,5 @@ try {
   }
 }
 
-export { app, db };
+export { app, db, auth };
 
