@@ -3473,7 +3473,7 @@ export default function App() {
     }
 
     return (
-      <div className="min-h-screen bg-[#030712] flex flex-col antialiased font-sans relative overflow-hidden">
+      <div className="min-h-screen min-h-[100dvh] bg-[#030712] flex flex-col antialiased font-sans relative overflow-y-auto overflow-x-hidden pt-16 pb-12">
         {/* Background Ambient Glow */}
         <div className="absolute top-10 left-10 w-80 h-80 rounded-full bg-blue-600/15 blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-violet-600/10 blur-3xl pointer-events-none" />
@@ -3481,7 +3481,7 @@ export default function App() {
         {/* Technical Grid Overlay */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-25 pointer-events-none" />
 
-        <div className="flex-1 flex flex-col justify-center items-center p-4 relative z-10 my-auto">
+        <div className="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 relative z-10 my-auto w-full">
           {/* Top Back to Home & Language Switcher */}
           <div className="absolute top-6 left-6 right-6 z-20 flex justify-between items-center">
             <button
@@ -3971,28 +3971,40 @@ export default function App() {
                   <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
                     <div className="space-y-3">
                       <div>
-                        <label className="text-[11px] font-extrabold text-slate-700 block mb-1">
+                        <label htmlFor="modal-social-email-input" className="text-[11px] font-extrabold text-slate-700 block mb-1 cursor-pointer">
                           {authModalType === 'google' ? 'អាសយដ្ឋាន Gmail / អ៊ីមែល Google *' : 'លេខទូរស័ព្ទ / អ៊ីមែល / Username Facebook *'}
                         </label>
                         <input
+                          id="modal-social-email-input"
+                          name="socialEmail"
                           type="text"
+                          autoComplete="email"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
                           value={customSocialEmail}
                           onChange={(e) => setCustomSocialEmail(e.target.value)}
                           placeholder={authModalType === 'google' ? 'ឧ. myaccount@gmail.com' : 'ឧ. pich.rachana'}
-                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-emerald-500 shadow-2xs"
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-base font-semibold text-slate-800 focus:outline-hidden focus:border-emerald-500 shadow-2xs"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-extrabold text-slate-700 block mb-1">
+                        <label htmlFor="modal-social-name-input" className="text-[11px] font-extrabold text-slate-700 block mb-1 cursor-pointer">
                           ឈ្មោះបង្ហាញ (Display Name) <span className="text-slate-400 font-normal">(ជម្រើស)</span>
                         </label>
                         <input
+                          id="modal-social-name-input"
+                          name="socialName"
                           type="text"
+                          autoComplete="name"
+                          autoCapitalize="words"
+                          autoCorrect="off"
+                          spellCheck={false}
                           value={customSocialName}
                           onChange={(e) => setCustomSocialName(e.target.value)}
                           placeholder="ឧ. Prozz Lop"
-                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-emerald-500 shadow-2xs"
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-base font-semibold text-slate-800 focus:outline-hidden focus:border-emerald-500 shadow-2xs"
                         />
                       </div>
 

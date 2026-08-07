@@ -47,9 +47,9 @@ export function SignInForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" method="post" action="#">
       <div className="space-y-1.5">
-        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider">
+        <label htmlFor="signin-username-input" className="block text-[10px] font-black text-slate-400 uppercase tracking-wider cursor-pointer">
           {t('usernameLabel')}
         </label>
         <div className="relative group">
@@ -57,14 +57,20 @@ export function SignInForm({
             👤
           </span>
           <input
+            id="signin-username-input"
+            name="username"
             type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             value={username}
             onChange={(e) => {
               setUsername(e.target.value);
               setLoginError('');
             }}
             placeholder={language === 'kh' ? 'បញ្ចូលឈ្មោះអ្នកប្រើប្រាស់' : 'Enter username'}
-            className="w-full pl-11 pr-4 py-3 text-base md:text-xs bg-slate-950/70 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-white font-bold transition duration-200"
+            className="w-full pl-11 pr-4 py-3 text-base bg-slate-950/70 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-white font-bold transition duration-200"
             required
           />
         </div>
@@ -72,7 +78,7 @@ export function SignInForm({
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider">
+          <label htmlFor="signin-password-input" className="block text-[10px] font-black text-slate-400 uppercase tracking-wider cursor-pointer">
             {t('passwordLabel')}
           </label>
           <button
@@ -88,14 +94,20 @@ export function SignInForm({
             🔒
           </span>
           <input
+            id="signin-password-input"
+            name="password"
             type="password"
+            autoComplete="current-password"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
               setLoginError('');
             }}
             placeholder="••••••••••••"
-            className="w-full pl-11 pr-4 py-3 text-base md:text-xs bg-slate-950/70 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-white font-bold transition duration-200"
+            className="w-full pl-11 pr-4 py-3 text-base bg-slate-950/70 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-white font-bold transition duration-200"
             required
           />
         </div>
@@ -737,7 +749,7 @@ export function ForgotPasswordForm({
       {resetStep === 'request' && (
         <form onSubmit={handleRequestSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider">
+            <label htmlFor="forgot-email-input" className="block text-[10px] font-black text-slate-400 uppercase tracking-wider cursor-pointer">
               {t('memberEmailLabel')}
             </label>
             <div className="relative">
@@ -745,14 +757,20 @@ export function ForgotPasswordForm({
                 ✉️
               </span>
               <input
+                id="forgot-email-input"
+                name="email"
                 type="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
                   setForgotError('');
                 }}
                 placeholder="member@gmail.com"
-                className="w-full pl-9 pr-4 py-3 text-base md:text-xs bg-slate-950/70 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-white font-bold transition duration-200"
+                className="w-full pl-9 pr-4 py-3 text-base bg-slate-950/70 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-white font-bold transition duration-200"
                 required
               />
             </div>

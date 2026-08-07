@@ -15,6 +15,26 @@ input:focus, select:focus, textarea:focus {
   outline: none;
 }
 
+/* Fix mobile PWA standalone input touch & typing focus */
+input, select, textarea {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Ensure mobile Safari & standalone PWA inputs maintain minimum 16px to prevent iOS auto-zoom & input lock */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"] {
+    font-size: 16px !important;
+  }
+}
+
 @keyframes marquee-scroll {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
